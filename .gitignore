@@ -1,0 +1,69 @@
+# ---- General ----
+*.log
+*.pyc
+__pycache__/
+.env
+.env.*
+
+# ---- macOS ----
+.DS_Store
+
+# ---- VSCode ----
+.vscode/
+
+# ---- Node (Frontend) ----
+/frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.env.local
+frontend/.DS_Store
+
+# ---- Python (Backend) ----
+/backend/db.sqlite3
+/backend/staticfiles/
+/backend/media/
+/backend/.venv/
+/backend/venv/
+/backend/.mypy_cache/
+/backend/.pytest_cache/
+/backend/.env
+
+# ---- Django ----
+*.sqlite3
+*.py[cod]
+*/__pycache__/
+*.pyo
+*.pyd
+.Python
+*.db
+*.pot
+*.mo
+
+# ---- Build files ----
+build/
+dist/
+
+# ---- Coverage ----
+htmlcov/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+
+# ---- Virtualenv ----
+venv/
+.venv/
+
+chatbot_env/
+.chatbot_env/
+
+# ---- IDE ----
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# ---- Git ----
+*.orig
