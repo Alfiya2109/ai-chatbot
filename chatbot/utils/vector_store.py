@@ -1,0 +1,84 @@
+import cassio
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_community.vectorstores import Cassandra
+from langchain.docstore.document import Document
+from .env import ASTRA_DB_APPLICATION_TOKEN, ASTRA_DB_ID, ASTRA_DB_REGION, OPENAI_API_KEY
+from langchain.text_splitter import CharacterTextSplitter
+from langchain.chains.question_answering import load_qa_chain
+
+# 🔥 Load model
+llm = ChatOpenAI(
+    model="gpt-4o-mini",
+    api_key=OPENAI_API_KEY,
+    temperature=0.2
+)
+
+# Init DB
+cassio.init(token=ASTRA_DB_APPLICATION_TOKEN, database_id=ASTRA_DB_ID)
+
+def store_in_vector_db(pages, namespace="web_scraped"):
+    print("\n📦 Starting vector DB storage process...")
+    print(f"📄 Number of pages to embed: {len(pages)}")
+
+    try:
+        # 🧠 Smart chunking
+        text_splitter = CharacterTextSplitter(
+            separator="\n",
+            chunk_size=750,
+            chunk_overlap=100
+        )
+
+        documents = []
+        for url, text in pages:
+            chunks = text_splitter.create_documents([text], metadata={"source": url})
+            documents.extend(chunks)
+
+        print(f"✅ Total chunks created: {len(documents)}")
+
+        # Embeddings
+        embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
+
+        # Cassandra vector store
+        vector_store = Cassandra(
+            embedding=embeddings,
+            table_name="web_docs",
+            session=None,
+            keyspace=None,
+        )
+
+        # Store documents
+        print("💾 Adding chunks to vector DB...")
+        vector_store.add_documents(documents)
+        print("🎉 Chunks successfully stored in vector DB.")
+
+    except Exception as e:
+        print("❌ Error while storing documents:", e)
+
+def query_vector_db(question, namespace="web_scraped"):
+    print("\n❓ Running query on vector DB...")
+    print(f"🧠 Question: {question}")
+
+    try:
+        embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
+
+        vector_store = Cassandra(
+            embedding=embeddings,
+            table_name="web_docs",
+            session=None,
+            keyspace=None,
+        )
+
+        # ⚡ Use only top 3 chunks to reduce cost
+        relevant_docs = vector_store.similarity_search(question, k=3)
+        print(f"✅ Retrieved {len(relevant_docs)} relevant chunks.")
+
+        # Generate response
+        chain = load_qa_chain(llm, chain_type="stuff")
+        answer = chain.run(input_documents=relevant_docs, question=question)
+
+        print("📝 Answer generated successfully.")
+        return answer
+
+    except Exception as e:
+        print("❌ Error while querying vector DB:", e)
+        return "Something went wrong while answering the question."
