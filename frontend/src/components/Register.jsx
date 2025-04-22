@@ -1,0 +1,174 @@
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
+
+function Register() {
+  const [formData, setFormData] = useState({
+    username: '',
+    password: '',
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone_number: '',
+    role: 'user'
+  })
+  
+  const { register, loading, error } = useAuth()
+  
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }))
+  }
+  
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    await register(formData)
+  }
+  
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-blue-100 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md space-y-8">
+        <div className="text-center">
+          <h2 className="text-center text-3xl font-bold tracking-tight text-gray-900">
+            Create an account
+          </h2>
+        </div>
+        <form className="mt-8 space-y-6 bg-white p-6 rounded-lg shadow-md" onSubmit={handleSubmit}>
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                Username
+              </label>
+              <input
+                id="username"
+                name="username"
+                type="text"
+                required
+                value={formData.username}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm py-1.5 px-2 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                Password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                required
+                value={formData.password}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm py-1.5 px-2 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              />
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor="first_name" className="block text-sm font-medium text-gray-700">
+                  First Name
+                </label>
+                <input
+                  id="first_name"
+                  name="first_name"
+                  type="text"
+                  required
+                  value={formData.first_name}
+                  onChange={handleChange}
+                  className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm py-1.5 px-2 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                />
+              </div>
+              <div>
+                <label htmlFor="last_name" className="block text-sm font-medium text-gray-700">
+                  Last Name
+                </label>
+                <input
+                  id="last_name"
+                  name="last_name"
+                  type="text"
+                  required
+                  value={formData.last_name}
+                  onChange={handleChange}
+                  className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm py-1.5 px-2 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                />
+              </div>
+            </div>
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                Email
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                value={formData.email}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm py-1.5 px-2 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              />
+            </div>
+            <div>
+              <label htmlFor="phone_number" className="block text-sm font-medium text-gray-700">
+                Phone Number
+              </label>
+              <input
+                id="phone_number"
+                name="phone_number"
+                type="text"
+                required
+                value={formData.phone_number}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm py-1.5 px-2 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              />
+            </div>
+            <div>
+              <label htmlFor="role" className="block text-sm font-medium text-gray-700">
+                Role
+              </label>
+              <select
+                id="role"
+                name="role"
+                value={formData.role}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm py-1.5 px-2 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              >
+                <option value="user">User</option>
+                <option value="sales">Sales Team</option>
+              </select>
+            </div>
+          </div>
+
+          {error && (
+            <div className="text-red-500 text-sm text-center">{error}</div>
+          )}
+
+          <div>
+            <button
+              type="submit"
+              disabled={loading}
+              className={`group relative flex w-full justify-center rounded-md bg-blue-900 py-2 px-3 text-sm font-semibold text-white hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-900 ${
+                loading ? 'opacity-70 cursor-not-allowed' : ''
+              }`}
+            >
+              {loading ? 'Registering...' : 'Register'}
+            </button>
+          </div>
+
+          <div className="text-sm text-center">
+            <p className="font-medium text-blue-600 hover:text-blue-500">
+              Already have an account?{' '}
+              <Link to="/login" className="underline">
+                Login here
+              </Link>
+            </p>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+export default Register

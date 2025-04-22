@@ -1,0 +1,31 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chatbot Application</title>
+</head>
+<body>
+  <div id="root"></div>
+  
+  <!-- In development, React will be served from the Vite dev server -->
+  <!-- In production, load the built React assets -->
+  {% if debug %}
+    <script type="module">
+      // In development, connect to the Vite dev server
+      import RefreshRuntime from 'http://localhost:5173/@react-refresh'
+      RefreshRuntime.injectIntoGlobalHook(window)
+      window.$RefreshReg$ = () => {}
+      window.$RefreshSig$ = () => (type) => type
+      window.__vite_plugin_react_preamble_installed__ = true
+    </script>
+    <script type="module" src="http://localhost:5173/@vite/client"></script>
+    <script type="module" src="http://localhost:5173/src/main.jsx"></script>
+  {% else %}
+    <!-- Production React build -->
+    <script type="module" src="{% static 'react/assets/index-xxx.js' %}"></script>
+    <link rel="stylesheet" href="{% static 'react/assets/index-xxx.css' %}">
+  {% endif %}
+</body>
+</html>
