@@ -66,8 +66,19 @@ class FeedbackSerializer(serializers.ModelSerializer):
 
 
 class ChatLogSerializer(serializers.ModelSerializer):
+    category = serializers.CharField(source='category.name', read_only=True)
     feedback = FeedbackSerializer(read_only=True)
 
     class Meta:
         model = ChatLog
-        fields = ['id', 'user' ,'is_correct', 'question', 'gpt_answer', 'timestamp', 'feedback']
+        fields = ['id', 'user' ,'is_correct', 'question', 'gpt_answer', 'timestamp', 'feedback','category']
+        
+#categories
+from rest_framework import serializers
+from .models import ChatbotCategory
+
+class ChatbotCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ChatbotCategory
+        fields = ['id', 'name']
+
