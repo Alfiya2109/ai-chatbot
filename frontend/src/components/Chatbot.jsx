@@ -142,6 +142,7 @@ function Chatbot() {
   const quickOptions = [
     "Pricing",
     "FAQs"
+    
   ]
   
   return (
