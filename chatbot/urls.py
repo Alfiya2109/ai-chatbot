@@ -5,9 +5,10 @@ from rest_framework_simplejwt.views import (
 )
 from django.views.generic import TemplateView
 from .views import FeedbackUpsertView
+from .views import ChatbotCategoryListAPIView
 
 # API endpoints
-api_patterns = [
+urlpatterns = [
     path("embed-website/", EmbedWebsiteAPIView.as_view()),
     path("ask/", AskWebsiteAPIView.as_view()),
     path('register/', RegisterView.as_view(), name='register'),
@@ -21,10 +22,8 @@ api_patterns = [
     path('stats/top-questions/', TopQuestionsView.as_view(), name='top-questions'),
     path('stats/accuracy-over-time/', AccuracyOverTimeView.as_view(), name='accuracy-over-time'),
     path('chatlog/<int:pk>/correct/', CorrectAnswerView.as_view(), name='correct-answer'),
+    path('categories/', ChatbotCategoryListAPIView.as_view(), name='chatbot-categories'),
 
 ]
 
-urlpatterns = [
-    path("api/chatbot/", include((api_patterns, "chatbot_api"))),
-    path('api/', include((api_patterns, "main_api"))),
-]
+
