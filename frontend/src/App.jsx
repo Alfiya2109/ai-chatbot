@@ -6,6 +6,8 @@ import Chatbot from './components/Chatbot'
 import Config from './components/Config'
 import FeedbackDashboard from './components/FeedbackDashboard'
 import { AuthProvider } from './context/AuthContext'
+import CreateAgent from './components/CreateAgent'
+import './index.css';
 
 function App() {
   return (
@@ -31,6 +33,7 @@ function App() {
               </SalesProtectedRoute>
             }
           />
+          <Route path="/train-agent" element={<CreateAgent />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </div>
@@ -65,4 +68,4 @@ function SalesProtectedRoute({ children }) {
   return children
 }
 
-export default App 
+export default App

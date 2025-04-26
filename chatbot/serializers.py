@@ -101,8 +101,12 @@ class ChatLogSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ChatLog
-        fields = [
-            'id', 'user', 'is_correct', 'question', 'gpt_answer', 
-            'timestamp', 'feedback', 'category', 'subcategory'
-        ]
+        fields = ['id', 'user' ,'is_correct', 'question', 'gpt_answer', 'timestamp', 'feedback','category']
+        
+#categories
+
+class ChatbotCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ChatbotCategory
+        fields = ['id', 'name']
 

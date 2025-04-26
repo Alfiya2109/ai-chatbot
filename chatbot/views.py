@@ -276,3 +276,47 @@ class ChatbotCategoryListAPIView(APIView):
 
 
 
+from .file_reader import read_uploaded_file
+
+
+class UploadAndTrainAPIView(APIView):
+    def post(self, request):
+        input_type = request.data.get("type")  # "file", "text", "qna"
+        pages = []
+
+        try:
+            if input_type == "file":
+                uploaded_file = request.FILES.get("file")
+                if not uploaded_file:
+                    return Response({"error": "No file provided."}, status=400)
+
+                content = read_uploaded_file(uploaded_file)
+                pages = [(uploaded_file.name, content)]
+
+            elif input_type == "text":
+                raw_text = request.data.get("text", "")
+                if not raw_text:
+                    return Response({"error": "Text not provided."}, status=400)
+                pages = [("manual_input", raw_text)]
+
+            elif input_type == "qna":
+                question = request.data.get("question")
+                answer = request.data.get("answer")
+                category = request.data.get("category", "general")
+                subcategory = request.data.get("subcategory", "")
+                if not question or not answer:
+                    return Response({"error": "Q&A not provided."}, status=400)
+
+                content = f"Category: {category}\nSubcategory: {subcategory}\nQ: {question}\nA: {answer}"
+                pages = [("qna_input", content)]
+
+            else:
+                return Response({"error": "Invalid type."}, status=400)
+
+            # Store in vector DB
+            store_in_vector_db(pages)
+
+            return Response({"message": "Stored successfully ✅"})
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)
