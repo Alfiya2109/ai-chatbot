@@ -267,8 +267,10 @@ from .models import ChatbotCategory
 from .serializers import ChatbotCategorySerializer
 
 class ChatbotCategoryListAPIView(APIView):
+    permission_classes = [AllowAny]
+
     def get(self, request):
-        categories = ChatbotCategory.objects.all()
+        categories = ChatbotCategory.objects.prefetch_related('subcategories').all()
         serializer = ChatbotCategorySerializer(categories, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 

@@ -23,6 +23,7 @@ urlpatterns = [
     path('stats/accuracy-over-time/', AccuracyOverTimeView.as_view(), name='accuracy-over-time'),
     path('chatlog/<int:pk>/correct/', CorrectAnswerView.as_view(), name='correct-answer'),
     path('categories/', ChatbotCategoryListAPIView.as_view(), name='chatbot-categories'),
+    path('api/categories/', ChatbotCategoryListAPIView.as_view(), name='chatbot-categories'),
 
 ]
 

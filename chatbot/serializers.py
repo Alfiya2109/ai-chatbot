@@ -1,9 +1,19 @@
 # serializers.py
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import *
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
+from .models import (
+    UserProfile,
+    Feedback,
+    ChatLog,
+    ChatbotCategory,
+    ChatbotSubCategory,
+)
+
+# ---------------------------
+# Auth Serializers
+# ---------------------------
 
 class UserRegisterSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField(write_only=True)
@@ -21,7 +31,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         user = User.objects.create_user(**validated_data)
         UserProfile.objects.create(user=user, phone_number=phone, role=role)
         return user
-        
+
     def get_tokens(self, user):
         tokens = RefreshToken.for_user(user)
         return {
@@ -49,7 +59,7 @@ class UserLoginSerializer(serializers.Serializer):
             'username': user.username,
             'user': user
         }
-        
+
     def get_tokens(self, obj):
         user = obj.get('user') if isinstance(obj, dict) else obj
         tokens = RefreshToken.for_user(user)
@@ -58,6 +68,9 @@ class UserLoginSerializer(serializers.Serializer):
             'access': str(tokens.access_token),
         }
 
+# ---------------------------
+# Feedback & ChatLog
+# ---------------------------
 
 class FeedbackSerializer(serializers.ModelSerializer):
     class Meta:
@@ -65,20 +78,31 @@ class FeedbackSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+# ---------------------------
+# Category & Subcategory
+# ---------------------------
+
+class ChatbotSubCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ChatbotSubCategory
+        fields = ['id', 'name']
+
+class ChatbotCategorySerializer(serializers.ModelSerializer):
+    subcategories = ChatbotSubCategorySerializer(many=True, read_only=True)
+
+    class Meta:
+        model = ChatbotCategory
+        fields = ['id', 'name', 'subcategories']
+
 class ChatLogSerializer(serializers.ModelSerializer):
-    category = serializers.CharField(source='category.name', read_only=True)
+    category = ChatbotCategorySerializer(read_only=True)
+    subcategory = ChatbotSubCategorySerializer(read_only=True)
     feedback = FeedbackSerializer(read_only=True)
 
     class Meta:
         model = ChatLog
-        fields = ['id', 'user' ,'is_correct', 'question', 'gpt_answer', 'timestamp', 'feedback','category']
-        
-#categories
-from rest_framework import serializers
-from .models import ChatbotCategory
-
-class ChatbotCategorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ChatbotCategory
-        fields = ['id', 'name']
+        fields = [
+            'id', 'user', 'is_correct', 'question', 'gpt_answer', 
+            'timestamp', 'feedback', 'category', 'subcategory'
+        ]
 
