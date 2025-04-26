@@ -16,11 +16,21 @@ class UserProfile(models.Model):
         return f"{self.user.username} - {self.role}"
     
 #categories
+
+
 class ChatbotCategory(models.Model):
     name = models.CharField(max_length=100, unique=True)
 
     def __str__(self):
         return self.name
+
+class ChatbotSubCategory(models.Model):
+    category = models.ForeignKey(ChatbotCategory, related_name='subcategories', on_delete=models.CASCADE)
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return f"{self.name} ({self.category.name})"
+
 
 class ChatLog(models.Model):
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
@@ -29,6 +39,9 @@ class ChatLog(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     is_correct = models.BooleanField(null=True, blank=True)
     category = models.ForeignKey(ChatbotCategory, on_delete=models.CASCADE, null=True)
+    subcategory = models.ForeignKey(ChatbotSubCategory, on_delete=models.CASCADE, null=True, blank=True)  # <-- ADD THIS
+
+    
 
 class Feedback(models.Model):
     chat_log = models.OneToOneField(ChatLog, on_delete=models.CASCADE)
