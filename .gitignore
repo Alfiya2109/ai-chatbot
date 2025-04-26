@@ -57,9 +57,10 @@ coverage.xml
 venv/
 .venv/
 
-chatbot_env/
-.chatbot_env/
+env/
+env/
 
+frontend/node_modules/
 # ---- IDE ----
 .idea/
 *.sublime-project

@@ -5,6 +5,7 @@ from langchain.docstore.document import Document
 from .env import ASTRA_DB_APPLICATION_TOKEN, ASTRA_DB_ID, ASTRA_DB_REGION, OPENAI_API_KEY
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.chains.question_answering import load_qa_chain
+from ..file_reader import read_uploaded_file
 
 # 🔥 Load model
 llm = ChatOpenAI(
@@ -15,6 +16,42 @@ llm = ChatOpenAI(
 
 # Init DB
 cassio.init(token=ASTRA_DB_APPLICATION_TOKEN, database_id=ASTRA_DB_ID)
+
+def prepare_pages(data):
+    """
+    Prepares the 'pages' input based on type of upload:
+    - file
+    - text
+    - qna
+    """
+
+    pages = []
+
+    if data["type"] == "file":
+        # File upload case
+        uploaded_file = data["file"]
+        content = read_uploaded_file(uploaded_file)
+        pages.append((uploaded_file.name, content))
+
+    elif data["type"] == "text":
+        # Plain text upload case
+        raw_text = data["text"]
+        pages.append(("manual_input", raw_text))
+
+    elif data["type"] == "qna":
+        # Question-Answer upload case
+        question = data["question"]
+        answer = data["answer"]
+        category = data.get("category", "general")  # fallback if not provided
+        subcategory = data.get("subcategory", "general")
+
+        content = f"Category: {category}\nSubcategory: {subcategory}\nQ: {question}\nA: {answer}"
+        pages.append(("qna_input", content))
+
+    else:
+        raise ValueError("Invalid input type provided. Must be 'file', 'text', or 'qna'.")
+
+    return pages
 
 def store_in_vector_db(pages, namespace="web_scraped"):
     print("\n📦 Starting vector DB storage process...")
@@ -30,7 +67,7 @@ def store_in_vector_db(pages, namespace="web_scraped"):
 
         documents = []
         for url, text in pages:
-            chunks = text_splitter.create_documents([text], metadata={"source": url})
+            chunks = text_splitter.create_documents([text])
             documents.extend(chunks)
 
         print(f"✅ Total chunks created: {len(documents)}")

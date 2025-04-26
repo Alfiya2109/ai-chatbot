@@ -74,8 +74,6 @@ class ChatLogSerializer(serializers.ModelSerializer):
         fields = ['id', 'user' ,'is_correct', 'question', 'gpt_answer', 'timestamp', 'feedback','category']
         
 #categories
-from rest_framework import serializers
-from .models import ChatbotCategory
 
 class ChatbotCategorySerializer(serializers.ModelSerializer):
     class Meta:
