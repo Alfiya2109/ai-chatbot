@@ -97,16 +97,24 @@ class ChatbotCategorySerializer(serializers.ModelSerializer):
 class ChatLogSerializer(serializers.ModelSerializer):
     category = ChatbotCategorySerializer(read_only=True)
     subcategory = ChatbotSubCategorySerializer(read_only=True)
-    feedback = FeedbackSerializer(read_only=True)
+    feedback = serializers.SerializerMethodField()
 
     class Meta:
         model = ChatLog
-        fields = ['id', 'user' ,'is_correct', 'question', 'gpt_answer', 'timestamp', 'feedback','category']
-        
-#categories
+        fields = ['id', 'user', 'is_correct', 'question', 'gpt_answer', 'timestamp', 'category', 'subcategory', 'feedback']
 
-class ChatbotCategorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ChatbotCategory
-        fields = ['id', 'name']
+    def get_feedback(self, obj):
+        try:
+            feedback = Feedback.objects.get(chat_log=obj)
+            return FeedbackSerializer(feedback).data
+        except Feedback.DoesNotExist:
+            return None
+
+        
+# #categories
+
+# class ChatbotCategorySerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = ChatbotCategory
+#         fields = ['id', 'name']
 
