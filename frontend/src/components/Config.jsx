@@ -22,7 +22,10 @@ function Config() {
     answer: '',
     date: '',
     time: '',
-    category: ''
+    category: '',
+    subcategory: ''
+    
+    
   });
   const [showFilters, setShowFilters] = useState(false);
   const { currentUser, logout } = useAuth();
@@ -142,7 +145,7 @@ function Config() {
           Question: log.question,
           Answer: log.gpt_answer,
           Date: date,
-          Category: log.category || '',
+          Category: log.category.name || '',
           Time: time
         };
       })
@@ -158,18 +161,20 @@ function Config() {
     const date = `${ts.getFullYear()}-${(ts.getMonth()+1).toString().padStart(2,'0')}-${ts.getDate().toString().padStart(2,'0')}`;
     const time = ts.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const username = (log.user || '').toString();
-    const category = (log.category || '').toString();
-
+    const category = (log?.category?.name || '').toString();
+    const subcategory = (log?.subcategory?.name || '').toString();
+  
     return (
       username.toLowerCase().includes(filters.user.toLowerCase()) &&
-      log.question.toLowerCase().includes(filters.question.toLowerCase()) &&
-      log.gpt_answer.toLowerCase().includes(filters.answer.toLowerCase()) &&
+      (log.question || '').toLowerCase().includes(filters.question.toLowerCase()) &&
+      (log.gpt_answer || '').toLowerCase().includes(filters.answer.toLowerCase()) &&
       date.includes(filters.date) &&
       category.toLowerCase().includes(filters.category.toLowerCase()) &&
+      subcategory.toLowerCase().includes(filters.subcategory.toLowerCase()) &&
       time.includes(filters.time)
     );
   });
-
+  
   return (
     <div className="bg-blue-900 p-4">
       <div className="mx-auto border bg-blue-100 shadow-md rounded-lg p-2" style={{ width: '100%' }}>
@@ -202,7 +207,7 @@ function Config() {
                       <option value="">All</option>
                       {[...new Set(chatLogs.map(log => typeof log.user === 'string' ? log.user : ''))]
                         .filter(u => u)
-                        .map((u,i) => <option key={i} value={u}>{u}</option>)}
+                        .map((u,i) => <option key={i} value={u.name}>{u.name}</option>)}
                     </select>
                   </th>
                   <th className="border border-gray-300 px-4 py-2">Question
@@ -215,11 +220,19 @@ function Config() {
                     <input type="date" className="w-full mt-1 px-2 py-1 border rounded" value={filters.date} onChange={e => handleFilterChange('date', e.target.value)} />
                   </th>
                   <th className="border border-gray-300 px-4 py-2">Category
-                    <select className="w-full mt-1 px-2 py-1 border rounded" value={filters.category} onChange={e => handleFilterChange('category', e.target.value)}>
+                    <select className="w-full mt-1 px-2 py-1 border rounded" value={filters.category.name} onChange={e => handleFilterChange('category', e.target.value)}>
                       <option value="">All</option>
-                      {[...new Set(chatLogs.map(log => log.category || '').filter(c => c))].map((cat, i) => (
+                      {[...new Set(chatLogs.map(log => log?.category?.name || '').filter(c => c))].map((cat, i) => (
                         <option key={i} value={cat}>{cat}</option>
                       ))}
+                    </select>
+                  </th>
+                  <th className="border border-gray-300 px-4 py-2">Sub Category
+                    <select className="w-full mt-1 px-2 py-1 border rounded" value={filters.subcategory} onChange={e => handleFilterChange('subcategory', e.target.value)}>
+                      <option value="">All</option>
+                      {[...new Set(chatLogs.map(log => log?.subcategory || ''))]
+                        .filter(sc => sc)
+                        .map((sc, i) => <option key={i} value={sc.name}>{sc.name}</option>)}
                     </select>
                   </th>
                   <th className="border border-gray-300 px-4 py-2">Time
@@ -238,6 +251,7 @@ function Config() {
                 <th className="border border-gray-300 px-4 py-2">Answer</th>
                 <th className="border border-gray-300 px-4 py-2">Date</th>
                 <th className="border border-gray-300 px-4 py-2">Category</th>
+                <th className="border border-gray-300 px-4 py-2">Sub Category</th>
                 <th className="border border-gray-300 px-4 py-2">Time</th>
                 <th className="border border-gray-300 px-4 py-2">Actions</th>
               </tr>
@@ -264,7 +278,8 @@ function Config() {
                       </button>
                     </td>
                     <td className="border border-gray-300 px-2 py-2 whitespace-nowrap">{date}</td>
-                    <td className="border border-gray-300 px-4 py-2 whitespace-nowrap">{log.category || '—'}</td>
+                    <td className="border border-gray-300 px-4 py-2 whitespace-nowrap">{log?.category?.name || '—'}</td>
+                    <td className="border border-gray-300 px-4 py-2">{log?.subcategory?.name || '—'}</td>
                     <td className="border border-gray-300 px-4 py-2 text-center whitespace-nowrap">{time}</td>
                     <td className="border border-gray-300 px-4 py-2 text-center">
                       <button onClick={() => handleUpsertFeedback(log.id, log.gpt_answer, true)} className="bg-green-500 px-3 py-1 rounded-full text-white hover:bg-green-600">

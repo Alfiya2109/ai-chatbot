@@ -1,9 +1,28 @@
 # ---- General ----
 *.log
 *.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+*.pot
+*.mo
+*.orig
+*.cover
+*.py,cover
+*.py[cod]
 __pycache__/
+.Python
+
+# ---- Environment ----
 .env
 .env.*
+env/
+.venv/
+venv/
+backend/.env
+backend/.venv/
+backend/venv/
 
 # ---- macOS ----
 .DS_Store
@@ -12,32 +31,22 @@ __pycache__/
 .vscode/
 
 # ---- Node (Frontend) ----
-/frontend/node_modules/
+node_modules/
+frontend/node_modules/
 frontend/dist/
 frontend/.vite/
 frontend/.env.local
 frontend/.DS_Store
 
 # ---- Python (Backend) ----
-/backend/db.sqlite3
-/backend/staticfiles/
-/backend/media/
-/backend/.venv/
-/backend/venv/
-/backend/.mypy_cache/
-/backend/.pytest_cache/
-/backend/.env
+backend/db.sqlite3
+backend/staticfiles/
+backend/media/
+backend/.mypy_cache/
+backend/.pytest_cache/
 
 # ---- Django ----
-*.sqlite3
-*.py[cod]
 */__pycache__/
-*.pyo
-*.pyd
-.Python
-*.db
-*.pot
-*.mo
 
 # ---- Build files ----
 build/
@@ -50,21 +59,8 @@ htmlcov/
 .cache
 nosetests.xml
 coverage.xml
-*.cover
-*.py,cover
 
-# ---- Virtualenv ----
-venv/
-.venv/
-
-env/
-env/
-
-frontend/node_modules/
 # ---- IDE ----
 .idea/
 *.sublime-project
 *.sublime-workspace
-
-# ---- Git ----
-*.orig

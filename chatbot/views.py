@@ -24,6 +24,8 @@ class ChatLogListView(generics.ListAPIView):
 
     def get_queryset(self):
         queryset = super().get_queryset()
+        
+        # Filter by status (existing filter)
         status_filter = self.request.query_params.get('status')
         if status_filter == 'incorrect':
             queryset = queryset.filter(is_correct=False)
@@ -31,6 +33,17 @@ class ChatLogListView(generics.ListAPIView):
             queryset = queryset.filter(is_correct=True)
         elif status_filter == 'unreviewed':
             queryset = queryset.filter(is_correct__isnull=True)
+
+        # Filter by category (new filter)
+        category_filter = self.request.query_params.get('category')
+        if category_filter:
+            queryset = queryset.filter(category__name=category_filter)
+
+        # Filter by subcategory (new filter)
+        subcategory_filter = self.request.query_params.get('subcategory')
+        if subcategory_filter:
+            queryset = queryset.filter(subcategory__name=subcategory_filter)
+        
         return queryset
 
 class CorrectAnswerView(APIView):
@@ -320,3 +333,6 @@ class UploadAndTrainAPIView(APIView):
 
         except Exception as e:
             return Response({"error": str(e)}, status=500)
+        
+        
+        
