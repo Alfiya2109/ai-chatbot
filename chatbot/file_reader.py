@@ -1,4 +1,3 @@
-import textract
 import pandas as pd
 import PyPDF2
 import docx

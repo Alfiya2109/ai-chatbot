@@ -165,7 +165,7 @@ function Chatbot() {
                 onClick={handleConfigClick}
                 className="bg-blue-900 hover-bg-indigo-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors"
               >
-                Configuration
+                History
               </button>
             )}
             <button

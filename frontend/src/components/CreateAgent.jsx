@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
 
 function CreateAgent() {
   const [activeTab, setActiveTab] = useState('Files');
   const [dragging, setDragging] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [textInput, setTextInput] = useState('');
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -20,49 +21,74 @@ function CreateAgent() {
     setDragging(false);
     const files = Array.from(e.dataTransfer.files);
     setUploadedFiles((prevFiles) => [...prevFiles, ...files]);
-
-    // Create FormData to send files to the backend
-    const formData = new FormData();
-    files.forEach((file) => {
-      formData.append('files', file);
-    });
-
-    try {
-      const response = await axios.post('http://localhost:8000/api/upload/', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      console.log('Upload successful:', response.data);
-    } catch (error) {
-      console.error('Error uploading files:', error);
-    }
   };
 
-  const handleFileSelect = async (e) => {
+  const handleFileSelect = (e) => {
     const files = Array.from(e.target.files);
     setUploadedFiles((prevFiles) => [...prevFiles, ...files]);
-
-    // Create FormData to send files to the backend
-    const formData = new FormData();
-    files.forEach((file) => {
-      formData.append('files', file);
-    });
-
-    try {
-      const response = await axios.post('http://localhost:8000/api/upload/', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      console.log('Upload successful:', response.data);
-    } catch (error) {
-      console.error('Error uploading files:', error);
-    }
   };
 
   const handleRemoveFile = (index) => {
     setUploadedFiles((prevFiles) => prevFiles.filter((_, i) => i !== index));
+  };
+
+  const handleTrain = async () => {
+    try {
+      let payload;
+
+      if (activeTab === 'Files') {
+        if (uploadedFiles.length === 0) {
+          alert('Please upload at least one file.');
+          return;
+        }
+        const formData = new FormData();
+        formData.append('type', 'file');
+        formData.append('file', uploadedFiles[0]); // Assuming single file upload for now
+        payload = formData;
+      } else if (activeTab === 'Text') {
+        if (!textInput.trim()) {
+          alert('Please enter some text.');
+          return;
+        }
+        payload = { type: 'text', text: textInput };
+      } else if (activeTab === 'Excel/CSV') {
+        if (uploadedFiles.length === 0) {
+          alert('Please upload an Excel or CSV file.');
+          return;
+        }
+        const formData = new FormData();
+        formData.append('type', 'file');
+        formData.append('file', uploadedFiles[0]);
+        payload = formData;
+      } else if (activeTab === 'Q&A') {
+        const question = document.getElementById('question').value;
+        const answer = document.getElementById('answer').value;
+        const category = document.getElementById('category').value;
+        const subCategory = document.getElementById('subCategory').value;
+
+        if (!question || !answer) {
+          alert('Question and Answer are required!');
+          return;
+        }
+
+        payload = {
+          type: 'qna',
+          question,
+          answer,
+          category,
+          subcategory: subCategory,
+        };
+      }
+
+      const response = await axios.post('http://127.0.0.1:8000/api/upload-and-train/', payload, {
+        headers: activeTab === 'Files' || activeTab === 'Excel/CSV' ? { 'Content-Type': 'multipart/form-data' } : {},
+      });
+
+      alert(response.data.message || 'Training successful!');
+    } catch (error) {
+      console.error('Error during training:', error);
+      alert('An error occurred during training. Please try again.');
+    }
   };
 
   const renderContent = () => {
@@ -70,7 +96,7 @@ function CreateAgent() {
       case 'Files':
         return (
           <div
-            className={`w-1/2  border b-2 rounded-lg p-6 text-center ${dragging ? 'border-blue-600 bg-blue-100' : 'border-gray-300 bg-white'}`}
+            className={`w-1/2 border b-2 rounded-lg p-6 text-center ${dragging ? 'border-blue-600 bg-blue-100' : 'border-gray-300 bg-white'}`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
@@ -90,7 +116,7 @@ function CreateAgent() {
               Supported File Types: .pdf, .doc, .docx, .txt
             </p>
             {uploadedFiles.length > 0 && (
-              <ul className="mt-4  text-left">
+              <ul className="mt-4 text-left">
                 {uploadedFiles.map((file, index) => (
                   <li key={index} className="text-sm p-2 text-gray-700 flex justify-between items-center">
                     {file.name}
@@ -113,11 +139,9 @@ function CreateAgent() {
               rows="10"
               className="w-4/5 p-2 border border-gray-300 rounded-md outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
               placeholder="Enter your text here..."
-              
+              value={textInput}
+              onChange={(e) => setTextInput(e.target.value)}
             />
-            <button className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-              Train
-            </button>
           </div>
         );
       case 'Excel/CSV':
@@ -222,16 +246,6 @@ function CreateAgent() {
                   placeholder="Enter the sub category"
                 />
               </div>
-              <div className='w-full flex justify-center items-center'>
-              <button
-
-                  type="submit"
-                  className=" bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-                  >
-                  Train
-                  </button>
-              </div>
-              
             </form>
           </div>
         );
@@ -242,8 +256,7 @@ function CreateAgent() {
 
   return (
     <div className="flex min-h-screen bg-gray-100">
-      {/* Sidebar */}
-      <div style={{width:'20%'}} className=" bg-white shadow-md p-6 flex flex-col justify-center">
+      <div style={{ width: '20%' }} className="bg-white shadow-md p-6 flex flex-col justify-center">
         <div className="space-y-4 text-center">
           {['Files', 'Text', 'Excel/CSV', 'Q&A'].map((tab) => (
             <div
@@ -259,29 +272,13 @@ function CreateAgent() {
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="w-full flex flex-col p-6 justify-center items-center">
         {renderContent()}
-        {activeTab === 'Files' && (
-          <div className="mt-4 flex flex-col items-center">
-            <p className="text-sm text-gray-500 mb-4">
-              If you are uploading a PDF, make sure you can select/highlight the text.
-            </p>
-            <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-              Train
-            </button>
-          </div>
-        )}
-        {activeTab === 'Excel/CSV' && (
-          <div className="mt-4 flex flex-col items-center">
-            <p className="text-sm text-gray-500 mb-4">
-              If you are uploading an Excel or CSV file, ensure it is properly formatted.
-            </p>
-            <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-              Train
-            </button>
-          </div>
-        )}
+        <div className="mt-4 flex flex-col items-center">
+          <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700" onClick={handleTrain}>
+            Train
+          </button>
+        </div>
       </div>
     </div>
   );

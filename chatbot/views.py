@@ -287,6 +287,13 @@ class ChatbotCategoryListAPIView(APIView):
         serializer = ChatbotCategorySerializer(categories, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+class ChatbotSubCategoryListAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        categories = ChatbotSubCategory.objects.prefetch_related('subcategories').all()
+        serializer = ChatbotSubCategorySerializer(categories, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 from .file_reader import read_uploaded_file
@@ -329,7 +336,7 @@ class UploadAndTrainAPIView(APIView):
             # Store in vector DB
             store_in_vector_db(pages)
 
-            return Response({"message": "Stored successfully ✅"})
+            return Response({"message": "Trained successfully ✅"})
 
         except Exception as e:
             return Response({"error": str(e)}, status=500)
