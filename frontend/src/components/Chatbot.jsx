@@ -134,6 +134,10 @@ function Chatbot() {
     navigate('/config')
   }
 
+  const handleTrainClick = () => {
+    navigate('/train')
+  }
+
   const handleOptionClick = (option) => {
     setQuestion(option)
   }
@@ -159,7 +163,7 @@ function Chatbot() {
               <div className="chat-subtitle">ONLINE</div>
             </div>
           </div>
-          <div className="flex space-x-4">
+          <div className="flex space-x-2">
             {isSalesUser && (
               <button
                 onClick={handleConfigClick}
@@ -167,6 +171,16 @@ function Chatbot() {
               >
                 History
               </button>
+              
+            )}
+            {isSalesUser && (
+              <button
+                onClick={handleTrainClick}
+                className="bg-blue-900 hover-bg-indigo-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors"
+              >
+                Train
+              </button>
+              
             )}
             <button
               onClick={logout}

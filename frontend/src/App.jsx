@@ -33,7 +33,7 @@ function App() {
               </SalesProtectedRoute>
             }
           />
-          <Route path="/train-agent" element={<CreateAgent />} />
+          <Route path="/train" element={<CreateAgent />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </div>
