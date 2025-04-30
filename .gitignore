@@ -5,6 +5,7 @@
 *.pyd
 *.db
 *.sqlite3
+
 *.pot
 *.mo
 *.orig
