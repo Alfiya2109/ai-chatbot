@@ -95,13 +95,17 @@ class ChatbotCategorySerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'subcategories']
 
 class ChatLogSerializer(serializers.ModelSerializer):
-    category = ChatbotCategorySerializer(read_only=True)
-    subcategory = ChatbotSubCategorySerializer(read_only=True)
+    category = serializers.SlugRelatedField(many=True, read_only=True, slug_field='name')
+    subcategory = serializers.SlugRelatedField(many=True, read_only=True, slug_field='name')
+
     feedback = serializers.SerializerMethodField()
 
     class Meta:
         model = ChatLog
-        fields = ['id', 'user', 'is_correct', 'question', 'gpt_answer', 'timestamp', 'category', 'subcategory', 'feedback']
+        fields = [
+            'id', 'user', 'is_correct', 'question', 'gpt_answer', 'timestamp',
+            'category', 'subcategory', 'feedback'
+        ]
 
     def get_feedback(self, obj):
         try:
@@ -109,7 +113,6 @@ class ChatLogSerializer(serializers.ModelSerializer):
             return FeedbackSerializer(feedback).data
         except Feedback.DoesNotExist:
             return None
-
         
 # #categories
 
