@@ -25,6 +25,8 @@ urlpatterns = [
     path('categories/', ChatbotCategoryListAPIView.as_view(), name='chatbot-categories'),
     # path('api/categories/', ChatbotCategoryListAPIView.as_view(), name='chatbot-categories'),
     path("upload-and-train/", UploadAndTrainAPIView.as_view(), name="upload_and_train"),
+    path('chatlogs/<int:chatlog_id>/update-category/', UpdateChatLogCategoryByNameAPIView.as_view(), name='update_chatlog_category'),
+    path('chatlogs/<int:chatlog_id>/update-subcategory/', UpdateChatLogSubCategoryByNameAPIView.as_view(), name='update_chatlog_subcategory'),
     
 
 ]

@@ -22,29 +22,30 @@ class ChatLogListView(generics.ListAPIView):
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['question', 'gpt_answer']
 
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        
-        # Filter by status (existing filter)
-        status_filter = self.request.query_params.get('status')
-        if status_filter == 'incorrect':
-            queryset = queryset.filter(is_correct=False)
-        elif status_filter == 'correct':
-            queryset = queryset.filter(is_correct=True)
-        elif status_filter == 'unreviewed':
-            queryset = queryset.filter(is_correct__isnull=True)
+def get_queryset(self):
+    queryset = super().get_queryset()
 
-        # Filter by category (new filter)
-        category_filter = self.request.query_params.get('category')
-        if category_filter:
-            queryset = queryset.filter(category__name=category_filter)
+    # Filter by is_correct status
+    status_filter = self.request.query_params.get('status')
+    if status_filter == 'incorrect':
+        queryset = queryset.filter(is_correct=False)
+    elif status_filter == 'correct':
+        queryset = queryset.filter(is_correct=True)
+    elif status_filter == 'unreviewed':
+        queryset = queryset.filter(is_correct__isnull=True)
 
-        # Filter by subcategory (new filter)
-        subcategory_filter = self.request.query_params.get('subcategory')
-        if subcategory_filter:
-            queryset = queryset.filter(subcategory__name=subcategory_filter)
-        
-        return queryset
+    # Support multiple values for category (keep field name 'category')
+    category_filter = self.request.query_params.getlist('category')
+    if category_filter:
+        queryset = queryset.filter(category__name__in=category_filter).distinct()
+
+    # Support multiple values for subcategory (keep field name 'subcategory')
+    subcategory_filter = self.request.query_params.getlist('subcategory')
+    if subcategory_filter:
+        queryset = queryset.filter(subcategory__name__in=subcategory_filter).distinct()
+
+    return queryset
+
 
 class CorrectAnswerView(APIView):
     permission_classes = [IsAuthenticated]
@@ -341,5 +342,78 @@ class UploadAndTrainAPIView(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=500)
         
-        
-        
+# views.py
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from rest_framework import status
+from .models import ChatLog, ChatbotCategory
+
+class UpdateChatLogCategoryByNameAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, chatlog_id):
+        # Ensure the ChatLog exists
+        try:
+            chat_log = ChatLog.objects.get(id=chatlog_id)
+        except ChatLog.DoesNotExist:
+            return Response({"error": "ChatLog not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Fetch category names from the request
+        category_names = request.data.get("category_names", [])
+        if not isinstance(category_names, list):
+            return Response({"error": "category_names must be a list of names."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Ensure categories exist in the database
+        categories = ChatbotCategory.objects.filter(name__in=category_names)
+        if categories.count() != len(category_names):
+            return Response({"error": "Some categories not found."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Assign selected categories to the ChatLog
+        chat_log.category.set(categories)  # Replace existing categories
+        chat_log.save()
+
+        return Response({
+            "message": "Categories updated successfully.",
+            "chatlog_id": chat_log.id,
+            "category_names": category_names
+        }, status=status.HTTP_200_OK)
+
+# views.py
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from rest_framework import status
+from .models import ChatLog, ChatbotSubCategory
+
+class UpdateChatLogSubCategoryByNameAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, chatlog_id):
+        # Ensure the ChatLog exists
+        try:
+            chat_log = ChatLog.objects.get(id=chatlog_id)
+        except ChatLog.DoesNotExist:
+            return Response({"error": "ChatLog not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Fetch subcategory names from the request
+        subcategory_names = request.data.get("subcategory_names", [])
+        if not isinstance(subcategory_names, list):
+            return Response({"error": "subcategory_names must be a list of names."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Ensure subcategories exist in the database
+        subcategories = ChatbotSubCategory.objects.filter(name__in=subcategory_names)
+        if subcategories.count() != len(subcategory_names):
+            return Response({"error": "Some subcategories not found."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Assign selected subcategories to the ChatLog
+        chat_log.subcategory.set(subcategories)  # Replace existing subcategories
+        chat_log.save()
+
+        return Response({
+            "message": "Subcategories updated successfully.",
+            "chatlog_id": chat_log.id,
+            "subcategory_names": subcategory_names
+        }, status=status.HTTP_200_OK)

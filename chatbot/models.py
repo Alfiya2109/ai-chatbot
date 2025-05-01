@@ -38,10 +38,13 @@ class ChatLog(models.Model):
     gpt_answer = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
     is_correct = models.BooleanField(null=True, blank=True)
-    category = models.ForeignKey(ChatbotCategory, on_delete=models.CASCADE, null=True)
-    subcategory = models.ForeignKey(ChatbotSubCategory, on_delete=models.CASCADE, null=True, blank=True)  # <-- ADD THIS
 
-    
+    category = models.ManyToManyField(ChatbotCategory, blank=True)
+    subcategory = models.ManyToManyField(ChatbotSubCategory, blank=True)
+
+    def __str__(self):
+        return f"ChatLog #{self.pk}"
+
 
 class Feedback(models.Model):
     chat_log = models.OneToOneField(ChatLog, on_delete=models.CASCADE)
