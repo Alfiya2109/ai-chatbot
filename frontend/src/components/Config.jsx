@@ -5,6 +5,7 @@ import * as XLSX from 'xlsx';
 import { IoFilter, IoBarChart } from 'react-icons/io5';
 import { FaPencilAlt, FaCheck } from 'react-icons/fa';
 import { MdSimCardDownload } from 'react-icons/md';
+import Multiselect from 'multiselect-react-dropdown';
 
 const API_BASE_URL = 'http://localhost:8000';
 
@@ -116,6 +117,32 @@ function Config() {
     setFilters(prev => ({ ...prev, [column]: value }));
   };
 
+  const handleCategoryChange = (selectedList) => {
+    const allCategories = [...new Set(chatLogs.flatMap(log => log.category || []))];
+    if (selectedList.some(item => item === 'All')) {
+      handleFilterChange('category', filters.category.includes('All') ? [] : ['All', ...allCategories]);
+    } else {
+      handleFilterChange('category', selectedList);
+    }
+  };
+
+  const handleSubcategoryChange = (selectedList) => {
+    const allSubcategories = [...new Set(chatLogs.flatMap(log => log.subcategory || []))];
+    if (selectedList.some(item => item === 'All')) {
+      handleFilterChange('subcategory', filters.subcategory.includes('All') ? [] : ['All', ...allSubcategories]);
+    } else {
+      handleFilterChange('subcategory', selectedList);
+    }
+  };
+
+  const handleEditCategoryChange = (selectedList) => {
+    setEditCategory(selectedList);
+  };
+
+  const handleEditSubcategoryChange = (selectedList) => {
+    setEditSubcategory(selectedList);
+  };
+
   const toggleFilters = () => setShowFilters(prev => !prev);
 
   const handleDownloadExcel = () => {
@@ -211,50 +238,26 @@ function Config() {
                     <input type="date" className="w-full mt-1 px-2 py-1 border rounded" value={filters.date} onChange={e => handleFilterChange('date', e.target.value)} />
                   </th>
                   <th className="border border-gray-300 px-4 py-2">Category
-                    <select
-                      multiple
+                    <Multiselect
+                      options={["All", ...new Set(chatLogs.flatMap(log => log.category || []))]}
+                      selectedValues={filters.category}
+                      onSelect={handleCategoryChange}
+                      onRemove={handleCategoryChange}
+                      isObject={false}
+                      placeholder="Categories"
                       className="w-full mt-1 px-2 py-1 border rounded"
-                      value={filters.category}
-                      onChange={(e) => {
-                        const options = Array.from(e.target.options);
-                        const selected = options.filter(opt => opt.selected).map(opt => opt.value);
-                        const allCategories = [...new Set(chatLogs.flatMap(log => log.category || []))];
-
-                        if (selected.includes('All')) {
-                          handleFilterChange('category', filters.category.includes('All') ? [] : ['All', ...allCategories]);
-                        } else {
-                          handleFilterChange('category', selected);
-                        }
-                      }}
-                    >
-                      <option value="All">All</option>
-                      {[...new Set(chatLogs.flatMap(log => log.category || []))].map((cat, i) => (
-                        <option key={i} value={cat}>{cat}</option>
-                      ))}
-                    </select>
+                    />
                   </th>
                   <th className="border border-gray-300 px-4 py-2">Sub Category
-                    <select
-                      multiple
+                    <Multiselect
+                      options={["All", ...new Set(chatLogs.flatMap(log => log.subcategory || []))]}
+                      selectedValues={filters.subcategory}
+                      onSelect={handleSubcategoryChange}
+                      onRemove={handleSubcategoryChange}
+                      isObject={false}
+                      placeholder="Subcategories"
                       className="w-full mt-1 px-2 py-1 border rounded"
-                      value={filters.subcategory}
-                      onChange={(e) => {
-                        const options = Array.from(e.target.options);
-                        const selected = options.filter(opt => opt.selected).map(opt => opt.value);
-                        const allSubcategories = [...new Set(chatLogs.flatMap(log => log.subcategory || []))];
-
-                        if (selected.includes('All')) {
-                          handleFilterChange('subcategory', filters.subcategory.includes('All') ? [] : ['All', ...allSubcategories]);
-                        } else {
-                          handleFilterChange('subcategory', selected);
-                        }
-                      }}
-                    >
-                      <option value="All">All</option>
-                      {[...new Set(chatLogs.flatMap(log => log.subcategory || []))].map((subcat, i) => (
-                        <option key={i} value={subcat}>{subcat}</option>
-                      ))}
-                    </select>
+                    />
                   </th>
                   <th className="border border-gray-300 px-4 py-2">Time
                     <input type="time" className="w-full mt-1 px-2 py-1 border rounded" value={filters.time} onChange={e => handleFilterChange('time', e.target.value)} />
@@ -265,6 +268,17 @@ function Config() {
           )}
 
           <table className="table-auto w-full text-sm border-collapse border border-gray-300">
+            <colgroup>
+              <col style={{ width: '5%' }} />
+              <col style={{ width: '25%' }} />
+              <col style={{ width: '25%' }} />
+              <col style={{ width: '5%' }} />
+              <col style={{ width: '15%' }} />
+              <col style={{ width: '15%' }} />
+              <col style={{ width: '5%' }} />
+              <col style={{ width: '5%' }} />
+
+            </colgroup>
             <thead>
               <tr className="bg-gray-200">
                 <th className="border border-gray-300 px-4 py-2">User</th>
@@ -290,33 +304,28 @@ function Config() {
                   <tr key={log.id} className="hover:bg-gray-100">
                     <td className="border border-gray-300 px-4 py-2">{log.user}</td>
                     <td className="border border-gray-300 px-2 py-2">{log.question}</td>
-                    <td className="border flex justify-between border-gray-300 px-2 py-2">
+                    <td className="border flex items-center border-gray-300 px-2 py-2">
                       {isEditingAnswer ? (
-                        <input type="text" value={editAnswer} onChange={e => setEditAnswer(e.target.value)} className="w-11/12 px-2 py-1 border rounded" />
+                        <input type="text" value={editAnswer} onChange={e => setEditAnswer(e.target.value)} className="w-10/12 px-2 py-1 border rounded" />
                       ) : (
-                        <div style={{ width: '85%', textAlign: 'justify' }}>{log.gpt_answer}</div>
+                        <div style={{ width: '90%', textAlign: 'justify' }}>{log.gpt_answer}</div>
                       )}
-                      <button onClick={() => isEditingAnswer ? handleUpdateFeedback(log.id) : (setEditId(log.id), setEditAnswer(log.gpt_answer))} className="ml-2 bg-blue-900 text-white rounded-full p-2 hover:bg-blue-700" style={{ width: '30px', height: '30px' }}>
+                      <button onClick={() => isEditingAnswer ? handleUpdateFeedback(log.id) : (setEditId(log.id), setEditAnswer(log.gpt_answer))} className="ml-1 bg-blue-900 text-white rounded-full p-2 hover:bg-blue-700" style={{ width: '30px', height: '30px', alignSelf: 'center' }}>
                         {isEditingAnswer ? <FaCheck size={16} /> : <FaPencilAlt size={16} />}
                       </button>
                     </td>
                     <td className="border border-gray-300 px-2 py-2 whitespace-nowrap">{date}</td>
                     <td className="border border-gray-300 px-2 py-2">
                       {isEditingCategory ? (
-                        <select
-                          multiple
-                          value={editCategory}
-                          onChange={(e) => {
-                            const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
-                            setEditCategory(selectedOptions); // Update the state with selected values
-                          }}
+                        <Multiselect
+                          options={["All", ...new Set(chatLogs.flatMap(log => log.category || []))]}
+                          selectedValues={editCategory}
+                          onSelect={handleEditCategoryChange}
+                          onRemove={handleEditCategoryChange}
+                          isObject={false}
+                          placeholder="Edit Categories"
                           className="w-11/12 px-2 py-1 border rounded float-right"
-                        >
-                          <option value="All">All</option>
-                          {[...new Set(chatLogs.flatMap(log => log.category || []))].map((cat, i) => (
-                            <option key={i} value={cat}>{cat}</option>
-                          ))}
-                        </select>
+                        />
                       ) : (
                         <div style={{ width: '85%', textAlign: 'justify' }}>{log.category.join(', ')}</div>
                       )}
@@ -326,20 +335,15 @@ function Config() {
                     </td>
                     <td className="border border-gray-300 px-2 py-2">
                       {isEditingSubcategory ? (
-                        <select
-                          multiple
-                          value={editSubcategory}
-                          onChange={(e) => {
-                            const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
-                            setEditSubcategory(selectedOptions); // Update the state with selected values
-                          }}
+                        <Multiselect
+                          options={["All", ...new Set(chatLogs.flatMap(log => log.subcategory || []))]}
+                          selectedValues={editSubcategory}
+                          onSelect={handleEditSubcategoryChange}
+                          onRemove={handleEditSubcategoryChange}
+                          isObject={false}
+                          placeholder="Edit Subcategories"
                           className="w-11/12 px-2 py-1 border rounded float-right"
-                        >
-                          <option value="All">All</option>
-                          {[...new Set(chatLogs.flatMap(log => log.subcategory || []))].map((subcat, i) => (
-                            <option key={i} value={subcat}>{subcat}</option>
-                          ))}
-                        </select>
+                        />
                       ) : (
                         <div style={{ width: '85%', textAlign: 'justify' }}>{log.subcategory.join(', ')}</div>
                       )}
