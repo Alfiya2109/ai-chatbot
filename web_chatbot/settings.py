@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-5g83x4w=*8z2)^fdfobwp0mea-x3++(j7a!l+2)dov)4eimv=4
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['75.119.128.244', 'aichatbotbackend.iqratechnology.com']
 
 
 # Application definition
@@ -60,6 +60,7 @@ CORS_ALLOW_ALL_ORIGINS = True  # For development only
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",  # Vite default dev server
     "http://localhost:5174",
+    'https://aichatbotfrontend.iqratechnology.com'
 ]
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
