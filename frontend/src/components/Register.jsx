@@ -19,12 +19,16 @@ function Register() {
     const { name, value } = e.target
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: value,
+      email: name === 'username' ? value : prev.email, // sync email if username changes
+      role: 'user' // always enforce role
     }))
   }
   
+  
   const handleSubmit = async (e) => {
     e.preventDefault()
+    
     await register(formData)
   }
   
@@ -40,7 +44,7 @@ function Register() {
           <div className="space-y-4">
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-                Username
+                Email
               </label>
               <input
                 id="username"
@@ -48,6 +52,7 @@ function Register() {
                 type="text"
                 required
                 value={formData.username}
+                
                 onChange={handleChange}
                 className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm py-1.5 px-2 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               />
@@ -96,20 +101,7 @@ function Register() {
                 />
               </div>
             </div>
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                value={formData.email}
-                onChange={handleChange}
-                className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm py-1.5 px-2 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-              />
-            </div>
+           
             <div>
               <label htmlFor="phone_number" className="block text-sm font-medium text-gray-700">
                 Phone Number
@@ -124,21 +116,7 @@ function Register() {
                 className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm py-1.5 px-2 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               />
             </div>
-            <div>
-              <label htmlFor="role" className="block text-sm font-medium text-gray-700">
-                Role
-              </label>
-              <select
-                id="role"
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-                className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm py-1.5 px-2 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-              >
-                <option value="user">User</option>
-                <option value="sales">Sales Team</option>
-              </select>
-            </div>
+            
           </div>
 
           {error && (

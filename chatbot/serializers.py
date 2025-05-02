@@ -15,28 +15,48 @@ from .models import (
 # Auth Serializers
 # ---------------------------
 
+from django.contrib.auth.models import User
+from rest_framework import serializers
+from .models import UserProfile
+from rest_framework_simplejwt.tokens import RefreshToken
+
 class UserRegisterSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField(write_only=True)
-    role = serializers.ChoiceField(choices=UserProfile.ROLE_CHOICES)
-    tokens = serializers.SerializerMethodField()
+    # make role write‑only so DRF won’t look for `user.role` on reads
+    role         = serializers.ChoiceField(
+                       choices=UserProfile.ROLE_CHOICES,
+                       write_only=True
+                   )
+    tokens       = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['username', 'password', 'first_name', 'last_name', 'email', 'phone_number', 'role', 'tokens']
-        extra_kwargs = {'password': {'write_only': True}}
+        fields = [
+            'username', 'password',
+            'first_name', 'last_name',
+            'email',
+            'phone_number', 'role',
+            'tokens'
+        ]
+        extra_kwargs = {
+            'password': {'write_only': True},
+            'email':    {'required': True},
+        }
 
     def create(self, validated_data):
         phone = validated_data.pop('phone_number')
-        role = validated_data.pop('role')
-        user = User.objects.create_user(**validated_data)
+        role  = validated_data.pop('role')
+        # create_user will hash the password
+        user  = User.objects.create_user(**validated_data)
+        # now attach your profile
         UserProfile.objects.create(user=user, phone_number=phone, role=role)
         return user
 
     def get_tokens(self, user):
-        tokens = RefreshToken.for_user(user)
+        refresh = RefreshToken.for_user(user)
         return {
-            'refresh': str(tokens),
-            'access': str(tokens.access_token),
+            'refresh': str(refresh),
+            'access':  str(refresh.access_token),
         }
 
 class UserLoginSerializer(serializers.Serializer):

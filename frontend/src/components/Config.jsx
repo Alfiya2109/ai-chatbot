@@ -10,8 +10,6 @@ import Multiselect from 'multiselect-react-dropdown';
 const API_BASE_URL = 'http://localhost:8000';
 
 function Config() {
-  const [feedbacks, setFeedbacks] = useState([]);
-  const [newFeedback, setNewFeedback] = useState({ question: '', answer: '' });
   const [editId, setEditId] = useState(null);
   const [editAnswer, setEditAnswer] = useState('');
   const [editCategory, setEditCategory] = useState([]);
@@ -34,23 +32,9 @@ function Config() {
     if (!currentUser || currentUser.role !== 'sales') {
       navigate('/chatbot');
     } else {
-      fetchFeedbacks();
       fetchChatLogs();
     }
   }, [currentUser]);
-
-  const fetchFeedbacks = async () => {
-    try {
-      const token = currentUser?.token || localStorage.getItem('access_token');
-      const res = await fetch(`${API_BASE_URL}/api/feedbacks/`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      setFeedbacks(data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
 
   const fetchChatLogs = async () => {
     try {
@@ -197,7 +181,7 @@ function Config() {
     <div className="bg-blue-900 p-4">
       <div className="mx-auto border bg-blue-100 shadow-md rounded-lg p-2" style={{ width: '100%' }}>
         <div className="w-full flex justify-center">
-          <h1 className="text-xl font-bold text-blue-900">Sales Feedback Panel</h1>
+          <h1 className="text-xl font-bold text-blue-900">Sales Chat Logs</h1>
         </div>
 
         <div>
@@ -277,7 +261,6 @@ function Config() {
               <col style={{ width: '15%' }} />
               <col style={{ width: '5%' }} />
               <col style={{ width: '5%' }} />
-
             </colgroup>
             <thead>
               <tr className="bg-gray-200">
@@ -367,5 +350,4 @@ function Config() {
     </div>
   );
 }
-
 export default Config;
