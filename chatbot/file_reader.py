@@ -18,8 +18,13 @@ def read_csv(file):
     return df.to_string(index=False)
 
 def read_excel(file):
-    df = pd.read_excel(file)
-    return df.to_string(index=False)
+    df = pd.read_excel(file).fillna("")
+    rows = []
+    for _, row in df.iterrows():
+        row_text = " | ".join(f"{col.strip()}: {str(row[col]).strip()}" for col in df.columns)
+        rows.append(row_text)
+    return "\n".join(rows)
+
 
 def read_text(file):
     return file.read().decode('utf-8')

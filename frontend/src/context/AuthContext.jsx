@@ -1,9 +1,10 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { BASE_URL } from '../base_url';
 
 const AuthContext = createContext()
-const API_BASE_URL = 'http://localhost:8000'; // Django backend server URL
-
+const API_BASE_URL = BASE_URL;
+console.log("API_BASE_URL", API_BASE_URL)
 export function useAuth() {
   return useContext(AuthContext)
 }
@@ -162,4 +163,4 @@ export function AuthProvider({ children }) {
       {children}
     </AuthContext.Provider>
   )
-} 
+}

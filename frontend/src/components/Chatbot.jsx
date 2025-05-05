@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { BASE_URL } from '../base_url';
 
-
-const API_BASE_URL = 'http://localhost:8000'; // Django backend server URL
+const API_BASE_URL = BASE_URL;
 
 // SVG Icons
 const SendIcon = () => (
