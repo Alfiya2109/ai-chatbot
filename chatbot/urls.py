@@ -6,6 +6,8 @@ from rest_framework_simplejwt.views import (
 from django.views.generic import TemplateView
 from .views import FeedbackUpsertView
 from .views import ChatbotCategoryListAPIView
+from .views import FileUploadView
+from .views import FileUploadView, TextContentView, ExcelFileView, QADataView
 
 # API endpoints
 urlpatterns = [
@@ -27,8 +29,15 @@ urlpatterns = [
     path("upload-and-train/", UploadAndTrainAPIView.as_view(), name="upload_and_train"),
     path('chatlogs/<int:chatlog_id>/update-category/', UpdateChatLogCategoryByNameAPIView.as_view(), name='update_chatlog_category'),
     path('chatlogs/<int:chatlog_id>/update-subcategory/', UpdateChatLogSubCategoryByNameAPIView.as_view(), name='update_chatlog_subcategory'),
-    
-
+    path("filesupload/", FileUploadView.as_view(), name="files_upload"),
+    path("filesupload/<int:pk>/", FileUploadView.as_view(), name="file_delete"),
+    path("filesupload/", FileUploadView.as_view(), name="files_upload"),
+    path("textupload/", TextContentView.as_view(), name="text_upload"),
+    path("textupload/<int:pk>/", TextContentView.as_view(), name="text_delete"),
+    path("excelupload/", ExcelFileView.as_view(), name="excel_upload"),
+    path("excelupload/<int:pk>/", ExcelFileView.as_view(), name="excel_delete"),
+    path("qa/", QADataView.as_view(), name="qa_data"),
+    path("qa/<int:pk>/", QADataView.as_view(), name="qa_data_detail"),
 ]
 
 

@@ -141,3 +141,44 @@ class ChatLogSerializer(serializers.ModelSerializer):
 #         model = ChatbotCategory
 #         fields = ['id', 'name']
 
+# For Files Upload
+import os
+from chatbot.models import Files_upload
+class FilesUploadSerializer(serializers.ModelSerializer):
+    file = serializers.FileField(use_url=True)
+
+    class Meta:
+        model = Files_upload
+        fields = '__all__'
+
+    def validate_file(self, value):
+        ext = os.path.splitext(value.name)[1].lower()
+        allowed_extensions = ['.pdf', '.doc', '.docx', '.txt']
+        if ext not in allowed_extensions:
+            raise serializers.ValidationError('Only .pdf, .doc, .docx, and .txt files are allowed.')
+        return value
+
+from chatbot.models import TextContent
+class TextContentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TextContent
+        fields = '__all__'
+
+from chatbot.models import ExcelFile
+class ExcelFileSerializer(serializers.ModelSerializer):
+    def validate_file(self, value):
+        ext = os.path.splitext(value.name)[1].lower()
+        if ext not in ['.csv', '.xls', '.xlsx']:
+            raise serializers.ValidationError("Only .csv, .xls, .xlsx files are allowed.")
+        return value
+
+    class Meta:
+        model = ExcelFile
+        fields = '__all__'
+
+from chatbot.models import QAData
+class QADataSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QAData
+        fields = '__all__'
+
