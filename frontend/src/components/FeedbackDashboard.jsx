@@ -14,6 +14,7 @@ import {
   TimeScale
 } from 'chart.js';
 import 'chartjs-adapter-date-fns';
+import { BASE_URL } from '../base_url';
 
 ChartJS.register(
   CategoryScale,
@@ -28,7 +29,7 @@ ChartJS.register(
   TimeScale
 );
 
-const API_BASE = 'http://localhost:8000/api/stats';
+const API_BASE = `${BASE_URL}/api/stats`;
 
 function FeedbackDashboard() {
   const [summary, setSummary] = useState(null);

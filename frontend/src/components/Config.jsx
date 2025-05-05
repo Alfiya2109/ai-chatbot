@@ -6,8 +6,9 @@ import { IoFilter, IoBarChart } from 'react-icons/io5';
 import { FaPencilAlt, FaCheck } from 'react-icons/fa';
 import { MdSimCardDownload } from 'react-icons/md';
 import Multiselect from 'multiselect-react-dropdown';
+import { BASE_URL } from '../base_url';
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = BASE_URL;
 
 function Config() {
   const [editId, setEditId] = useState(null);
