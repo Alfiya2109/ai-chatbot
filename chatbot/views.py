@@ -417,3 +417,95 @@ class UpdateChatLogSubCategoryByNameAPIView(APIView):
             "chatlog_id": chat_log.id,
             "subcategory_names": subcategory_names
         }, status=status.HTTP_200_OK)
+
+
+# File Uploder
+from rest_framework.parsers import MultiPartParser, FormParser
+from chatbot.models import Files_upload
+from chatbot.serializers import FilesUploadSerializer
+class FileUploadView(APIView):
+    parser_classes = (MultiPartParser, FormParser)
+
+    def get(self, request):
+        files = Files_upload.objects.all()
+        serializer = FilesUploadSerializer(files, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        serializer = FilesUploadSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def delete(self, request, pk=None):
+        try:
+            file = Files_upload.objects.get(pk=pk)
+            file.delete()
+            return Response({"message": "File deleted"}, status=status.HTTP_204_NO_CONTENT)
+        except Files_upload.DoesNotExist:
+            return Response({"error": "File not found"}, status=status.HTTP_404_NOT_FOUND)
+
+class TextContentView(APIView):
+    def get(self, request):
+        texts = TextContent.objects.all()
+        serializer = TextContentSerializer(texts, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = TextContentSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def delete(self, request, pk=None):
+        try:
+            text = TextContent.objects.get(pk=pk)
+            text.delete()
+            return Response({"message": "Text deleted"}, status=status.HTTP_204_NO_CONTENT)
+        except TextContent.DoesNotExist:
+            return Response({"error": "Text not found"}, status=status.HTTP_404_NOT_FOUND)
+class ExcelFileView(APIView):
+    parser_classes = (MultiPartParser, FormParser)
+
+    def get(self, request):
+        files = ExcelFile.objects.all()
+        serializer = ExcelFileSerializer(files, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = ExcelFileSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def delete(self, request, pk=None):
+        try:
+            file = ExcelFile.objects.get(pk=pk)
+            file.delete()
+            return Response({"message": "File deleted"}, status=status.HTTP_204_NO_CONTENT)
+        except ExcelFile.DoesNotExist:
+            return Response({"error": "File not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+
+class QADataView(APIView):
+    def get(self, request):
+        items = QAData.objects.all()
+        serializer = QADataSerializer(items, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = QADataSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def delete(self, request, pk=None):
+        try:
+            item = QAData.objects.get(pk=pk)
+            item.delete()
+            return Response({"message": "Item deleted"}, status=status.HTTP_204_NO_CONTENT)
+        except QAData.DoesNotExist:
+            return Response({"error": "Item not found"}, status=status.HTTP_404_NOT_FOUND)
+

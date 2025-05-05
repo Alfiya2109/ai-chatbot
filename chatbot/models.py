@@ -1,6 +1,7 @@
 # models.py
 from django.contrib.auth.models import User
 from django.db import models
+import os
 
 class UserProfile(models.Model):
     ROLE_CHOICES = (
@@ -52,5 +53,24 @@ class Feedback(models.Model):
     correct_answer = models.TextField(blank=True, null=True)
     feedback_time = models.DateTimeField(auto_now=True)
     
+class Files_upload(models.Model):
+    file = models.FileField(upload_to='uploads/')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
 
+    def __str__(self):
+        return f"{os.path.basename(self.file.name)} uploaded at {self.uploaded_at}"
 
+class TextContent(models.Model):
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class ExcelFile(models.Model):
+    file = models.FileField(upload_to='excel_files/')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+class QAData(models.Model):
+    question = models.TextField()
+    answer = models.TextField()
+    category = models.ManyToManyField(ChatbotCategory, blank=True)
+    subcategory = models.ManyToManyField(ChatbotSubCategory, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
