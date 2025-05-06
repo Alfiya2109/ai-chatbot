@@ -292,8 +292,8 @@ class ChatbotSubCategoryListAPIView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        categories = ChatbotSubCategory.objects.prefetch_related('subcategories').all()
-        serializer = ChatbotSubCategorySerializer(categories, many=True)
+        subcategories = ChatbotSubCategory.objects.all()
+        serializer = ChatbotSubCategorySerializer(subcategories, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
