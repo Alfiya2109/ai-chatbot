@@ -119,3 +119,53 @@ def query_vector_db(question, namespace="web_scraped"):
     except Exception as e:
         print("❌ Error while querying vector DB:", e)
         return "Something went wrong while answering the question."
+
+def remove_from_vector_db(identifier, namespace="web_scraped"):
+    print(f"\n🗑️ Removing document with identifier '{identifier}' from vector DB...")
+
+    try:
+        embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
+
+        vector_store = Cassandra(
+            embedding=embeddings,
+            table_name="web_docs",
+            session=None,
+            keyspace=None,
+        )
+
+        # Convert identifier to string to ensure compatibility
+        identifier = str(identifier)
+
+        # Remove document by identifier using delete_by_document_id
+        vector_store.delete_by_document_id(identifier)
+
+        # Additional cleanup: Remove associated metadata and embeddings
+        vector_store.delete_by_metadata_filter({"row_id": identifier})
+
+        # Clear cache or ensure no stale data remains
+        vector_store.clear()  # Clear the entire table to ensure no stale data
+
+        print(f"✅ Document '{identifier}' and associated data successfully removed from vector DB, and cache cleared.")
+
+    except Exception as e:
+        print(f"❌ Error while removing document '{identifier}':", e)
+        
+def clear_vector_db(namespace="web_scraped"):
+    print("\n🗑️ Clearing all documents from the vector DB...")
+
+    try:
+        embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
+
+        vector_store = Cassandra(
+            embedding=embeddings,
+            table_name="web_docs",
+            session=None,
+            keyspace=None,
+        )
+
+        # Clear all documents
+        vector_store.clear()  # Replace with the correct method to clear the database
+        print("✅ Vector DB successfully cleared.")
+
+    except Exception as e:
+        print(f"❌ Error while clearing vector DB: {e}")

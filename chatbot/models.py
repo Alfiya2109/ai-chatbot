@@ -74,3 +74,10 @@ class QAData(models.Model):
     category = models.ManyToManyField(ChatbotCategory, blank=True)
     subcategory = models.ManyToManyField(ChatbotSubCategory, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+class URLModel(models.Model):
+    url = models.URLField(max_length=500)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.url

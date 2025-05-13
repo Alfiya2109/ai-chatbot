@@ -1,19 +1,20 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .utils.scraper import scrape_entire_website
-from .utils.vector_store import store_in_vector_db, query_vector_db
+from .utils.vector_store import store_in_vector_db, query_vector_db, remove_from_vector_db, clear_vector_db
 from .serializers import *
 from django.contrib.auth.models import *
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.generics import UpdateAPIView
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.shortcuts import render
-from django.conf import settings
+from rest_framework.parsers import MultiPartParser, FormParser
+
 from rest_framework import generics, filters, status
 from django.db.models import Count
-from .models import Feedback
+from .models import Feedback, URLModel
 from django.views import View
 from django.http import JsonResponse
+from django.db import models
 
 
 class ChatLogListView(generics.ListAPIView):
@@ -420,9 +421,9 @@ class UpdateChatLogSubCategoryByNameAPIView(APIView):
 
 
 # File Uploder
-from rest_framework.parsers import MultiPartParser, FormParser
 from chatbot.models import Files_upload
 from chatbot.serializers import FilesUploadSerializer
+
 class FileUploadView(APIView):
     parser_classes = (MultiPartParser, FormParser)
 
@@ -441,11 +442,16 @@ class FileUploadView(APIView):
     def delete(self, request, pk=None):
         try:
             file = Files_upload.objects.get(pk=pk)
+            identifier = file.id  # Use a unique identifier for the file
             file.delete()
+            try:
+                remove_from_vector_db(identifier)  # Remove from vector DB
+            except Exception as e:
+                return Response({"error": f"Failed to remove from vector DB: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             return Response({"message": "File deleted"}, status=status.HTTP_204_NO_CONTENT)
         except Files_upload.DoesNotExist:
             return Response({"error": "File not found"}, status=status.HTTP_404_NOT_FOUND)
-
+        
 class TextContentView(APIView):
     def get(self, request):
         texts = TextContent.objects.all()
@@ -458,13 +464,21 @@ class TextContentView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     def delete(self, request, pk=None):
         try:
             text = TextContent.objects.get(pk=pk)
+            identifier = text.id  # Use a unique identifier for the text
             text.delete()
+            try:
+                remove_from_vector_db(identifier)  # Remove from vector DB
+            except Exception as e:
+                return Response({"error": f"Failed to remove from vector DB: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             return Response({"message": "Text deleted"}, status=status.HTTP_204_NO_CONTENT)
         except TextContent.DoesNotExist:
             return Response({"error": "Text not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+
 class ExcelFileView(APIView):
     parser_classes = (MultiPartParser, FormParser)
 
@@ -482,11 +496,16 @@ class ExcelFileView(APIView):
     def delete(self, request, pk=None):
         try:
             file = ExcelFile.objects.get(pk=pk)
+            identifier = file.id  # Use a unique identifier for the Excel file
             file.delete()
+            try:
+                remove_from_vector_db(identifier)  # Remove from vector DB
+            except Exception as e:
+                return Response({"error": f"Failed to remove from vector DB: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             return Response({"message": "File deleted"}, status=status.HTTP_204_NO_CONTENT)
         except ExcelFile.DoesNotExist:
             return Response({"error": "File not found"}, status=status.HTTP_404_NOT_FOUND)
-        
+     
 
 class QADataView(APIView):
     def get(self, request):
@@ -504,8 +523,63 @@ class QADataView(APIView):
     def delete(self, request, pk=None):
         try:
             item = QAData.objects.get(pk=pk)
+            identifier = item.id  # Use a unique identifier for the Q&A item
             item.delete()
+            try:
+                remove_from_vector_db(identifier)  # Remove from vector DB
+            except Exception as e:
+                return Response({"error": f"Failed to remove from vector DB: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             return Response({"message": "Item deleted"}, status=status.HTTP_204_NO_CONTENT)
         except QAData.DoesNotExist:
             return Response({"error": "Item not found"}, status=status.HTTP_404_NOT_FOUND)
 
+
+class ClearVectorDBView(APIView):
+    permission_classes = [IsAuthenticated]  # Restrict access to authenticated users
+
+    def delete(self, request):
+        try:
+            clear_vector_db()
+            return Response({"message": "Vector DB cleared successfully."}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class URLManagementAPIView(APIView):
+    def get(self, request):
+        urls = URLModel.objects.all()
+        url_list = [
+            {
+                "id": url.id,
+                "url": url.url,
+                "created_at": url.created_at
+            }
+            for url in urls
+        ]
+        return Response(url_list, status=status.HTTP_200_OK)
+
+    def delete(self, request, pk):
+        try:
+            url = URLModel.objects.get(pk=pk)
+            identifier = str(url.id)  # Convert identifier to string for compatibility
+            url.delete()
+
+            try:
+                remove_from_vector_db(identifier)  # Remove from vector DB
+            except Exception as e:
+                return Response({"error": f"Failed to remove from vector DB: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            return Response({"message": "URL deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+        except URLModel.DoesNotExist:
+            return Response({"error": "URL not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    def post(self, request):
+        url = request.data.get("url")
+        if not url:
+            return Response({"error": "URL is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            new_url = URLModel.objects.create(url=url)
+            return Response({"id": new_url.id, "url": new_url.url, "created_at": new_url.created_at}, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -13,9 +13,10 @@ function CreateAgent() {
   const [categories, setCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
   const [isTraining, setIsTraining] = useState(false);
+  const [urlList, setUrlList] = useState([]);
   const navigate = useNavigate();
 
-  const tabs = ['Files', 'Text', 'Excel/CSV', 'Q&A', 'Chatbot', 'History'];
+  const tabs = ['Files', 'Text', 'Excel/CSV', 'Q&A','URL', 'Chatbot', 'History'];
 
   useEffect(() => {
     if (activeTab === 'Files') {
@@ -28,6 +29,8 @@ function CreateAgent() {
       fetchQA();
       fetchCategories();
       fetchSubCategories();
+    } else if (activeTab === 'URL') {
+      fetchURLs();
     }
   }, [activeTab]);
 
@@ -85,6 +88,15 @@ function CreateAgent() {
       setSubCategories(response.data);
     } catch (error) {
       console.error('Error fetching subcategories:', error);
+    }
+  };
+
+  const fetchURLs = async () => {
+    try {
+      const response = await axios.get('http://127.0.0.1:8000/api/urls/');
+      setUrlList(response.data);
+    } catch (error) {
+      console.error('Error fetching URLs:', error);
     }
   };
 
@@ -169,12 +181,30 @@ function CreateAgent() {
     }
   };
 
+  const handleExcelDelete = async (fileId) => {
+    try {
+      await axios.delete(`http://127.0.0.1:8000/api/excelupload/${fileId}/`);
+      fetchExcel(); // Refresh the Excel/CSV list after deletion
+    } catch (error) {
+      console.error('Error deleting Excel/CSV file:', error);
+    }
+  };
+
   const handleTextUpload = async () => {
     try {
       await axios.post('http://127.0.0.1:8000/api/textupload/', { text: textInput });
       fetchText();
     } catch (error) {
       console.error('Error uploading text:', error);
+    }
+  };
+
+  const handleTextDelete = async (textId) => {
+    try {
+      await axios.delete(`http://127.0.0.1:8000/api/textupload/${textId}/`);
+      fetchText(); // Refresh the text list after deletion
+    } catch (error) {
+      console.error('Error deleting text:', error);
     }
   };
 
@@ -292,6 +322,37 @@ function CreateAgent() {
     } catch (error) {
       console.error('Error initiating training:', error);
       alert('Failed to initiate training. Please try again.');
+    }
+  };
+
+  const handleURLTrain = async () => {
+    const urlInput = document.querySelector('textarea').value;
+    if (!urlInput) {
+      alert('Please enter at least one URL.');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('access_token');
+
+      // Add the URL to the URLs API
+      const addUrlResponse = await axios.post('http://127.0.0.1:8000/api/urls/', { url: urlInput }, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      // Call the embed-website API
+      const embedResponse = await axios.post('http://127.0.0.1:8000/api/embed-website/', { url: urlInput }, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      alert(embedResponse.data.message || 'Training initiated successfully!');
+    } catch (error) {
+      console.error('Error during URL training:', error);
+      alert('Failed to train with the provided URL(s). Please try again.');
     }
   };
 
@@ -467,6 +528,26 @@ function CreateAgent() {
             
           </div>
         );
+      case 'URL':
+        return (
+          <>
+            <div className="mt-6 w-1/2">
+              <h3 className="text-lg font-semibold mb-4">URL Management</h3>
+              <textarea
+                rows="4"
+                className="w-full p-2 border border-gray-300 rounded-md outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter URLs here, one per line..."
+              />
+              <button
+                className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded"
+                onClick={handleURLTrain}
+              >
+                Train
+              </button>
+            </div>
+            {renderURLList()}
+          </>
+        );
       default:
         return null;
     }
@@ -510,7 +591,7 @@ function CreateAgent() {
               <div>{file.content}</div>
               <FaTrash
                 className="text-red-500 cursor-pointer hover:text-red-700"
-                onClick={() => handleFileDelete(file.id)}
+                onClick={() => handleTextDelete(file.id)}
               />
             </li>
           ))}
@@ -538,7 +619,7 @@ function CreateAgent() {
               </a>
               <FaTrash
                 className="text-red-500 cursor-pointer hover:text-red-700"
-                onClick={() => handleFileDelete(file.id)}
+                onClick={() => handleExcelDelete(file.id)}
               />
             </li>
           ))}
@@ -578,6 +659,34 @@ function CreateAgent() {
         </ul>
       ) : (
         <p className="text-gray-500">No Q&A data available yet.</p>
+      )}
+    </div>
+  );
+
+  const renderURLList = () => (
+    <div className="mt-6 w-1/2">
+      <h3 className="text-lg font-semibold mb-4">Uploaded URLs</h3>
+      {urlList.length > 0 ? (
+        <ul className="text-left">
+          {urlList.map((url) => (
+            <li key={url.id} className="text-sm p-2 text-gray-700 flex justify-between items-center border-b">
+              <div>{url.url}</div>
+              <FaTrash
+                className="text-red-500 cursor-pointer hover:text-red-700"
+                onClick={async () => {
+                  try {
+                    await axios.delete(`http://127.0.0.1:8000/api/urls/${url.id}/`);
+                    fetchURLs(); // Refresh the URL list after deletion
+                  } catch (error) {
+                    console.error('Error deleting URL:', error);
+                  }
+                }}
+              />
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-gray-500">No URLs uploaded yet.</p>
       )}
     </div>
   );
