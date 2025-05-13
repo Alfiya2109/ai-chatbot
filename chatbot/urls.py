@@ -39,6 +39,9 @@ urlpatterns = [
     path("excelupload/<int:pk>/", ExcelFileView.as_view(), name="excel_delete"),
     path("qa/", QADataView.as_view(), name="qa_data"),
     path("qa/<int:pk>/", QADataView.as_view(), name="qa_data_detail"),
+    path('clear-vector-db/', ClearVectorDBView.as_view(), name='clear-vector-db'),
+    path("urls/", URLManagementAPIView.as_view(), name="url_management"),
+    path("urls/<int:pk>/", URLManagementAPIView.as_view(), name="url_delete"),
 ]
 
 
