@@ -15,7 +15,9 @@ from .models import Feedback, URLModel
 from django.views import View
 from django.http import JsonResponse
 from django.db import models
-
+import subprocess
+import os
+import uuid
 
 class ChatLogListView(generics.ListAPIView):
     queryset = ChatLog.objects.all().order_by('-timestamp')
@@ -581,5 +583,59 @@ class URLManagementAPIView(APIView):
         try:
             new_url = URLModel.objects.create(url=url)
             return Response({"id": new_url.id, "url": new_url.url, "created_at": new_url.created_at}, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+
+import os
+import uuid
+import subprocess
+import whisper
+
+
+
+class TranscribeAudio(APIView):
+    def post(self, request):
+        audio_file = request.FILES.get('audio')
+
+        if not audio_file:
+            return Response({"error": "No audio file uploaded."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            temp_dir = "temp_audio"
+            os.makedirs(temp_dir, exist_ok=True)
+
+            # Save uploaded WebM/Opus audio
+            file_id = uuid.uuid4()
+            input_path = os.path.join(temp_dir, f"{uuid.uuid4()}.webm")
+            with open(input_path, 'wb+') as f:
+                for chunk in audio_file.chunks():
+                    f.write(chunk)
+
+            # Convert to WAV using ffmpeg
+            output_path = os.path.join(temp_dir, f"{file_id}.wav")
+            ffmpeg_path = os.path.abspath(os.path.join("ffmpeg", "bin", "ffmpeg.exe"))
+
+            command = [
+                ffmpeg_path,  # assumes ffmpeg is in PATH; otherwise use full path
+                '-y',
+                '-i', input_path,
+                '-ac', '1',
+                '-ar', '16000',
+                '-sample_fmt', 's16',
+                output_path
+            ]
+            result = subprocess.run(command, capture_output=True)
+            if result.returncode != 0:
+                return Response({"error": f"ffmpeg error: {result.stderr.decode()}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            # Load Whisper and transcribe
+            model = whisper.load_model("base")  # Options: tiny, base, small, medium, large
+            result = model.transcribe(output_path)
+            transcription = result['text']
+
+            return Response({"transcription": transcription})
+
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

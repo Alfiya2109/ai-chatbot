@@ -42,6 +42,7 @@ urlpatterns = [
     path('clear-vector-db/', ClearVectorDBView.as_view(), name='clear-vector-db'),
     path("urls/", URLManagementAPIView.as_view(), name="url_management"),
     path("urls/<int:pk>/", URLManagementAPIView.as_view(), name="url_delete"),
+    path('transcribe/', TranscribeAudio.as_view(), name='transcribe-audio'),
 ]
 
 
