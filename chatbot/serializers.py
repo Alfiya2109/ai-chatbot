@@ -146,6 +146,7 @@ import os
 from chatbot.models import Files_upload
 class FilesUploadSerializer(serializers.ModelSerializer):
     file = serializers.FileField(use_url=True)
+    added_by = serializers.SlugRelatedField(slug_field='username', queryset=User.objects.all(), required=False, allow_null=True)
 
     class Meta:
         model = Files_upload
@@ -160,12 +161,14 @@ class FilesUploadSerializer(serializers.ModelSerializer):
 
 from chatbot.models import TextContent
 class TextContentSerializer(serializers.ModelSerializer):
+    added_by = serializers.SlugRelatedField(slug_field='username', queryset=User.objects.all(), required=False, allow_null=True)
     class Meta:
         model = TextContent
         fields = '__all__'
 
 from chatbot.models import ExcelFile
 class ExcelFileSerializer(serializers.ModelSerializer):
+    added_by = serializers.SlugRelatedField(slug_field='username', queryset=User.objects.all(), required=False, allow_null=True)
     def validate_file(self, value):
         ext = os.path.splitext(value.name)[1].lower()
         if ext not in ['.csv', '.xls', '.xlsx']:
@@ -178,7 +181,15 @@ class ExcelFileSerializer(serializers.ModelSerializer):
 
 from chatbot.models import QAData
 class QADataSerializer(serializers.ModelSerializer):
+    added_by = serializers.SlugRelatedField(slug_field='username', queryset=User.objects.all(), required=False, allow_null=True)
     class Meta:
         model = QAData
+        fields = '__all__'
+
+from chatbot.models import URLModel
+class URLModelSerializer(serializers.ModelSerializer):
+    added_by = serializers.SlugRelatedField(slug_field='username', queryset=User.objects.all(), required=False, allow_null=True)
+    class Meta:
+        model = URLModel
         fields = '__all__'
 

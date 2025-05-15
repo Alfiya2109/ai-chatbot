@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { FaTrash } from 'react-icons/fa';
+import { BASE_URL } from '../base_url';
 
 function CreateAgent() {
   const [activeTab, setActiveTab] = useState('Files');
@@ -36,7 +37,7 @@ function CreateAgent() {
 
   const fetchFiles = async () => {
     try {
-      const response = await axios.get('http://127.0.0.1:8000/api/filesupload/');
+      const response = await axios.get(`${BASE_URL}/api/filesupload/`);
       setUploadedFiles(response.data);
       console.log(response.data);
     } catch (error) {
@@ -46,7 +47,7 @@ function CreateAgent() {
 
   const fetchText = async () => {
     try {
-      const response = await axios.get('http://127.0.0.1:8000/api/textupload/');
+      const response = await axios.get(`${BASE_URL}/api/textupload/`);
       
       setTextInput('');
       setUploadedTexts(response.data);
@@ -57,7 +58,7 @@ function CreateAgent() {
 
   const fetchExcel = async () => {
     try {
-      const response = await axios.get('http://127.0.0.1:8000/api/excelupload/');
+      const response = await axios.get(`${BASE_URL}/api/excelupload/`);
       setUploadedFiles(response.data);
     } catch (error) {
       console.error('Error fetching Excel files:', error);
@@ -66,7 +67,7 @@ function CreateAgent() {
 
   const fetchQA = async () => {
     try {
-      const response = await axios.get('http://127.0.0.1:8000/api/qa/');
+      const response = await axios.get(`${BASE_URL}/api/qa/`);
       setQaData(response.data);
     } catch (error) {
       console.error('Error fetching Q&A data:', error);
@@ -75,7 +76,7 @@ function CreateAgent() {
 
   const fetchCategories = async () => {
     try {
-      const response = await axios.get('http://127.0.0.1:8000/api/categories/');
+      const response = await axios.get(`${BASE_URL}/api/categories/`);
       setCategories(response.data);
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -84,7 +85,7 @@ function CreateAgent() {
 
   const fetchSubCategories = async () => {
     try {
-      const response = await axios.get('http://127.0.0.1:8000/api/subcategories/');
+      const response = await axios.get(`${BASE_URL}/api/subcategories/`);
       setSubCategories(response.data);
     } catch (error) {
       console.error('Error fetching subcategories:', error);
@@ -93,7 +94,7 @@ function CreateAgent() {
 
   const fetchURLs = async () => {
     try {
-      const response = await axios.get('http://127.0.0.1:8000/api/urls/');
+      const response = await axios.get(`${BASE_URL}/api/urls/`);
       setUrlList(response.data);
     } catch (error) {
       console.error('Error fetching URLs:', error);
@@ -112,12 +113,14 @@ function CreateAgent() {
 
   const handleFileUploadAndTrain = async (file) => {
     try {
-      // Upload the file using filesupload API
       const formData = new FormData();
       formData.append('file', file);
-
-      const uploadResponse = await axios.post('http://127.0.0.1:8000/api/filesupload/', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      const token = localStorage.getItem('access_token');
+      const uploadResponse = await axios.post(`${BASE_URL}/api/filesupload/`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${token}` 
+        },
       });
 
       // Show the uploaded file in preview
@@ -130,7 +133,7 @@ function CreateAgent() {
       trainFormData.append('file', file);
 
       // Call upload-and-train API
-      const trainResponse = await axios.post('http://127.0.0.1:8000/api/upload-and-train/', trainFormData, {
+      const trainResponse = await axios.post(`${BASE_URL}/api/upload-and-train/`, trainFormData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
@@ -143,12 +146,14 @@ function CreateAgent() {
 
   const handleExcelUploadAndTrain = async (file) => {
     try {
-      // Upload the file using excelupload API
       const formData = new FormData();
       formData.append('file', file);
-
-      const uploadResponse = await axios.post('http://127.0.0.1:8000/api/excelupload/', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      const token = localStorage.getItem('access_token');
+      const uploadResponse = await axios.post(`${BASE_URL}/api/excelupload/`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${token}` 
+        },
       });
 
       // Show the uploaded file in preview
@@ -161,7 +166,7 @@ function CreateAgent() {
       trainFormData.append('file', file);
 
       // Call upload-and-train API
-      const trainResponse = await axios.post('http://127.0.0.1:8000/api/upload-and-train/', trainFormData, {
+      const trainResponse = await axios.post(`${BASE_URL}/api/upload-and-train/`, trainFormData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
@@ -174,7 +179,7 @@ function CreateAgent() {
 
   const handleFileDelete = async (fileId) => {
     try {
-      await axios.delete(`http://127.0.0.1:8000/api/filesupload/${fileId}/`);
+      await axios.delete(`${BASE_URL}/api/filesupload/${fileId}/`);
       fetchFiles();
     } catch (error) {
       console.error('Error deleting file:', error);
@@ -183,7 +188,7 @@ function CreateAgent() {
 
   const handleExcelDelete = async (fileId) => {
     try {
-      await axios.delete(`http://127.0.0.1:8000/api/excelupload/${fileId}/`);
+      await axios.delete(`${BASE_URL}/api/excelupload/${fileId}/`);
       fetchExcel(); // Refresh the Excel/CSV list after deletion
     } catch (error) {
       console.error('Error deleting Excel/CSV file:', error);
@@ -192,7 +197,12 @@ function CreateAgent() {
 
   const handleTextUpload = async () => {
     try {
-      await axios.post('http://127.0.0.1:8000/api/textupload/', { text: textInput });
+      const token = localStorage.getItem('access_token');
+      await axios.post(`${BASE_URL}/api/textupload/`, { text: textInput }, {
+        headers: {
+        'Authorization': `Bearer ${token}`
+        },
+      });
       fetchText();
     } catch (error) {
       console.error('Error uploading text:', error);
@@ -201,7 +211,7 @@ function CreateAgent() {
 
   const handleTextDelete = async (textId) => {
     try {
-      await axios.delete(`http://127.0.0.1:8000/api/textupload/${textId}/`);
+      await axios.delete(`${BASE_URL}/api/textupload/${textId}/`);
       fetchText(); // Refresh the text list after deletion
     } catch (error) {
       console.error('Error deleting text:', error);
@@ -211,11 +221,12 @@ function CreateAgent() {
   const handleTextUploadAndTrain = async () => {
     try {
       setIsTraining(true); // Set training state to true
-
-      // Call textupload API
-      await axios.post('http://127.0.0.1:8000/api/textupload/', { content: textInput });
-
-      // Refresh the uploaded text list
+      const token = localStorage.getItem('access_token');
+      await axios.post(`${BASE_URL}/api/textupload/`, { content: textInput }, {
+        headers: {
+        'Authorization': `Bearer ${token}`
+        },
+      });
       fetchText();
 
       // Prepare data for upload-and-train API
@@ -224,7 +235,7 @@ function CreateAgent() {
       trainFormData.append('text', textInput);
 
       // Call upload-and-train API
-      const trainResponse = await axios.post('http://127.0.0.1:8000/api/upload-and-train/', trainFormData, {
+      const trainResponse = await axios.post(`${BASE_URL}/api/upload-and-train/`, trainFormData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
@@ -238,12 +249,15 @@ function CreateAgent() {
   };
 
   const handleExcelUpload = async (file) => {
-    const formData = new FormData()
+    const formData = new FormData();
     formData.append('file', file);
-
+    const token = localStorage.getItem('access_token');
     try {
-      await axios.post('http://127.0.0.1:8000/api/excelupload/', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      await axios.post(`${BASE_URL}/api/excelupload/`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${token}`
+        },
       });
       fetchExcel();
     } catch (error) {
@@ -253,7 +267,12 @@ function CreateAgent() {
 
   const handleQASubmit = async (qa) => {
     try {
-      await axios.post('http://127.0.0.1:8000/api/qa/', qa);
+      const token = localStorage.getItem('access_token');
+      await axios.post(`${BASE_URL}/api/qa/`, { ...qa }, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+      });
       fetchQA();
     } catch (error) {
       console.error('Error submitting Q&A:', error);
@@ -263,16 +282,17 @@ function CreateAgent() {
   const handleQnAUploadAndTrain = async (qa) => {
     try {
       setIsTraining(true); // Set training state to true
-
-      // Ensure category and subcategory are sent as IDs
+      const token = localStorage.getItem('access_token');
       const formattedQA = {
         ...qa,
         category: qa.category ? [parseInt(qa.category)] : [],
         subcategory: qa.subcategory ? [parseInt(qa.subcategory)] : [],
       };
-
-      // Upload the Q&A using qa API
-      const uploadResponse = await axios.post('http://127.0.0.1:8000/api/qa/', formattedQA);
+      await axios.post(`${BASE_URL}/api/qa/`, formattedQA, {
+        headers: {
+         'Authorization': `Bearer ${token}`
+        },
+      });
 
       // Prepare data for upload-and-train API
       const trainFormData = new FormData();
@@ -283,7 +303,7 @@ function CreateAgent() {
       trainFormData.append('subcategory', qa.subcategory || '');
 
       // Call upload-and-train API
-      const trainResponse = await axios.post('http://127.0.0.1:8000/api/upload-and-train/', trainFormData, {
+      const trainResponse = await axios.post(`${BASE_URL}/api/upload-and-train/`, trainFormData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
@@ -317,7 +337,7 @@ function CreateAgent() {
         }
       }
 
-      const response = await axios.post('http://127.0.0.1:8000/api/upload-and-train/', requestData);
+      const response = await axios.post(`${BASE_URL}/api/upload-and-train/`, requestData);
       alert(response.data.message || 'Training initiated successfully!');
     } catch (error) {
       console.error('Error initiating training:', error);
@@ -334,16 +354,14 @@ function CreateAgent() {
 
     try {
       const token = localStorage.getItem('access_token');
-
-      // Add the URL to the URLs API
-      const addUrlResponse = await axios.post('http://127.0.0.1:8000/api/urls/', { url: urlInput }, {
+      await axios.post(`${BASE_URL}/api/urls/`, { url: urlInput }, {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
 
       // Call the embed-website API
-      const embedResponse = await axios.post('http://127.0.0.1:8000/api/embed-website/', { url: urlInput }, {
+      const embedResponse = await axios.post(`${BASE_URL}/api/embed-website/`, { url: urlInput }, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -354,6 +372,77 @@ function CreateAgent() {
       console.error('Error during URL training:', error);
       alert('Failed to train with the provided URL(s). Please try again.');
     }
+  };
+
+  const renderTable = (data, type) => {
+    if (!data || data.length === 0) return <p className="text-gray-500">No data available yet.</p>;
+    // Remove 'id' from columns, and for files show 'file' as 'File Name'
+    let columns = Object.keys(data[0]).filter((col) => col !== 'id');
+    // For file/excel, ensure 'file' is first
+    if ((type === 'files' || type === 'excel') && columns.includes('file')) {
+      columns = ['file', ...columns.filter((c) => c !== 'file')];
+    }
+    return (
+      <div className="overflow-x-auto">
+        <table className="min-w-full border text-xs">
+          <thead>
+            <tr>
+              {columns.map((col) => (
+                <th key={col} className="border px-2 py-1 bg-gray-100 text-gray-700">
+                  {col === 'file' ? 'File Name' : col.charAt(0).toUpperCase() + col.slice(1)}
+                </th>
+              ))}
+              <th className="border px-2 py-1 bg-gray-100 text-gray-700">View</th>
+              <th className="border px-2 py-1 bg-gray-100 text-gray-700">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((row) => (
+              <tr key={row.file || row.content || row.url || row.question}>
+                {columns.map((col) => (
+                  <td key={col} className="border px-2 py-1">
+                    {col === 'file' && row[col] ? row[col].split('/').pop() :
+                      (typeof row[col] === 'string' && row[col].startsWith('http')) ? (
+                        <a href={row[col]} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{row[col]}</a>
+                      ) : Array.isArray(row[col]) ? row[col].join(', ') : String(row[col])}
+                  </td>
+                ))}
+                <td className="border px-2 py-1 text-center">
+                  {row.file ? (
+                    <button
+                      className="text-blue-600 underline hover:text-blue-800"
+                      onClick={() => window.open(row.file, '_blank')}
+                    >
+                      View
+                    </button>
+                  ) : row.url ? (
+                    <button
+                      className="text-blue-600 underline hover:text-blue-800"
+                      onClick={() => window.open(`${BASE_URL}`+row.url, '_blank')}
+                    >
+                      View
+                    </button>
+                  ) : null}
+                </td>
+                <td className="border px-2 py-1 text-center">
+                  <FaTrash className="text-red-500 cursor-pointer hover:text-red-700" onClick={() => {
+                    if (type === 'files') handleFileDelete(row.id);
+                    else if (type === 'excel') handleExcelDelete(row.id);
+                    else if (type === 'text') handleTextDelete(row.id);
+                    else if (type === 'qa') {
+                      axios.delete(`${BASE_URL}/api/qa/${row.id}/`).then(fetchQA);
+                    }
+                    else if (type === 'url') {
+                      axios.delete(`${BASE_URL}/api/urls/${row.id}/`).then(fetchURLs);
+                    }
+                  }} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
   };
 
   const renderContent = () => {
@@ -556,138 +645,35 @@ function CreateAgent() {
   const renderFileList = () => (
     <div className="mt-6 w-1/2">
       <h3 className="text-lg font-semibold mb-4">Uploaded Files</h3>
-      {uploadedFiles.length > 0 ? (
-        <ul className="text-left">
-          {uploadedFiles.map((file) => (
-            <li key={file.id} className="text-sm p-2 text-gray-700 flex justify-between items-center border-b">
-              <a
-                href={file.file}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:underline"
-              >
-                {file.file.split('/').pop()}
-              </a>
-              <FaTrash
-                className="text-red-500 cursor-pointer hover:text-red-700"
-                onClick={() => handleFileDelete(file.id)}
-              />
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-gray-500">No files uploaded yet.</p>
-      )}
+      {renderTable(uploadedFiles, 'files')}
     </div>
   );
 
   const renderTextList = () => (
     <div className="mt-6 w-1/2">
       <h3 className="text-lg font-semibold mb-4">Uploaded Text</h3>
-      {uploadedTexts.length > 0 ? (
-        <ul className="text-left">
-          {uploadedTexts.map((file) => (
-            <li key={file.id} className="text-sm p-2 text-gray-700 flex justify-between items-center border-b">
-              <div>{file.content}</div>
-              <FaTrash
-                className="text-red-500 cursor-pointer hover:text-red-700"
-                onClick={() => handleTextDelete(file.id)}
-              />
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-gray-500">No text uploaded yet.</p>
-      )}
+      {renderTable(uploadedTexts, 'text')}
     </div>
   );
 
   const renderExcelList = () => (
     <div className="mt-6 w-1/2">
       <h3 className="text-lg font-semibold mb-4">Uploaded Excel/CSV Files</h3>
-      {uploadedFiles.length > 0 ? (
-        <ul className="text-left">
-          {uploadedFiles.map((file) => (
-            <li key={file.id} className="text-sm p-2 text-gray-700 flex justify-between items-center border-b">
-              <a
-                href={file.file}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:underline"
-              >
-                {file.file.split('/').pop()}
-              </a>
-              <FaTrash
-                className="text-red-500 cursor-pointer hover:text-red-700"
-                onClick={() => handleExcelDelete(file.id)}
-              />
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-gray-500">No Excel/CSV files uploaded yet.</p>
-      )}
+      {renderTable(uploadedFiles, 'excel')}
     </div>
   );
 
   const renderQAList = () => (
     <div className="mt-6 w-1/2">
       <h3 className="text-lg font-semibold mb-4">Q&A Data</h3>
-      {qaData.length > 0 ? (
-        <ul className="text-left">
-          {qaData.map((qa) => (
-            <li key={qa.id} className="text-sm p-2 text-gray-700 border-b flex justify-between items-center">
-              <div>
-                <strong>Q:</strong> {qa.question} <br />
-                <strong>A:</strong> {qa.answer}
-              </div>
-              <FaTrash
-                className="text-red-500 cursor-pointer hover:text-red-700"
-                onClick={async () => {
-                  try {
-                    await axios.delete(`http://127.0.0.1:8000/api/qa/${qa.id}/`);
-                    fetchQA(); // Refresh the Q&A list after deletion
-                    alert('Q&A deleted successfully!');
-                  } catch (error) {
-                    console.error('Error deleting Q&A:', error);
-                    alert('Failed to delete Q&A. Please try again.');
-                  }
-                }}
-              />
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-gray-500">No Q&A data available yet.</p>
-      )}
+      {renderTable(qaData, 'qa')}
     </div>
   );
 
   const renderURLList = () => (
     <div className="mt-6 w-1/2">
       <h3 className="text-lg font-semibold mb-4">Uploaded URLs</h3>
-      {urlList.length > 0 ? (
-        <ul className="text-left">
-          {urlList.map((url) => (
-            <li key={url.id} className="text-sm p-2 text-gray-700 flex justify-between items-center border-b">
-              <div>{url.url}</div>
-              <FaTrash
-                className="text-red-500 cursor-pointer hover:text-red-700"
-                onClick={async () => {
-                  try {
-                    await axios.delete(`http://127.0.0.1:8000/api/urls/${url.id}/`);
-                    fetchURLs(); // Refresh the URL list after deletion
-                  } catch (error) {
-                    console.error('Error deleting URL:', error);
-                  }
-                }}
-              />
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-gray-500">No URLs uploaded yet.</p>
-      )}
+      {renderTable(urlList, 'url')}
     </div>
   );
 

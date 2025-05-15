@@ -56,6 +56,7 @@ class Feedback(models.Model):
 class Files_upload(models.Model):
     file = models.FileField(upload_to='uploads/')
     uploaded_at = models.DateTimeField(auto_now_add=True)
+    added_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='files_uploaded')
 
     def __str__(self):
         return f"{os.path.basename(self.file.name)} uploaded at {self.uploaded_at}"
@@ -63,10 +64,12 @@ class Files_upload(models.Model):
 class TextContent(models.Model):
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+    added_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='texts_uploaded')
 
 class ExcelFile(models.Model):
     file = models.FileField(upload_to='excel_files/')
     uploaded_at = models.DateTimeField(auto_now_add=True)
+    added_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='excels_uploaded')
 
 class QAData(models.Model):
     question = models.TextField()
@@ -74,10 +77,12 @@ class QAData(models.Model):
     category = models.ManyToManyField(ChatbotCategory, blank=True)
     subcategory = models.ManyToManyField(ChatbotSubCategory, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    added_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='qadata_uploaded')
 
 class URLModel(models.Model):
     url = models.URLField(max_length=500)
     created_at = models.DateTimeField(auto_now_add=True)
+    added_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='urls_uploaded')
 
     def __str__(self):
         return self.url

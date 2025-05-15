@@ -1,6 +1,8 @@
 import openpyxl
 import requests
 
+BASE_URL = "http://localhost:8000"  # Change this to your API base URL as needed
+
 def test_ask_api():
     # Load the Excel file
     workbook = openpyxl.load_workbook('Chatbot Test Data.xlsx')
@@ -12,7 +14,7 @@ def test_ask_api():
 
         # Make a POST request to the Ask API
         response = requests.post(
-            'http://localhost:8000/api/ask/',
+            f'{BASE_URL}/api/ask/',
             json={"question": question},
             headers={"Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQ0ODQ5NjYyLCJpYXQiOjE3NDQ4NDI0NjIsImp0aSI6IjMwMmYxMWNlYWZkZjRjOWJiYWNmNTUwY2EyMWVhYjgyIiwidXNlcl9pZCI6Mn0.8UFvVq7Z_tB-IQJtje9lRKISbPYa0z00nVQTa_jfM10"}  # Replace with a valid token
         )
