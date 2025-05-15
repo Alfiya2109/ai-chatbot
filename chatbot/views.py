@@ -432,12 +432,20 @@ class FileUploadView(APIView):
     def get(self, request):
         files = Files_upload.objects.all()
         serializer = FilesUploadSerializer(files, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        data = serializer.data
+        # Add username for each file
+        for i, file in enumerate(files):
+            data[i]['added_by'] = file.added_by.username if file.added_by else None
+        return Response(data, status=status.HTTP_200_OK)
 
     def post(self, request):
-        serializer = FilesUploadSerializer(data=request.data)
+        # Do NOT use request.data.copy() for file uploads!
+        data = request.data  # Use the original, do not copy (avoids deepcopy error)
+        # Always use the authenticated user
+        user = request.user if request.user and request.user.is_authenticated else None
+        serializer = FilesUploadSerializer(data=data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(added_by=user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
@@ -458,12 +466,18 @@ class TextContentView(APIView):
     def get(self, request):
         texts = TextContent.objects.all()
         serializer = TextContentSerializer(texts, many=True)
-        return Response(serializer.data)
+        data = serializer.data
+        for i, text in enumerate(texts):
+            data[i]['added_by'] = text.added_by.username if text.added_by else None
+        return Response(data)
 
     def post(self, request):
-        serializer = TextContentSerializer(data=request.data)
+        data = request.data.copy()
+        data.pop('added_by', None)
+        user = request.user if request.user and request.user.is_authenticated else None
+        serializer = TextContentSerializer(data=data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(added_by=user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -478,8 +492,7 @@ class TextContentView(APIView):
                 return Response({"error": f"Failed to remove from vector DB: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             return Response({"message": "Text deleted"}, status=status.HTTP_204_NO_CONTENT)
         except TextContent.DoesNotExist:
-            return Response({"error": "Text not found"}, status=status.HTTP_404_NOT_FOUND)
-        
+            return Response({"error": "Text not found"}, status=status.HTTP_404_NOT_FOUND)      
 
 class ExcelFileView(APIView):
     parser_classes = (MultiPartParser, FormParser)
@@ -487,12 +500,18 @@ class ExcelFileView(APIView):
     def get(self, request):
         files = ExcelFile.objects.all()
         serializer = ExcelFileSerializer(files, many=True)
-        return Response(serializer.data)
+        data = serializer.data
+        for i, file in enumerate(files):
+            data[i]['added_by'] = file.added_by.username if file.added_by else None
+        return Response(data)
 
     def post(self, request):
-        serializer = ExcelFileSerializer(data=request.data)
+        data = request.data.copy()
+        data.pop('added_by', None)
+        user = request.user if request.user and request.user.is_authenticated else None
+        serializer = ExcelFileSerializer(data=data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(added_by=user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     def delete(self, request, pk=None):
@@ -508,17 +527,22 @@ class ExcelFileView(APIView):
         except ExcelFile.DoesNotExist:
             return Response({"error": "File not found"}, status=status.HTTP_404_NOT_FOUND)
      
-
 class QADataView(APIView):
     def get(self, request):
         items = QAData.objects.all()
         serializer = QADataSerializer(items, many=True)
-        return Response(serializer.data)
+        data = serializer.data
+        for i, item in enumerate(items):
+            data[i]['added_by'] = item.added_by.username if item.added_by else None
+        return Response(data)
 
     def post(self, request):
-        serializer = QADataSerializer(data=request.data)
+        data = request.data.copy()
+        data.pop('added_by', None)
+        user = request.user if request.user and request.user.is_authenticated else None
+        serializer = QADataSerializer(data=data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(added_by=user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
@@ -554,7 +578,8 @@ class URLManagementAPIView(APIView):
             {
                 "id": url.id,
                 "url": url.url,
-                "created_at": url.created_at
+                "created_at": url.created_at,
+                "added_by": url.added_by.username if url.added_by else None
             }
             for url in urls
         ]
@@ -579,10 +604,10 @@ class URLManagementAPIView(APIView):
         url = request.data.get("url")
         if not url:
             return Response({"error": "URL is required."}, status=status.HTTP_400_BAD_REQUEST)
-
+        user = request.user if request.user and request.user.is_authenticated else None
         try:
-            new_url = URLModel.objects.create(url=url)
-            return Response({"id": new_url.id, "url": new_url.url, "created_at": new_url.created_at}, status=status.HTTP_201_CREATED)
+            new_url = URLModel.objects.create(url=url, added_by=user)
+            return Response({"id": new_url.id, "url": new_url.url, "created_at": new_url.created_at, "added_by": new_url.added_by.username if new_url.added_by else None}, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
