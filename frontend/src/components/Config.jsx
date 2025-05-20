@@ -20,7 +20,8 @@ function Config() {
     user: '',
     question: '',
     answer: '',
-    date: '',
+    startDate: '',
+    endDate: '',
     time: '',
     category: [],
     subcategory: []
@@ -155,7 +156,15 @@ function Config() {
     if (log.is_correct !== null) return false;
 
     const ts = new Date(log.timestamp);
-    const date = `${ts.getFullYear()}-${(ts.getMonth() + 1).toString().padStart(2, '0')}-${ts.getDate().toString().padStart(2, '0')}`;
+
+    const startDate = filters.startDate ? new Date(filters.startDate) : null;
+    const endDate = filters.endDate ? new Date(filters.endDate) : null;
+
+    // Check if log timestamp falls within the date range if set
+    const isWithinDateRange =
+      (!startDate || ts >= startDate) &&
+      (!endDate || ts <= endDate);
+
     const time = ts.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const username = (log.user || '').toString();
 
@@ -171,12 +180,13 @@ function Config() {
       username.toLowerCase().includes(filters.user.toLowerCase()) &&
       (log.question || '').toLowerCase().includes(filters.question.toLowerCase()) &&
       (log.gpt_answer || '').toLowerCase().includes(filters.answer.toLowerCase()) &&
-      date.includes(filters.date) &&
+      isWithinDateRange &&
       matchesCategory &&
       matchesSubcategory &&
       time.includes(filters.time)
     );
   });
+
 
   return (
     <div className="bg-blue-900 p-4">
@@ -219,9 +229,25 @@ function Config() {
                   <th className="border border-gray-300 px-4 py-2">Answer
                     <input type="text" placeholder="Filter" className="w-full mt-1 px-2 py-1 border rounded" value={filters.answer} onChange={e => handleFilterChange('answer', e.target.value)} />
                   </th>
-                  <th className="border border-gray-300 px-4 py-2">Date
-                    <input type="date" className="w-full mt-1 px-2 py-1 border rounded" value={filters.date} onChange={e => handleFilterChange('date', e.target.value)} />
-                  </th>
+                  <th className="border border-gray-300 px-4 py-2">Date Range
+                  <div className="flex space-x-1">
+                    <input
+                      type="date"
+                      className="w-1/2 mt-1 px-2 py-1 border rounded"
+                      value={filters.startDate}
+                      onChange={e => handleFilterChange('startDate', e.target.value)}
+                      placeholder="Start Date"
+                    />
+                    <input
+                      type="date"
+                      className="w-1/2 mt-1 px-2 py-1 border rounded"
+                      value={filters.endDate}
+                      onChange={e => handleFilterChange('endDate', e.target.value)}
+                      placeholder="End Date"
+                    />
+                  </div>
+                </th>
+
                   <th className="border border-gray-300 px-4 py-2">Category
                     <Multiselect
                       options={["All", ...new Set(chatLogs.flatMap(log => log.category || []))]}
@@ -252,26 +278,30 @@ function Config() {
             </table>
           )}
 
-          <table className="table-auto w-full text-sm border-collapse border border-gray-300">
+          <table className="table-auto w-full text-xs border-collapse border border-gray-300">
             <colgroup>
-              <col style={{ width: '5%' }} />
+              <col style={{ width: '10%' }} />
+              <col style={{ width: '8%' }} />
               <col style={{ width: '25%' }} />
               <col style={{ width: '25%' }} />
-              <col style={{ width: '5%' }} />
+              <col style={{ width: '8%' }} />
               <col style={{ width: '15%' }} />
-              <col style={{ width: '15%' }} />
               <col style={{ width: '5%' }} />
               <col style={{ width: '5%' }} />
+              <col style={{ width: '3%' }} />
+              <col style={{ width: '4%' }} />
             </colgroup>
             <thead>
               <tr className="bg-gray-200">
                 <th className="border border-gray-300 px-4 py-2">User</th>
+                <th className="border border-gray-300 px-4 py-2">Title</th>
                 <th className="border border-gray-300 px-4 py-2">Question</th>
                 <th className="border border-gray-300 px-4 py-2">Answer</th>
                 <th className="border border-gray-300 px-4 py-2">Date</th>
                 <th className="border border-gray-300 px-4 py-2">Category</th>
                 <th className="border border-gray-300 px-4 py-2">Sub Category</th>
                 <th className="border border-gray-300 px-4 py-2">Time</th>
+                <th className="border border-gray-300 px-4 py-2">Tokens</th>
                 <th className="border border-gray-300 px-4 py-2">Actions</th>
               </tr>
             </thead>
@@ -283,10 +313,19 @@ function Config() {
                 const isEditingAnswer = editId === log.id;
                 const isEditingCategory = editCategory === log.category;
                 const isEditingSubcategory = editSubcategory === log.subcategory;
+                // Extract user info
+                let userDisplay = '';
+                if (log.user && typeof log.user === 'object') {
+                  const { first_name, last_name, title } = log.user;
+                  userDisplay = `${first_name || ''} ${last_name || ''}${title ? ` (${title})` : ''}`.trim();
+                } else if (typeof log.user === 'string') {
+                  userDisplay = log.user;
+                }
 
                 return (
                   <tr key={log.id} className="hover:bg-gray-100">
-                    <td className="border border-gray-300 px-4 py-2">{log.user}</td>
+                    <td className="border border-gray-300 px-4 py-2">{userDisplay}</td>
+                    <td className="border border-gray-300 px-2 py-2">{log.session_title || ''}</td>
                     <td className="border border-gray-300 px-2 py-2">{log.question}</td>
                     <td className="border flex items-center border-gray-300 px-2 py-2">
                       {isEditingAnswer ? (
@@ -336,6 +375,7 @@ function Config() {
                       </button>
                     </td>
                     <td className="border border-gray-300 px-4 py-2 text-center whitespace-nowrap">{time}</td>
+                    <td className="border border-gray-300 px-4 py-2 text-center">{log.tokens ?? ''}</td>
                     <td className="border border-gray-300 px-4 py-2 text-center">
                       <button onClick={() => handleUpdateFeedback(log.id)} className="bg-green-500 px-3 py-1 rounded-full text-white hover:bg-green-600">
                         <FaCheck size={12} />

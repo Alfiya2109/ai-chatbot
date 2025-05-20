@@ -31,20 +31,56 @@ class ChatbotSubCategory(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.category.name})"
+    
+#chatHistory
+
+class ChatSession(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='chat_sessions')
+    title = models.CharField(max_length=255, default="New Chat", blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.title}"
+
+    def generate_title(self):
+        first_log = self.chat_logs.order_by('timestamp').first()
+        if first_log and first_log.question:
+            return " ".join(first_log.question.strip().split()[:6]) + "..."
+        return "New Chat"
+
+    def save(self, *args, **kwargs):
+        if not self.title or self.title.strip() == "New Chat":
+            self.title = self.generate_title()
+        super().save(*args, **kwargs)
+
+
 
 
 class ChatLog(models.Model):
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    session = models.ForeignKey(ChatSession, on_delete=models.CASCADE, related_name='chat_logs', null=True, blank=True)
     question = models.TextField()
     gpt_answer = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
     is_correct = models.BooleanField(null=True, blank=True)
+    tokens = models.IntegerField(null=True, blank=True)
 
     category = models.ManyToManyField(ChatbotCategory, blank=True)
     subcategory = models.ManyToManyField(ChatbotSubCategory, blank=True)
 
     def __str__(self):
         return f"ChatLog #{self.pk}"
+
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        super().save(*args, **kwargs)
+
+        if self.session:
+            if not self.session.title or self.session.title.strip() == "New Chat":
+                self.session.title = self.session.generate_title()
+                self.session.save()
+
+
 
 
 class Feedback(models.Model):
@@ -86,3 +122,4 @@ class URLModel(models.Model):
 
     def __str__(self):
         return self.url
+
