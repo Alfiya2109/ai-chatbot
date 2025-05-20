@@ -10,6 +10,7 @@ from .models import (
     ChatbotCategory,
     ChatbotSubCategory,
 )
+from .models import ChatSession
 
 # ---------------------------
 # Auth Serializers
@@ -115,17 +116,38 @@ class ChatbotCategorySerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'subcategories']
 
 class ChatLogSerializer(serializers.ModelSerializer):
+    # Display category and subcategory names
     category = serializers.SlugRelatedField(many=True, read_only=True, slug_field='name')
     subcategory = serializers.SlugRelatedField(many=True, read_only=True, slug_field='name')
-
+    
+    # Include feedback
     feedback = serializers.SerializerMethodField()
+
+    # Replace user field with custom representation
+    user = serializers.SerializerMethodField()
+
+    # Replace session with title
+    session_title = serializers.CharField(source='session.title', read_only=True)
+
+    # Add tokens field
+    tokens = serializers.IntegerField(required=False, allow_null=True)
 
     class Meta:
         model = ChatLog
         fields = [
-            'id', 'user', 'is_correct', 'question', 'gpt_answer', 'timestamp',
-            'category', 'subcategory', 'feedback'
+            'id', 'user', 'session', 'session_title', 'is_correct',
+            'question', 'gpt_answer', 'timestamp',
+            'category', 'subcategory', 'feedback', 'tokens'
         ]
+        read_only_fields = ['user', 'timestamp', 'session_title']
+
+    def get_user(self, obj):
+        if obj.user:
+            return {
+                "first_name": obj.user.first_name,
+                "last_name": obj.user.last_name
+            }
+        return None
 
     def get_feedback(self, obj):
         try:
@@ -133,6 +155,12 @@ class ChatLogSerializer(serializers.ModelSerializer):
             return FeedbackSerializer(feedback).data
         except Feedback.DoesNotExist:
             return None
+        
+    def create(self, validated_data):
+        return super().create(validated_data)
+    
+    
+
         
 # #categories
 
@@ -193,3 +221,31 @@ class URLModelSerializer(serializers.ModelSerializer):
         model = URLModel
         fields = '__all__'
 
+#chathistory
+from chatbot.models import ChatSession
+
+class ChatSessionSerializer(serializers.ModelSerializer):
+    chat_logs = ChatLogSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = ChatSession
+        fields = ['id', 'title', 'created_at', 'chat_logs']
+
+#userDetails
+
+# serializers.py
+from rest_framework import serializers
+from django.contrib.auth.models import User
+from .models import UserProfile
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    first_name = serializers.CharField(source='user.first_name')
+    last_name = serializers.CharField(source='user.last_name')
+    email = serializers.EmailField(source='user.email')
+    created_at = serializers.DateTimeField(source='user.date_joined')  # User creation date
+    phone_number = serializers.CharField()
+    role = serializers.CharField()
+
+    class Meta:
+        model = UserProfile
+        fields = ['first_name', 'last_name', 'phone_number', 'email', 'created_at', 'role']

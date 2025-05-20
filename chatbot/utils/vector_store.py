@@ -6,6 +6,7 @@ from .env import ASTRA_DB_APPLICATION_TOKEN, ASTRA_DB_ID, ASTRA_DB_REGION, OPENA
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.chains.question_answering import load_qa_chain
 from ..file_reader import read_uploaded_file
+import tiktoken
 
 # 🔥 Load model
 llm = ChatOpenAI(
@@ -16,6 +17,10 @@ llm = ChatOpenAI(
 
 # Init DB
 cassio.init(token=ASTRA_DB_APPLICATION_TOKEN, database_id=ASTRA_DB_ID)
+
+def count_tokens(text, model="gpt-4o-mini"):
+    encoding = tiktoken.encoding_for_model(model)
+    return len(encoding.encode(text))
 
 def prepare_pages(data):
     """
@@ -109,16 +114,23 @@ def query_vector_db(question, namespace="web_scraped"):
         relevant_docs = vector_store.similarity_search(question, k=3)
         print(f"✅ Retrieved {len(relevant_docs)} relevant chunks.")
 
-        # Generate response
-        chain = load_qa_chain(llm, chain_type="stuff")
-        answer = chain.run(input_documents=relevant_docs, question=question)
+        # Compose a prompt from the docs
+        context = "\n\n".join([doc.page_content for doc in relevant_docs])
+        prompt = f"Context:\n{context}\n\nQuestion: {question}\nAnswer:"
+
+        # Call the LLM directly
+        response = llm.invoke(prompt)
+        answer = response.content if hasattr(response, 'content') else str(response)
+
+        # Calculate tokens for prompt and answer
+        tokens = count_tokens(prompt, model="gpt-4o-mini") + count_tokens(answer, model="gpt-4o-mini")
 
         print("📝 Answer generated successfully.")
-        return answer
+        return answer, tokens
 
     except Exception as e:
         print("❌ Error while querying vector DB:", e)
-        return "Something went wrong while answering the question."
+        return "Something went wrong while answering the question.", None
 
 def remove_from_vector_db(identifier, namespace="web_scraped"):
     print(f"\n🗑️ Removing document with identifier '{identifier}' from vector DB...")

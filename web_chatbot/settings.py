@@ -25,7 +25,8 @@ SECRET_KEY = 'django-insecure-5g83x4w=*8z2)^fdfobwp0mea-x3++(j7a!l+2)dov)4eimv=4
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1','75.119.128.244', 'aichatbotbackend.iqratechnology.com']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '75.119.128.244', 'aichatbotbackend.iqratechnology.com']
+
 
 
 # Application definition

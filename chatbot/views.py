@@ -265,16 +265,18 @@ class AskWebsiteAPIView(APIView):
         if not question:
             return Response({"error": "Question is required."}, status=400)
 
-        answer = query_vector_db(question)
+        # Get both answer and tokens from vector_store
+        answer, tokens = query_vector_db(question)
 
         # Store the chat in ChatLog
         ChatLog.objects.create(
             user=request.user,
             question=question,
-            gpt_answer=answer
+            gpt_answer=answer,
+            tokens=tokens
         )
 
-        return Response({"answer": answer})
+        return Response({"answer": answer, "tokens": tokens})
     
 #categories view
 from rest_framework.views import APIView
@@ -664,3 +666,103 @@ class TranscribeAudio(APIView):
 
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+#chathistory
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import permissions, status
+from .models import ChatSession
+from .serializers import ChatSessionSerializer, ChatLogSerializer
+
+class ChatSessionListCreateAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        sessions = ChatSession.objects.filter(user=request.user).order_by('-created_at')
+        serializer = ChatSessionSerializer(sessions, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = ChatSessionSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ChatSessionRetrieveUpdateDestroyAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self, pk, user):
+        try:
+            return ChatSession.objects.get(pk=pk, user=user)
+        except ChatSession.DoesNotExist:
+            return None
+
+    def get(self, request, pk):
+        session = self.get_object(pk, request.user)
+        if not session:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+        serializer = ChatSessionSerializer(session)
+        return Response(serializer.data)
+
+    def put(self, request, pk):
+        session = self.get_object(pk, request.user)
+        if not session:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+        serializer = ChatSessionSerializer(session, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def patch(self, request, pk):
+        session = self.get_object(pk, request.user)
+        if not session:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+        serializer = ChatSessionSerializer(session, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        session = self.get_object(pk, request.user)
+        if not session:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+        session.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ChatSessionAddMessageAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            session = ChatSession.objects.get(pk=pk, user=request.user)
+        except ChatSession.DoesNotExist:
+            return Response({"detail": "Chat session not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        data = request.data.copy()
+        data['session'] = session.pk
+        serializer = ChatLogSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save(user=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+#userdetails
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from .models import UserProfile
+from .serializers import UserProfileSerializer
+
+class UserProfileListAPI(APIView):
+    def get(self, request):
+        user_profiles = UserProfile.objects.select_related('user').all()
+        serializer = UserProfileSerializer(user_profiles, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+

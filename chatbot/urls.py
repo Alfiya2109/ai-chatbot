@@ -43,6 +43,10 @@ urlpatterns = [
     path("urls/", URLManagementAPIView.as_view(), name="url_management"),
     path("urls/<int:pk>/", URLManagementAPIView.as_view(), name="url_delete"),
     path('transcribe/', TranscribeAudio.as_view(), name='transcribe-audio'),
+    path('chatsessions/', ChatSessionListCreateAPIView.as_view(), name='chat-session-list-create'),
+    path('chatsessions/<int:pk>/', ChatSessionRetrieveUpdateDestroyAPIView.as_view(), name='chat-session-detail'),
+    path('chatsessions/<int:pk>/add_message/', ChatSessionAddMessageAPIView.as_view(), name='chat-session-add-message'),
+     path('userprofiles/', UserProfileListAPI.as_view(), name='userprofile-list'),
 ]
 
 
