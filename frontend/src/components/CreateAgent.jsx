@@ -18,6 +18,17 @@ function CreateAgent() {
   const [users, setUsers] = useState([]); // For User Details tab
   const [userSearch, setUserSearch] = useState(''); // User search filter
 
+  const [modalOpen, setModalOpen] = useState(false);
+  const [newUserData, setNewUserData] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    username: '',
+    phone_number: '',
+    password: '',
+    confirm_password: '',
+  });
+
   const navigate = useNavigate();
 
   const tabs = ['Files', 'Text', 'Excel/CSV', 'Q&A', 'URL', 'Chatbot', 'History', 'User Details'];
@@ -384,6 +395,42 @@ function CreateAgent() {
     }
   };
 
+  // Register Sales User API call
+  const handleRegisterSalesUser = async (e) => {
+    e.preventDefault();
+
+    try {
+      const token = localStorage.getItem('access_token');
+      const payload = {
+        ...newUserData,
+        role: 'sales',
+      };
+
+      await axios.post(`${BASE_URL}/api/register/`, payload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      alert('Sales user registered successfully!');
+      setModalOpen(false);
+      setNewUserData({
+        first_name: '',
+        last_name: '',
+        email: '',
+        
+        phone_number: '',
+        password: '',
+      
+      });
+
+      if (activeTab === 'User Details') fetchUsers();
+    } catch (error) {
+      console.error('Error registering sales user:', error);
+      alert('Failed to register sales user.');
+    }
+  };
+
   // Render table helper for various data types
 
   const renderTable = (data, type) => {
@@ -501,8 +548,6 @@ function CreateAgent() {
     </div>
   );
 
-  // Updated User Details UI from previous Config component for consistent UI & filtering
-
   const renderUserDetails = () => {
     if (!users || users.length === 0) {
       return <p className="text-gray-500">No users found.</p>;
@@ -522,8 +567,18 @@ function CreateAgent() {
 
     return (
       <div className="mt-6 w-full max-w-5xl overflow-x-auto bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4">User Details</h3>
-
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">User Details</h3>
+          <button
+            style={{ lineHeight: '7.5' }}  // makes the "+" sign move a bit up inside the button
+            className="bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 text-white rounded-full w-10 h-10 flex items-center justify-center text-2xl font-bold shadow-lg transition-transform transform hover:scale-110 focus:outline-none focus:ring-3 focus:ring-blue-400"
+            title="Add Sales User"
+            aria-label="Add Sales User"
+            onClick={() => setModalOpen(true)}
+          >
+            +
+          </button>
+        </div>
         <div className="flex flex-wrap gap-2 mb-4">
           <input
             type="text"
@@ -784,7 +839,7 @@ function CreateAgent() {
 
   return (
     <div className="flex min-h-screen bg-gray-100">
-      <div style={{ width: '20%' }} className="bg-white shadow-md p-6 flex flex-col justify-center">
+      <div style={{ width: '20%' }} className="bg-white shadow-md p-6 flex flex-col justify-center relative">
         <div className="space-y-4 text-center">
           {tabs.map((tab) => (
             <div
@@ -798,9 +853,99 @@ function CreateAgent() {
             </div>
           ))}
         </div>
+        {/* Removed + Button from here */}
       </div>
 
       <div className="w-full flex flex-col p-6 justify-center items-center">{renderContent()}</div>
+
+      {/* Modal */}
+      {modalOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={() => setModalOpen(false)}
+        >
+          <div
+            className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-xl font-semibold mb-4">Register Sales User</h2>
+            <form onSubmit={handleRegisterSalesUser} className="space-y-4">
+              <div>
+                <label className="block mb-1 font-medium">First Name</label>
+                <input
+                  type="text"
+                  required
+                  value={newUserData.first_name}
+                  onChange={(e) => setNewUserData({ ...newUserData, first_name: e.target.value })}
+                  className="w-full p-2 border rounded"
+                />
+              </div>
+              <div>
+                <label className="block mb-1 font-medium">Last Name</label>
+                <input
+                  type="text"
+                  required
+                  value={newUserData.last_name}
+                  onChange={(e) => setNewUserData({ ...newUserData, last_name: e.target.value })}
+                  className="w-full p-2 border rounded"
+                />
+              </div>
+              <div>
+                <label className="block mb-1 font-medium">Email</label>
+                <input
+                  type="email"
+                  required
+                  value={newUserData.email}
+                  onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value, username: e.target.value })}
+                  className="w-full p-2 border rounded"
+                />
+              </div>
+              
+              <div>
+                <label className="block mb-1 font-medium">Phone Number</label>
+                <input
+                  type="tel"
+                  value={newUserData.phone_number}
+                  onChange={(e) => setNewUserData({ ...newUserData, phone_number: e.target.value })}
+                  className="w-full p-2 border rounded"
+                />
+              </div>
+              <div>
+                <label className="block mb-1 font-medium">Password</label>
+                <input
+                  type="password"
+                  required
+                  value={newUserData.password}
+                  onChange={(e) => setNewUserData({ ...newUserData, password: e.target.value })}
+                  className="w-full p-2 border rounded"
+                />
+              </div>
+              
+              <div>
+                <label className="block mb-1 font-medium">Role</label>
+                <input
+                  type="text"
+                  value="sales"
+                  readOnly
+                  className="w-full p-2 border rounded bg-gray-100 cursor-not-allowed"
+                />
+              </div>
+              <div className="flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(false)}
+                  className="px-4 py-2 rounded border border-gray-300 hover:bg-gray-100"
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">
+                  Register
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

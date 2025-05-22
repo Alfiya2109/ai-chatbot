@@ -46,6 +46,7 @@ function Chatbot() {
   const messagesEndRef = useRef(null)
   
   const isSalesUser = currentUser?.role === 'sales'
+  const isNormalUser = currentUser?.role === 'user' || !currentUser?.role
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -164,24 +165,31 @@ function Chatbot() {
             </div>
           </div>
           <div className="flex space-x-2">
-            {isSalesUser && (
-              <button
-                onClick={handleConfigClick}
-                className="bg-blue-900 hover-bg-indigo-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors"
-              >
-                History
-              </button>
-              
-            )}
-            {isSalesUser && (
+            {/* Only show Admin for sales user, nothing for normal user, both for others */}
+            {isSalesUser ? (
               <button
                 onClick={handleTrainClick}
                 className="bg-blue-900 hover-bg-indigo-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors"
               >
-                Train
+                Admin
               </button>
-              
-            )}
+            ) : null}
+            {!isSalesUser && !isNormalUser ? (
+              <>
+                <button
+                  onClick={handleConfigClick}
+                  className="bg-blue-900 hover-bg-indigo-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors"
+                >
+                  History
+                </button>
+                <button
+                  onClick={handleTrainClick}
+                  className="bg-blue-900 hover-bg-indigo-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors"
+                >
+                  Train
+                </button>
+              </>
+            ) : null}
             <button
               onClick={logout}
               className="bg-red-500 hover-bg-red-600 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors"
