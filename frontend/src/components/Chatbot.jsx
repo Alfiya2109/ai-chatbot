@@ -26,6 +26,25 @@ import { FaRobot } from "react-icons/fa";
     </svg>
   );
 
+
+function Chatbot() {
+  const [question, setQuestion] = useState('')
+  const [messages, setMessages] = useState([
+    { 
+      id: 1, 
+      text: 'Hi there! I\'m your Web Assistant. How can I help you today?', 
+      sender: 'bot', 
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+    }
+  ])
+  const [loading, setLoading] = useState(false)
+  const { currentUser, logout, refreshToken } = useAuth()
+  const navigate = useNavigate()
+  const messagesEndRef = useRef(null)
+  
+  const isSalesUser = currentUser?.role === 'sales'
+  const isNormalUser = currentUser?.role === 'user' || !currentUser?.role
+
   const ChatDotIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
       <path d="M12 .75a8.25 8.25 0 00-4.135 15.39c.686.398 1.115 1.008 1.134 1.623a.75.75 0 00.577.706c.352.083.71.148 1.074.195.323.041.6-.218.6-.544v-4.661a6.75 6.75 0 111.5 0v4.661c0 .326.277.585.6.544.364-.047.722-.112 1.074-.195a.75.75 0 00.577-.706c.02-.615.448-1.225 1.134-1.623A8.25 8.25 0 0012 .75z" />
@@ -34,6 +53,7 @@ import { FaRobot } from "react-icons/fa";
       <path d="M19.741 17.242a.75.75 0 01.897-1.203 5.243 5.243 0 012.05 5.022.75.75 0 01-.625.627 5.243 5.243 0 01-5.022-2.051.75.75 0 111.203-.897 3.744 3.744 0 003.008 1.51 3.744 3.744 0 00-1.51-3.008z" />
     </svg>
   );
+
 
   function Chatbot() {
     const [question, setQuestion] = useState('')
@@ -224,6 +244,12 @@ import { FaRobot } from "react-icons/fa";
                 <div className="chat-subtitle">ONLINE</div>
               </div>
             </div>
+
+          </div>
+          <div className="flex space-x-2">
+            {/* Only show Admin for sales user, nothing for normal user, both for others */}
+            {isSalesUser ? (
+
             <div className="flex space-x-2">
               
               {isSalesUser && (
@@ -235,13 +261,41 @@ import { FaRobot } from "react-icons/fa";
                 </button>
                 
               )}
+
               <button
                 onClick={logout}
                 className="bg-red-500 hover-bg-red-600 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors"
               >
+                Admin
+              </button>
+            ) : null}
+            {!isSalesUser && !isNormalUser ? (
+              <>
+                <button
+                  onClick={handleConfigClick}
+                  className="bg-blue-900 hover-bg-indigo-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors"
+                >
+                  History
+                </button>
+                <button
+                  onClick={handleTrainClick}
+                  className="bg-blue-900 hover-bg-indigo-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors"
+                >
+                  Train
+                </button>
+              </>
+            ) : null}
+            <button
+              onClick={logout}
+              className="bg-red-500 hover-bg-red-600 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors"
+            >
+              Logout
+            </button>
+
                 Logout
               </button>
             </div>
+
           </div>
           
           {/* Chat Body with Messages */}

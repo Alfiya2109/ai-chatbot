@@ -1,15 +1,19 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 function Login() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const { login, loading, error } = useAuth()
+  const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     await login(username, password)
+    if (localStorage.getItem('user_role') === 'sales') {
+      navigate('/train')
+    }
   }
 
   return (
@@ -84,4 +88,4 @@ function Login() {
   )
 }
 
-export default Login 
+export default Login
