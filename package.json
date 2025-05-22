@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@ffmpeg/ffmpeg": "^0.12.15",
     "react-time-picker": "^7.0.0"
   }
 }

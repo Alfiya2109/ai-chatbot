@@ -615,64 +615,51 @@ class URLManagementAPIView(APIView):
         
 
 
-import os
-import uuid
-import subprocess
-import whisper
-
-
-
-class TranscribeAudio(APIView):
-    def post(self, request):
-        audio_file = request.FILES.get('audio')
-
-        if not audio_file:
-            return Response({"error": "No audio file uploaded."}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            temp_dir = "temp_audio"
-            os.makedirs(temp_dir, exist_ok=True)
-
-            # Save uploaded WebM/Opus audio
-            file_id = uuid.uuid4()
-            input_path = os.path.join(temp_dir, f"{uuid.uuid4()}.webm")
-            with open(input_path, 'wb+') as f:
-                for chunk in audio_file.chunks():
-                    f.write(chunk)
-
-            # Convert to WAV using ffmpeg
-            output_path = os.path.join(temp_dir, f"{file_id}.wav")
-            ffmpeg_path = os.path.abspath(os.path.join("ffmpeg", "bin", "ffmpeg.exe"))
-
-            command = [
-                ffmpeg_path,  # assumes ffmpeg is in PATH; otherwise use full path
-                '-y',
-                '-i', input_path,
-                '-ac', '1',
-                '-ar', '16000',
-                '-sample_fmt', 's16',
-                output_path
-            ]
-            result = subprocess.run(command, capture_output=True)
-            if result.returncode != 0:
-                return Response({"error": f"ffmpeg error: {result.stderr.decode()}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-            # Load Whisper and transcribe
-            model = whisper.load_model("base")  # Options: tiny, base, small, medium, large
-            result = model.transcribe(output_path)
-            transcription = result['text']
-
-            return Response({"transcription": transcription})
-
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-#chathistory
+ 
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.parsers import MultiPartParser
+from rest_framework import status
+import os
+ 
+from .apps import convert_to_wav, transcribe_audio_whisper
+ 
+TEMP_DIR = os.path.join("media", "temp")
+os.makedirs(TEMP_DIR, exist_ok=True)
+ 
+class TranscribeAudioAPIView(APIView):
+    parser_classes = [MultiPartParser]
+ 
+    def post(self, request):
+        audio_file = request.FILES.get("audio")
+ 
+        if not audio_file:
+            return Response({"error": "No audio file provided"}, status=400)
+ 
+        temp_path = os.path.join(TEMP_DIR, audio_file.name)
+ 
+        with open(temp_path, "wb") as f:
+            for chunk in audio_file.chunks():
+                f.write(chunk)
+ 
+        try:
+            wav_path = convert_to_wav(temp_path)
+            transcript = transcribe_audio_whisper(wav_path)
+ 
+            # Clean up
+            os.remove(temp_path)
+            if wav_path != temp_path:
+                os.remove(wav_path)
+ 
+            return Response({"transcript": transcript}, status=200)
+ 
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)
+ 
+         
+       
+#chathistory
 from rest_framework import permissions, status
-from .models import ChatSession
-from .serializers import ChatSessionSerializer, ChatLogSerializer
 
 class ChatSessionListCreateAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
