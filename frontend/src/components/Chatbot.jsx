@@ -29,6 +29,16 @@ import { FaRobot } from "react-icons/fa";
 
 function Chatbot() {
   const [question, setQuestion] = useState('')
+      const [loading, setLoading] = useState(false)
+    const [isRecording, setIsRecording] = useState(false);
+    const [mediaRecorder, setMediaRecorder] = useState(null);
+    const [audioChunks, setAudioChunks] = useState([]);
+    const [isTranscribing, setIsTranscribing] = useState(false);
+    const { currentUser, logout, refreshToken } = useAuth()
+    const navigate = useNavigate()
+    const messagesEndRef = useRef(null)
+    
+    const isSalesUser = currentUser?.role === 'sales'
   const [messages, setMessages] = useState([
     { 
       id: 1, 
@@ -37,12 +47,8 @@ function Chatbot() {
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
     }
   ])
-  const [loading, setLoading] = useState(false)
-  const { currentUser, logout, refreshToken } = useAuth()
-  const navigate = useNavigate()
-  const messagesEndRef = useRef(null)
-  
-  const isSalesUser = currentUser?.role === 'sales'
+
+
   const isNormalUser = currentUser?.role === 'user' || !currentUser?.role
 
   const ChatDotIcon = () => (
@@ -55,26 +61,7 @@ function Chatbot() {
   );
 
 
-  function Chatbot() {
-    const [question, setQuestion] = useState('')
-    const [messages, setMessages] = useState([
-      { 
-        id: 1, 
-        text: 'Hi there! I\'m your Web Assistant. How can I help you today?', 
-        sender: 'bot', 
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
-      }
-    ])
-    const [loading, setLoading] = useState(false)
-    const [isRecording, setIsRecording] = useState(false);
-    const [mediaRecorder, setMediaRecorder] = useState(null);
-    const [audioChunks, setAudioChunks] = useState([]);
-    const [isTranscribing, setIsTranscribing] = useState(false);
-    const { currentUser, logout, refreshToken } = useAuth()
-    const navigate = useNavigate()
-    const messagesEndRef = useRef(null)
-    
-    const isSalesUser = currentUser?.role === 'sales'
+
 
     // Scroll to bottom when messages change
     useEffect(() => {
@@ -216,6 +203,7 @@ function Chatbot() {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
+            // 'Content-Type' should NOT be set when sending FormData
           },
           body: formData
         });
@@ -244,60 +232,42 @@ function Chatbot() {
                 <div className="chat-subtitle">ONLINE</div>
               </div>
             </div>
-
-          </div>
-          <div className="flex space-x-2">
-            {/* Only show Admin for sales user, nothing for normal user, both for others */}
-            {isSalesUser ? (
-
-            <div className="flex space-x-2">
-              
+            <div className="flex space-x-2 mt-2">
               {isSalesUser && (
-                <button
-                  onClick={handleTrainClick}
-                  className="bg-blue-900 hover-bg-indigo-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors"
-                >
-                  Train
-                </button>
-                
+                <>
+                  <button
+                    onClick={handleTrainClick}
+                    className="bg-blue-900 hover-bg-indigo-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors"
+                  >
+                    Train
+                  </button>
+                  
+                </>
               )}
-
+              {!isSalesUser && !isNormalUser && (
+                <>
+                  <button
+                    onClick={handleConfigClick}
+                    className="bg-blue-900 hover-bg-indigo-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors"
+                  >
+                    History
+                  </button>
+                  <button
+                    onClick={handleTrainClick}
+                    className="bg-blue-900 hover-bg-indigo-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors"
+                  >
+                    Admin 
+                  </button>
+                </>
+              )}
               <button
                 onClick={logout}
                 className="bg-red-500 hover-bg-red-600 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors"
               >
-                Admin
-              </button>
-            ) : null}
-            {!isSalesUser && !isNormalUser ? (
-              <>
-                <button
-                  onClick={handleConfigClick}
-                  className="bg-blue-900 hover-bg-indigo-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors"
-                >
-                  History
-                </button>
-                <button
-                  onClick={handleTrainClick}
-                  className="bg-blue-900 hover-bg-indigo-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors"
-                >
-                  Train
-                </button>
-              </>
-            ) : null}
-            <button
-              onClick={logout}
-              className="bg-red-500 hover-bg-red-600 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors"
-            >
-              Logout
-            </button>
-
                 Logout
               </button>
             </div>
-
           </div>
-          
           {/* Chat Body with Messages */}
           <div className="chat-body">
             <div className="chat-messages">
