@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { FaTrash } from 'react-icons/fa';
 import { BASE_URL } from '../base_url';
+import { FaPlus } from 'react-icons/fa6';
 
 function CreateAgent() {
   const [activeTab, setActiveTab] = useState('Files');
@@ -462,7 +463,7 @@ function CreateAgent() {
                       ? row[col].split('/').pop()
                       : typeof row[col] === 'string' && row[col].startsWith('http')
                       ? (
-                        <a href={row[col]} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                        <a href={row[col]} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:underline">
                           {row[col]}
                         </a>
                       )
@@ -474,14 +475,14 @@ function CreateAgent() {
                 <td className="border px-2 py-1 text-center">
                   {row.file ? (
                     <button
-                      className="text-blue-600 underline hover:text-blue-800"
+                      className="text-gray-600 underline hover:text-gray-800"
                       onClick={() => window.open(row.file, '_blank')}
                     >
                       View
                     </button>
                   ) : row.url ? (
                     <button
-                      className="text-blue-600 underline hover:text-blue-800"
+                      className="text-gray-600 underline hover:text-gray-800"
                       onClick={() => window.open(`${BASE_URL}` + row.url, '_blank')}
                     >
                       View
@@ -570,13 +571,13 @@ function CreateAgent() {
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">User Details</h3>
           <button
-            style={{ lineHeight: '7.5' }}  // makes the "+" sign move a bit up inside the button
-            className="bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 text-white rounded-full w-10 h-10 flex items-center justify-center text-2xl font-bold shadow-lg transition-transform transform hover:scale-110 focus:outline-none focus:ring-3 focus:ring-blue-400"
+          // makes the "+" sign move a bit up inside the button
+            className="bg-gray-500 hover:bg-gray-300 font-bold text-white rounded-full w-8 h-8 flex text-center items-center justify-center"
             title="Add Sales User"
             aria-label="Add Sales User"
             onClick={() => setModalOpen(true)}
           >
-            +
+            <span className="text-xl"><FaPlus/></span>
           </button>
         </div>
         <div className="flex flex-wrap gap-2 mb-4">
@@ -592,12 +593,12 @@ function CreateAgent() {
         <table className="min-w-full border text-sm">
           <thead>
             <tr>
-              <th className="border px-3 py-2 bg-gray-100 text-left">First Name</th>
-              <th className="border px-3 py-2 bg-gray-100 text-left">Last Name</th>
-              <th className="border px-3 py-2 bg-gray-100 text-left">Phone</th>
-              <th className="border px-3 py-2 bg-gray-100 text-left">Email</th>
-              <th className="border px-3 py-2 bg-gray-100 text-left">Created Date</th>
-              <th className="border px-3 py-2 bg-gray-100 text-left">Role</th>
+              <th className="border px-2 py-1 bg-gray-100 text-left">First Name</th>
+              <th className="border px-2 py-1 bg-gray-100 text-left">Last Name</th>
+              <th className="border px-2 py-1 bg-gray-100 text-left">Phone</th>
+              <th className="border px-2 py-1 bg-gray-100 text-left">Email</th>
+              <th className="border px-2 py-1 bg-gray-100 text-left">Created Date</th>
+              <th className="border px-2 py-1 bg-gray-100 text-left">Role</th>
             </tr>
           </thead>
           <tbody>
@@ -632,7 +633,7 @@ function CreateAgent() {
           <>
             <div
               className={`w-1/2 border b-2 rounded-lg p-6 text-center ${
-                dragging ? 'border-blue-600 bg-blue-100' : 'border-gray-300 bg-white'
+                dragging ? 'border-gray-600 bg-gray-100' : 'border-gray-300 bg-white'
               }`}
               onDragOver={(e) => {
                 e.preventDefault();
@@ -649,7 +650,7 @@ function CreateAgent() {
               <p className="text-gray-600 mb-4" style={{ fontSize: '1.2rem' }}>
                 Drag & drop files, or{' '}
                 <span
-                  className="text-blue-600 cursor-pointer underline"
+                  className="text-gray-600 cursor-pointer underline"
                   onClick={() => document.getElementById('fileInput').click()}
                 >
                   click here
@@ -677,14 +678,14 @@ function CreateAgent() {
             <div className="mt-4 w-full flex flex-col items-center">
               <textarea
                 rows="10"
-                className="w-4/5 p-2 border border-gray-300 rounded-md outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                className="w-4/5 p-2 border border-gray-300 rounded-md outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-500"
                 placeholder="Enter your text here..."
                 value={textInput}
                 onChange={(e) => setTextInput(e.target.value)}
               />
               <button
                 className={`mt-4 px-4 py-2 rounded ${
-                  isTraining ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'
+                  isTraining ? 'bg-gray-400' : 'bg-gray-500 hover:bg-gray-700'
                 } text-white`}
                 onClick={handleTextUploadAndTrain}
                 disabled={isTraining}
@@ -700,7 +701,7 @@ function CreateAgent() {
           <>
             <div
               className={`w-1/2 border b-2 rounded-lg p-6 text-center ${
-                dragging ? 'border-blue-600 bg-blue-100' : 'border-gray-300 bg-white'
+                dragging ? 'border-gray-600 bg-gray-100' : 'border-gray-300 bg-white'
               }`}
               onDragOver={(e) => {
                 e.preventDefault();
@@ -717,7 +718,7 @@ function CreateAgent() {
               <p className="text-gray-600 mb-4" style={{ fontSize: '1.2rem' }}>
                 Drag & drop Excel/CSV files, or{' '}
                 <span
-                  className="text-blue-600 cursor-pointer underline"
+                  className="text-gray-600 cursor-pointer underline"
                   onClick={() => document.getElementById('excelInput').click()}
                 >
                   click here
@@ -802,7 +803,7 @@ function CreateAgent() {
                 </div>
                 <button
                   type="submit"
-                  className={`mt-4 px-4 py-2 rounded ${isTraining ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'} text-white`}
+                  className={`mt-4 px-4 py-2 rounded ${isTraining ? 'bg-gray-400' : 'bg-gray-500 hover:bg-gray-700'} text-white`}
                   disabled={isTraining}
                 >
                   {isTraining ? 'Training...' : 'Train'}
@@ -820,10 +821,10 @@ function CreateAgent() {
               <h3 className="text-lg font-semibold mb-4">URL Management</h3>
               <textarea
                 rows="4"
-                className="w-full p-2 border border-gray-300 rounded-md outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                className="w-full p-2 border border-gray-300 rounded-md outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-500"
                 placeholder="Enter URLs here, one per line..."
               />
-              <button className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded" onClick={handleURLTrain}>
+              <button className="mt-4 px-4 py-2 bg-gray-500 hover:bg-gray-700 text-white rounded" onClick={handleURLTrain}>
                 Train
               </button>
             </div>
@@ -838,14 +839,14 @@ function CreateAgent() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex  min-h-screen bg-gray-100">
       <div style={{ width: '20%' }} className="bg-white shadow-md p-6 flex flex-col justify-center relative">
         <div className="space-y-4 text-center">
           {tabs.map((tab) => (
             <div
               key={tab}
               className={`cursor-pointer p-2 rounded-md ${
-                activeTab === tab ? 'bg-blue-600 text-white font-bold' : 'text-gray-600 hover:bg-gray-200'
+                activeTab === tab ? 'bg-gray-500 text-white font-bold' : 'text-gray-600 hover:bg-gray-200'
               }`}
               onClick={() => handleTabClick(tab)}
             >
@@ -861,7 +862,7 @@ function CreateAgent() {
       {/* Modal */}
       {modalOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-gray-500 b-50 flex items-center justify-center z-50"
           onClick={() => setModalOpen(false)}
         >
           <div
@@ -869,7 +870,7 @@ function CreateAgent() {
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-xl font-semibold mb-4">Register Sales User</h2>
-            <form onSubmit={handleRegisterSalesUser} className="space-y-4">
+            <form onSubmit={handleRegisterSalesUser} className="space-y-1 text-sm">
               <div>
                 <label className="block mb-1 font-medium">First Name</label>
                 <input
@@ -938,7 +939,7 @@ function CreateAgent() {
                 >
                   Cancel
                 </button>
-                <button type="submit" className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">
+                <button type="submit" className="px-4 py-2 rounded bg-gray-500 text-white hover:bg-gray-700">
                   Register
                 </button>
               </div>

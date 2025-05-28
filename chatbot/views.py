@@ -19,11 +19,39 @@ import subprocess
 import os
 import uuid
 
-class ChatLogListView(generics.ListAPIView):
+class ChatLogListView(generics.ListCreateAPIView):
     queryset = ChatLog.objects.all().order_by('-timestamp')
     serializer_class = ChatLogSerializer
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['question', 'gpt_answer']
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+
+        # Filter by is_correct status
+        status_filter = self.request.query_params.get('status')
+        if status_filter == 'incorrect':
+            queryset = queryset.filter(is_correct=False)
+        elif status_filter == 'correct':
+            queryset = queryset.filter(is_correct=True)
+        elif status_filter == 'unreviewed':
+            queryset = queryset.filter(is_correct__isnull=True)
+
+        # Support multiple values for category (keep field name 'category')
+        category_filter = self.request.query_params.getlist('category')
+        if category_filter:
+            queryset = queryset.filter(category__name__in=category_filter).distinct()
+
+        # Support multiple values for subcategory (keep field name 'subcategory')
+        subcategory_filter = self.request.query_params.getlist('subcategory')
+        if subcategory_filter:
+            queryset = queryset.filter(subcategory__name__in=subcategory_filter).distinct()
+
+        return queryset
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 def get_queryset(self):
     queryset = super().get_queryset()
@@ -262,19 +290,23 @@ class AskWebsiteAPIView(APIView):
     
     def post(self, request):
         question = request.data.get("question")
+        session_id = request.data.get("session")  # Get session from request
         if not question:
             return Response({"error": "Question is required."}, status=400)
 
         # Get both answer and tokens from vector_store
         answer, tokens = query_vector_db(question)
 
-        # Store the chat in ChatLog
-        ChatLog.objects.create(
-            user=request.user,
-            question=question,
-            gpt_answer=answer,
-            tokens=tokens
-        )
+        # Store the chat in ChatLog, including session if provided
+        chatlog_kwargs = {
+            'user': request.user,
+            'question': question,
+            'gpt_answer': answer,
+            'tokens': tokens,
+        }
+        if session_id:
+            chatlog_kwargs['session_id'] = session_id
+        ChatLog.objects.create(**chatlog_kwargs)
 
         return Response({"answer": answer, "tokens": tokens})
     
@@ -740,16 +772,41 @@ class ChatSessionAddMessageAPIView(APIView):
 
 #userdetails
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from .models import UserProfile
-from .serializers import UserProfileSerializer
-
 class UserProfileListAPI(APIView):
     def get(self, request):
         user_profiles = UserProfile.objects.select_related('user').all()
         serializer = UserProfileSerializer(user_profiles, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+from rest_framework.decorators import api_view, permission_classes
+import os
+import openai
+from openai import OpenAI
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def summarize_question(request):
+    text = request.data.get('text', '').strip()
+    if not text:
+        return Response({'error': 'No text provided.'}, status=400)
+    # Use OpenAI GPT to generate a session title (openai>=1.0.0)
+    api_key = os.environ.get('OPENAI_API_KEY')
+    if not api_key:
+        return Response({'error': 'OpenAI API key not set.'}, status=500)
+    client = OpenAI(api_key=api_key)
+    try:
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant that summarizes a user's first chat message into a short, clear session title (max 8 words)."},
+                {"role": "user", "content": text}
+            ],
+            max_tokens=16,
+            temperature=0.5,
+        )
+        summary = response.choices[0].message.content.strip()
+    except Exception as e:
+        return Response({'error': f'Failed to generate summary: {str(e)}'}, status=500)
+    return Response({'summary': summary})
 
 

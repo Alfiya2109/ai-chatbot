@@ -1,12 +1,15 @@
-import { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
   import { useNavigate } from 'react-router-dom'
   import { useAuth } from '../context/AuthContext'
   import { BASE_URL } from '../base_url';
-  import { FaMicrophone } from "react-icons/fa";
+import { IoMicOutline } from "react-icons/io5";
 import { FaStop } from "react-icons/fa6";
 import { IoSend } from "react-icons/io5";
 import { FaRobot } from "react-icons/fa";
-
+import { FaSearch, FaPlus, FaBook, FaUserCircle } from "react-icons/fa";
+import { FiEdit } from "react-icons/fi";
+import { BsLayoutSidebar } from "react-icons/bs";
+import { IoSearchOutline } from "react-icons/io5";
 
   const API_BASE_URL = BASE_URL;
 
@@ -17,23 +20,60 @@ import { FaRobot } from "react-icons/fa";
     </svg>
   );
 
-  const RobotIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
-      <path d="M12 .75a8.25 8.25 0 00-4.135 15.39c.686.398 1.115 1.008 1.134 1.623a.75.75 0 00.577.706c.352.083.71.148 1.074.195.323.041.6-.218.6-.544v-4.661a6.75 6.75 0 111.5 0v4.661c0 .326.277.585.6.544.364-.047.722-.112 1.074-.195a.75.75 0 00.577-.706c.02-.615.448-1.225 1.134-1.623A8.25 8.25 0 0012 .75z" />
-      <path fillRule="evenodd" d="M9.75 10.5a1.5 1.5 0 013 0v.75a.75.75 0 001.5 0v-.75a3 3 0 00-6 0v.75a.75.75 0 001.5 0v-.75z" clipRule="evenodd" />
-      <path d="M5.26 17.242a.75.75 0 10-.897-1.203 5.243 5.243 0 00-2.05 5.022.75.75 0 00.625.627 5.243 5.243 0 005.022-2.051.75.75 0 10-1.202-.897 3.744 3.744 0 01-3.008 1.51c0-1.23.592-2.323 1.51-3.008z" />
-      <path d="M19.741 17.242a.75.75 0 01.897-1.203 5.243 5.243 0 012.05 5.022.75.75 0 01-.625.627 5.243 5.243 0 01-5.022-2.051.75.75 0 111.203-.897 3.744 3.744 0 003.008 1.51 3.744 3.744 0 00-1.51-3.008z" />
-    </svg>
+
+
+function SearchChatsModal({ open, onClose, chatSessions, onSessionSelect }) {
+  const [search, setSearch] = useState('');
+  const filteredSessions = chatSessions.filter(session =>
+    session.title?.toLowerCase().includes(search.toLowerCase())
   );
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{background: 'rgba(243,244,246,0.5)'}}>
+      <div className="bg-white rounded-xl shadow-lg w-full max-w-lg p-6 relative">
+        <button className="absolute top-2 right-2 text-gray-400 hover:text-gray-600" onClick={onClose}>&times;</button>
+        <h2 className="text-xl font-semibold mb-4">Search chats...</h2>
+        <input
+          type="text"
+          className="w-full border border-gray-200 rounded-lg px-3 py-2 mb-4 focus:outline-none focus:ring"
+          placeholder="Search chats..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          autoFocus
+        />
+        <div className="max-h-64 overflow-y-auto">
+          <button
+            className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700 font-medium mb-2"
+            onClick={() => { onSessionSelect(null); onClose(); }}
+          >
+            New chat
+          </button>
+          {filteredSessions.length === 0 && (
+            <div className="text-xs text-gray-400 pl-2">No chats found</div>
+          )}
+          {filteredSessions.map(session => (
+            <button
+              key={session.id}
+              className="w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700"
+              onClick={() => { onSessionSelect(session.id); onClose(); }}
+            >
+              <span className="truncate">{session.title || `Chat #${session.id}`}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
-
-function Chatbot() {
+export default function Chatbot() {
   const [question, setQuestion] = useState('')
       const [loading, setLoading] = useState(false)
     const [isRecording, setIsRecording] = useState(false);
     const [mediaRecorder, setMediaRecorder] = useState(null);
     const [audioChunks, setAudioChunks] = useState([]);
     const [isTranscribing, setIsTranscribing] = useState(false);
+    const [sidebarOpen, setSidebarOpen] = useState(true);
     const { currentUser, logout, refreshToken } = useAuth()
     const navigate = useNavigate()
     const messagesEndRef = useRef(null)
@@ -51,88 +91,133 @@ function Chatbot() {
 
   const isNormalUser = currentUser?.role === 'user' || !currentUser?.role
 
-  const ChatDotIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
-      <path d="M12 .75a8.25 8.25 0 00-4.135 15.39c.686.398 1.115 1.008 1.134 1.623a.75.75 0 00.577.706c.352.083.71.148 1.074.195.323.041.6-.218.6-.544v-4.661a6.75 6.75 0 111.5 0v4.661c0 .326.277.585.6.544.364-.047.722-.112 1.074-.195a.75.75 0 00.577-.706c.02-.615.448-1.225 1.134-1.623A8.25 8.25 0 0012 .75z" />
-      <path fillRule="evenodd" d="M9.75 10.5a1.5 1.5 0 013 0v.75a.75.75 0 001.5 0v-.75a3 3 0 00-6 0v.75a.75.75 0 001.5 0v-.75z" clipRule="evenodd" />
-      <path d="M5.26 17.242a.75.75 0 10-.897-1.203 5.243 5.243 0 00-2.05 5.022.75.75 0 00.625.627 5.243 5.243 0 005.022-2.051.75.75 0 10-1.202-.897 3.744 3.744 0 01-3.008 1.51c0-1.23.592-2.323 1.51-3.008z" />
-      <path d="M19.741 17.242a.75.75 0 01.897-1.203 5.243 5.243 0 012.05 5.022.75.75 0 01-.625.627 5.243 5.243 0 01-5.022-2.051.75.75 0 111.203-.897 3.744 3.744 0 003.008 1.51 3.744 3.744 0 00-1.51-3.008z" />
-    </svg>
-  );
-
-
-
+  const [chatSessions, setChatSessions] = useState([]);
+  const [activeSession, setActiveSession] = useState(null);
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
 
     // Scroll to bottom when messages change
     useEffect(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }, [messages])
     
+    // Fetch chat sessions (refactored for reuse)
+    const fetchChatSessions = async () => {
+      try {
+        let token = currentUser?.token || localStorage.getItem('access_token');
+        const response = await fetch(`${API_BASE_URL}/api/chatsessions/`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        if (!response.ok) throw new Error('Failed to fetch chat sessions');
+        const data = await response.json();
+        setChatSessions(data);
+      } catch (err) {
+        setChatSessions([]);
+      }
+    };
+
+    useEffect(() => {
+      if (sidebarOpen) fetchChatSessions();
+    }, [sidebarOpen, currentUser]);
+
     const handleSubmit = async (e) => {
-      e.preventDefault()
-      
-      if (!question.trim()) return
-      
+      e.preventDefault();
+      if (!question.trim()) return;
+
       // Add user message
       const userMessage = {
         id: Date.now(),
         text: question,
         sender: 'user',
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      }
-      
-      setMessages(prevMessages => [...prevMessages, userMessage])
-      setQuestion('')
-      setLoading(true)
-      
+      };
+      setMessages(prevMessages => [...prevMessages, userMessage]);
+      setQuestion('');
+      setLoading(true);
+
       try {
-        let token = currentUser?.token || localStorage.getItem('access_token')
-        
+        let token = currentUser?.token || localStorage.getItem('access_token');
         if (!token) {
-          addBotMessage('Authentication required. Please login.')
-          logout()
-          return
+          addBotMessage('Authentication required. Please login.');
+          logout();
+          return;
         }
-        
-        let response = await fetch(`${API_BASE_URL}/api/chatbot/ask/`, {
+
+        let sessionId = activeSession;
+        let sessionTitle = 'New Chat';
+        let sessionCreated = false;
+        // If no session, first summarize the question and create a session with that title
+        if (!sessionId) {
+          // 1. Summarize the question
+          const summaryRes = await fetch(`${API_BASE_URL}/api/chatbot/summarize/`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({ text: userMessage.text }),
+          });
+          if (!summaryRes.ok) throw new Error('Failed to summarize question');
+          const summaryData = await summaryRes.json();
+          sessionTitle = summaryData.summary || summaryData.title || userMessage.text.slice(0, 30);
+          // 2. Create new session with generated title
+          const sessionRes = await fetch(`${API_BASE_URL}/api/chatsessions/`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({ title: sessionTitle }),
+          });
+          if (!sessionRes.ok) throw new Error('Failed to create chat session');
+          const sessionData = await sessionRes.json();
+          sessionId = sessionData.id;
+          setActiveSession(sessionId);
+          setChatSessions(prev => [{...sessionData, chat_logs: []}, ...prev]);
+          sessionCreated = true;
+        }
+
+        // Create ChatLog entry directly
+        let response = await fetch(`${API_BASE_URL}/api/ask/`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
           },
-          body: JSON.stringify({ question: userMessage.text }),
-        })
-        
+          body: JSON.stringify({ question: userMessage.text, session: sessionId }),
+        });
+
         // If token is expired, try to refresh
         if (response.status === 401) {
-          token = await refreshToken()
-          
+          token = await refreshToken();
           if (!token) {
-            addBotMessage('Session expired. Please login again.')
-            return
+            addBotMessage('Session expired. Please login again.');
+            return;
           }
-          
           // Retry with new token
-          response = await fetch(`${API_BASE_URL}/api/chatbot/ask/`, {
+          response = await fetch(`${API_BASE_URL}/api/ask/`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
+              'Authorization': `Bearer ${token}`,
             },
-            body: JSON.stringify({ question: userMessage.text }),
-          })
+            body: JSON.stringify({ question: userMessage.text, session: sessionId }),
+          });
         }
-        
+
         if (!response.ok) {
-          throw new Error(`Error: ${response.status}`)
+          throw new Error(`Error: ${response.status}`);
         }
-        
-        const data = await response.json()
-        addBotMessage(data.answer || 'No response from chatbot.')
+        const data = await response.json();
+        addBotMessage(data.gpt_answer || data.answer || 'No response from chatbot.');
+        // Always refresh chat sessions after a new session or message
+        await fetchChatSessions();
       } catch (error) {
-        addBotMessage(`Error: ${error.message}`)
+        addBotMessage(`Error: ${error.message}`);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     }
     
@@ -218,137 +303,168 @@ function Chatbot() {
       }
     };
 
+    // When a session is selected, show its chat_logs directly from chatSessions
+    const handleSessionClick = (sessionId) => {
+      const session = chatSessions.find(s => s.id === sessionId);
+      if (!session) return;
+      // Convert chat_logs to messages format
+      const chatMessages = [
+        { id: 1, text: "Hi there! I'm your Web Assistant. How can I help you today?", sender: 'bot', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
+        ...((session.chat_logs || []).map(log => [
+          {
+            id: log.id + '-q',
+            text: log.question,
+            sender: 'user',
+            time: log.timestamp ? new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
+          },
+          {
+            id: log.id + '-a',
+            text: log.gpt_answer,
+            sender: 'bot',
+            time: log.timestamp ? new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
+          }
+        ]).flat())
+      ];
+      setMessages(chatMessages);
+      setActiveSession(sessionId);
+    };
+
+    // Helper: Format bot answer with bold and links
+function formatBotAnswer(text) {
+  // Replace **bold** with <strong>bold</strong>
+  let formatted = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  // Replace [text](url) with <a ...>text</a>
+  formatted = formatted.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline">$1</a>');
+  // Also handle [text]http... (your style)
+  formatted = formatted.replace(/\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline">$1</a>');
+  formatted = formatted.replace(/\[(.*?)\]\s*(https?:\/\/[^\s)]+)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline">$1</a>');
+  return formatted;
+}
+
     return (
-      <div className="min-h-screen h-full min-w-[50%] w-full bg-blue-100 flex items-center justify-center p-4 py-8">
-        <div className="chat-container" style={{ maxWidth: '50vw', overflowY: 'auto' }}>
-          {/* Chat Header */}
-          <div className="chat-header">
-            <div className="chat-title">
-              <div className="chat-logo">
-                <FaRobot size={28}/>
+      <div className="flex overflow-auto bg-gray-100">
+        {/* Sidebar */}
+        <div className="relative">
+          <div
+            className={`fixed top-0 left-0 h-full z-30 transition-all duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} w-64`}
+            style={{ willChange: 'transform' }}
+          >
+            <aside className="w-64 bg-gray-50 border-r border-gray-200 overflow-y-scroll flex flex-col h-full">
+              <div className="flex items-center justify-between gap-2 pl-4 pr-2 py-2   ">
+                <FaRobot className="text-black text-2xl" />
+             
+                <button onClick={() => setSidebarOpen(false)} className="focus:outline-none">
+                  <BsLayoutSidebar className="text-gray-500 font-extrabold hover:cursor-pointer text-xl" />
+                </button>
               </div>
-              <div>
-                <h3>AI Assistant</h3>
-                <div className="chat-subtitle">ONLINE</div>
-              </div>
-            </div>
-            <div className="flex space-x-2 mt-2">
-              {isSalesUser && (
-                <>
-                  <button
-                    onClick={handleTrainClick}
-                    className="bg-blue-900 hover-bg-indigo-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors"
-                  >
-                    Train
-                  </button>
-                  
-                </>
-              )}
-              {!isSalesUser && !isNormalUser && (
-                <>
-                  <button
-                    onClick={handleConfigClick}
-                    className="bg-blue-900 hover-bg-indigo-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors"
-                  >
-                    History
-                  </button>
-                  <button
-                    onClick={handleTrainClick}
-                    className="bg-blue-900 hover-bg-indigo-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors"
-                  >
-                    Admin 
-                  </button>
-                </>
-              )}
-              <button
-                onClick={logout}
-                className="bg-red-500 hover-bg-red-600 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-          {/* Chat Body with Messages */}
-          <div className="chat-body">
-            <div className="chat-messages">
-              {messages.map((message) => (
-                <div key={message.id} className={message.sender === 'user' ? 'message message-user' : 'message-with-avatar'}>
-                  {message.sender === 'bot' && (
-                    <div className="message-avatar flex-shrink-0 ">
-                      <FaRobot size={18}/>
-                    </div>
+              <nav className="text-sm flex-1 px-2 py-2 space-y-1 overflow-y-auto">
+                <button className="w-full flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium"
+                  onClick={() => window.location.reload()}
+                >
+                  <FiEdit /> New chat
+                </button>
+                <button className="w-full flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium"
+                  onClick={() => setSearchModalOpen(true)}
+                >
+                  <IoSearchOutline className='text-xl font-semibold' /> Search chats
+                </button>
+                {/* List chat sessions */}
+                <div className="mt-4">
+                  <div className="text-xs text-gray-400 mb-2 pl-2">Your Chats</div>
+                  {chatSessions.length === 0 && (
+                    <div className="text-xs text-gray-400 pl-2">No chats found</div>
                   )}
-                  <div className={message.sender === 'user' ? '' : 'message message-bot message-content'}>
-                    <div>{message.text}</div>
-                    <div className="message-time">{message.time}</div>
+                  {chatSessions.map(session => (
+                    <button
+                      key={session.id}
+                      className={`w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-50 hover:bg-gray-100 text-gray-700 ${activeSession === session.id ? 'bg-gray-200' : ''}`}
+                      onClick={() => handleSessionClick(session.id)}
+                    >
+                      <span className="truncate">{session.title || `Chat #${session.id}`}</span>
+                    </button>
+                  ))}
+                </div>
+                {/* Add more sidebar items as needed */}
+              </nav>
+              
+            </aside>
+          </div>
+          {/* Sidebar open/close button (when sidebar is closed) */}
+          {!sidebarOpen && (
+            <button
+              className="fixed top-4 left-4 z-40 bg-gray-50 border border-gray-200 rounded-xl p-2 shadow focus:outline-none transition-all duration-300"
+              onClick={() => setSidebarOpen(true)}
+            >
+              <BsLayoutSidebar className="text-gray-500 hover:cursor-pointer font-extrabold text-xl" />
+            </button>
+          )}
+        </div>
+        {/* Main Chat Area */}
+        <main className={`transition-all duration-300 flex-1 h-screen flex flex-col items-center justify-center bg-white ${sidebarOpen ? 'ml-64' : 'ml-0'}`}>
+          {/* Header with AI Chatbot and user icon */}
+          <div className="w-full flex items-center justify-between px-8 pt-2 pb-2">
+            <div className="flex items-center gap-2">
+              <span className="text-lg font-semibold text-gray-800">AI Chatbot</span>
+            </div>
+            <FaUserCircle className="text-2xl text-gray-500" />
+          </div>
+          <div className={`${sidebarOpen ? 'max-w-2xl' : 'max-w-3xl'} w-full  mx-auto flex flex-col items-center justify-center h-full relative`}>
+            <h1 className={`text-3xl font-semibold  text-gray-800 text-center  ${messages.length > 1 ? 'fixed bottom-0 hidden left-1/2 -translate-x-1/2 max-w-xl z-10' : 'mx-auto mt-6'}`} >
+              What can I help with?
+            </h1>
+            {/* Chat message area */}
+            <div className={`flex flex-col w-full gap-4 ${messages.length > 1 ? 'pb-2' : ''}  overflow-y-auto no-scrollbar`} style={{maxHeight: '70vh'}}>
+              {messages.slice(1).map((message, idx) => (
+                <div key={message.id} className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>  
+                  <div className={`rounded-xl px-4 py-3 max-w-[80%] shadow text-base whitespace-pre-line ${
+                    message.sender === 'user'
+                      ? 'bg-gray-100 text-black rounded-full'
+                      : 'bg-white text-gray-900 border-none shadow-none'
+                  }`}>
+                    {message.sender === 'bot' ? (
+                      <span dangerouslySetInnerHTML={{ __html: formatBotAnswer(message.text) }} />
+                    ) : (
+                      message.text
+                    )}
                   </div>
                 </div>
               ))}
               
-              {loading && (
-                <div className="typing-indicator">
-                  <div className="typing-dot"></div>
-                  <div className="typing-dot"></div>
-                  <div className="typing-dot"></div>
-                </div>
-              )}
-              
               <div ref={messagesEndRef} />
             </div>
             
-            {/* Quick Options */}
-            <div className="chat-options">
-              {quickOptions.map((option, index) => (
-                <div 
-                  key={index} 
-                  className="chat-option"
-                  onClick={() => handleOptionClick(option)}
-                >
-                  {option.startsWith("What") ? "👋 " : option === "Pricing" ? "📊 " : "📚 "}
-                  {option}
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          {/* Chat Footer with Input */}
-          <div className="chat-footer">
-            <form onSubmit={handleSubmit}>
-              <div className="chat-input-container flex items-center">
-                <input
-                  type="text"
-                  className=" border-none focus:border-0 focus:ring-0 w-full h-12 text-gray-700 placeholder-gray-400"
-                  value={question}
-                  onChange={(e) => setQuestion(e.target.value)}
-                  placeholder={isTranscribing ? 'Transcribing...' : 'Type your message here...'}
-                  disabled={loading || isTranscribing}
-                />
-                <button
-                  type="button"
-                  className={`ml-2 chat-mic-button ${isRecording ? 'bg-red-200' : 'bg-gray-200'} size-12 rounded-full   `}
-                  onClick={handleMicClick}
-                  title={isRecording ? 'Stop Recording' : 'Start Recording'}
-                  disabled={isTranscribing}
-                >
-                  {isRecording ? (
-                    <FaStop/> 
-                  ) : (
-                    <FaMicrophone/>
-                  )}
-                </button>
-                <button
-                  type="submit"
-                  className="chat-send-button ml-2"
-                  disabled={loading || !question.trim() || isTranscribing}
-                >
-                  <IoSend />
-                </button>
-              </div>
+            
+            <form
+              className={`flex items-center bg-white rounded-full shadow px-4 py-2 ${sidebarOpen ? 'max-w-2xl' : 'max-w-3xl'} ${messages.length > 1 ? 'absolute bottom-4 left-1/2 -translate-x-1/2  w-[95%] z-10' : 'mx-auto mt-6 w-full'} `}
+              onSubmit={handleSubmit}
+            >
+              <input
+                type="text"
+                className="flex-1 outline-none border-none bg-transparent text-md px-2 "
+                placeholder="Ask anything"
+                value={question}
+                onChange={e => setQuestion(e.target.value)}
+                disabled={loading || isTranscribing}
+              />
+              <button type="button" className="mx-2 text-gray-500 bg-white" onClick={handleMicClick} disabled={isTranscribing}>
+                {isRecording ? <FaStop className="text-2xl text-black" /> : <IoMicOutline className="text-2xl text-black" />}
+              </button>
+              <button
+                type="submit"
+                className="text-white bg-white hover:bg-gray-100 rounded-full p-2"
+                disabled={loading || !question.trim() || isTranscribing}
+              >
+                <IoSend className="text-xl text-black" />
+              </button>
             </form>
           </div>
-        </div>
+        </main>
+        <SearchChatsModal
+          open={searchModalOpen}
+          onClose={() => setSearchModalOpen(false)}
+          chatSessions={chatSessions}
+          onSessionSelect={handleSessionClick}
+        />
       </div>
     )
-  }
-
-  export default Chatbot
+}
