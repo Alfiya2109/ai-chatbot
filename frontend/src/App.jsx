@@ -8,8 +8,37 @@ import FeedbackDashboard from './components/FeedbackDashboard'
 import { AuthProvider } from './context/AuthContext'
 import CreateAgent from './components/CreateAgent'
 import './index.css';
+import { BASE_URL } from './base_url'
 
 function App() {
+  // Joget SSO auto-login logic
+  useEffect(() => {
+    // Only run if not already logged in
+    if (!localStorage.getItem('access_token')) {
+      fetch('https://jogetdx8dev.iqratechnology.com:8443/jw/web/json/directory/user/sso', {
+        credentials: 'include'
+      })
+        .then(res => res.json())
+        .then(async user => {
+          if (user && user.username) {
+            // Call backend to get JWT
+            const res = await fetch(`${BASE_URL}/api/joget-sso-login/`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ username: user.username })
+            });
+            if (res.ok) {
+              const data = await res.json();
+              localStorage.setItem('access_token', data.access);
+              // Optionally: set user info in localStorage/context
+              window.location.reload(); // reload to trigger ProtectedRoute
+            }
+          }
+        })
+        .catch(() => {});
+    }
+  }, []);
+
   return (
     <AuthProvider>
       <div className="min-h-screen bg-gray-100">

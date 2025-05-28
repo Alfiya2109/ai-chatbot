@@ -61,7 +61,8 @@ CORS_ALLOW_ALL_ORIGINS = True  # For development only
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",  # Vite default dev server
     "http://localhost:5174",
-    'https://aichatbotfrontend.iqratechnology.com'
+    'https://aichatbotfrontend.iqratechnology.com',
+    'https://stellular-crepe-71a243.netlify.app'
 ]
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
