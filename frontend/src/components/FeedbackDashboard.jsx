@@ -78,38 +78,40 @@ function FeedbackDashboard() {
   
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <h1 className=" text-3xl font-bold mb-6">📊 Feedback Performance Dashboard</h1>
-      <div className="grid grid-cols-2 items-center justify-center border gap-4">
-        {pieData && (
-          <div className='flex flex-col items-center justify-center'>
-            <h2 className="w-full text-center text-xl font-semibold mb-2">Correct vs Incorrect</h2>
-            <Pie
-                data={pieData}
-                options={{
-                    responsive: false,
-                    maintainAspectRatio: true,
-                }}
-                width={400} // Set the width here
-                height={400} // Set the height here
-                />
-             
-          </div>
-        )}
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100 py-8 px-4">
+      <div className="w-full max-w-4xl bg-white rounded-xl shadow-lg p-8">
+        <h2 className="text-3xl font-semibold text-gray-800 mb-6 text-center">Feedback Dashboard</h2>
+        <div className="grid grid-cols-2 items-center justify-center border gap-4">
+          {pieData && (
+            <div className='flex flex-col items-center justify-center'>
+              <h2 className="w-full text-center text-xl font-semibold mb-2">Correct vs Incorrect</h2>
+              <Pie
+                  data={pieData}
+                  options={{
+                      responsive: false,
+                      maintainAspectRatio: true,
+                  }}
+                  width={400} // Set the width here
+                  height={400} // Set the height here
+                  />
+               
+            </div>
+          )}
 
 
 
-<div className='flex flex-col items-center justify-center'>
-        <h2 className="text-xl font-semibold mb-2">Accuracy Over Time</h2>
-        <Line data={lineData} options={{
-          responsive: false,
-          maintainAspectRatio: true,
-        }}
-        width={400} // Set the width here
-        height={400} // Set the height here
- />
-      </div>
-      
+  <div className='flex flex-col items-center justify-center'>
+          <h2 className="text-xl font-semibold mb-2">Accuracy Over Time</h2>
+          <Line data={lineData} options={{
+            responsive: false,
+            maintainAspectRatio: true,
+          }}
+          width={400} // Set the width here
+          height={400} // Set the height here
+   />
+        </div>
+        
+        </div>
       </div>
     </div>
 

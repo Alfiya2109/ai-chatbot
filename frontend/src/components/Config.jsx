@@ -189,23 +189,20 @@ function Config() {
 
 
   return (
-    <div className="bg-blue-900 p-4">
-      <div className="mx-auto border bg-blue-100 shadow-md rounded-lg p-2" style={{ width: '100%' }}>
-        <div className="w-full flex justify-center">
-          <h1 className="text-xl font-bold text-blue-900">Sales Chat Logs</h1>
-        </div>
-
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100 py-8 px-2">
+      <div className="w-full max-w-7xl bg-white rounded-xl shadow-lg p-2">
+        <h2 className="text-3xl font-semibold text-gray-800 mb-6 text-center">Configuration</h2>
         <div>
           <div className="flex justify-between mb-2">
             <h2 className="text-lg font-semibold text-gray-800 mb-2">Chat Logs</h2>
             <div className="flex space-x-2">
-              <button onClick={toggleFilters} className="bg-blue-900 text-white rounded-full p-2 hover:bg-blue-700" style={{ width: '30px', height: '30px' }}>
+              <button onClick={toggleFilters} className="bg-gray-500 text-white rounded-full p-2 hover:bg-gray-500" style={{ width: '30px', height: '30px' }}>
                 <IoFilter size={16} />
               </button>
-              <button onClick={handleDownloadExcel} className="bg-blue-900 text-white rounded-full p-2 hover:bg-blue-700" style={{ width: '30px', height: '30px' }}>
+              <button onClick={handleDownloadExcel} className="bg-gray-500 text-white rounded-full p-2 hover:bg-gray-500" style={{ width: '30px', height: '30px' }}>
                 <MdSimCardDownload size={16} />
               </button>
-              <button onClick={() => navigate('/dashboard')} className="bg-blue-900 text-white rounded-full p-2 hover:bg-blue-700" style={{ width: '30px', height: '30px' }}>
+              <button onClick={() => navigate('/dashboard')} className="bg-gray-500 text-white rounded-full p-2 hover:bg-gray-500" style={{ width: '30px', height: '30px' }}>
                 <IoBarChart size={16} />
               </button>
             </div>
@@ -282,14 +279,14 @@ function Config() {
             <colgroup>
               <col style={{ width: '10%' }} />
               <col style={{ width: '8%' }} />
-              <col style={{ width: '25%' }} />
-              <col style={{ width: '25%' }} />
-              <col style={{ width: '8%' }} />
               <col style={{ width: '15%' }} />
-              <col style={{ width: '5%' }} />
-              <col style={{ width: '5%' }} />
-              <col style={{ width: '3%' }} />
+              <col style={{ width: '45%' }} />
+              <col style={{ width: '8%' }} />
+              <col style={{ width: '13%' }} />
               <col style={{ width: '4%' }} />
+              <col style={{ width: '4%' }} />
+              <col style={{ width: '2%' }} />
+              <col style={{ width: '2%' }} />
             </colgroup>
             <thead>
               <tr className="bg-gray-200">
@@ -333,7 +330,7 @@ function Config() {
                       ) : (
                         <div style={{ width: '90%', textAlign: 'justify' }}>{log.gpt_answer}</div>
                       )}
-                      <button onClick={() => isEditingAnswer ? handleUpdateFeedback(log.id) : (setEditId(log.id), setEditAnswer(log.gpt_answer))} className="ml-1 bg-blue-900 text-white rounded-full p-2 hover:bg-blue-700" style={{ width: '30px', height: '30px', alignSelf: 'center' }}>
+                      <button onClick={() => isEditingAnswer ? handleUpdateFeedback(log.id) : (setEditId(log.id), setEditAnswer(log.gpt_answer))} className="ml-1 bg-gray-500 text-white rounded-full p-2 hover:bg-gray-500" style={{ width: '30px', height: '30px', alignSelf: 'center' }}>
                         {isEditingAnswer ? <FaCheck size={16} /> : <FaPencilAlt size={16} />}
                       </button>
                     </td>
@@ -352,7 +349,7 @@ function Config() {
                       ) : (
                         <div style={{ width: '85%', textAlign: 'justify' }}>{log.category.join(', ')}</div>
                       )}
-                      <button onClick={() => isEditingCategory ? handleUpdateCategory(log.id) : setEditCategory(log.category)} className="ml-2 bg-blue-900 text-white rounded-full p-2 hover:bg-blue-700 float-right" style={{ width: '30px', height: '30px' }}>
+                      <button onClick={() => isEditingCategory ? handleUpdateCategory(log.id) : setEditCategory(log.category)} className="ml-2 bg-gray-500 text-white rounded-full p-2 hover:bg-gray-500 float-right" style={{ width: '30px', height: '30px' }}>
                         {isEditingCategory ? <FaCheck size={16} /> : <FaPencilAlt size={16} />}
                       </button>
                     </td>
@@ -370,14 +367,14 @@ function Config() {
                       ) : (
                         <div style={{ width: '85%', textAlign: 'justify' }}>{log.subcategory.join(', ')}</div>
                       )}
-                      <button onClick={() => isEditingSubcategory ? handleUpdateSubcategory(log.id) : setEditSubcategory(log.subcategory)} className="ml-2 bg-blue-900 text-white rounded-full p-2 hover:bg-blue-700 float-right" style={{ width: '30px', height: '30px' }}>
+                      <button onClick={() => isEditingSubcategory ? handleUpdateSubcategory(log.id) : setEditSubcategory(log.subcategory)} className="ml-2 bg-gray-500 text-white rounded-full p-2 hover:bg-gray-500 float-right" style={{ width: '30px', height: '30px' }}>
                         {isEditingSubcategory ? <FaCheck size={16} /> : <FaPencilAlt size={16} />}
                       </button>
                     </td>
                     <td className="border border-gray-300 px-4 py-2 text-center whitespace-nowrap">{time}</td>
                     <td className="border border-gray-300 px-4 py-2 text-center">{log.tokens ?? ''}</td>
                     <td className="border border-gray-300 px-4 py-2 text-center">
-                      <button onClick={() => handleUpdateFeedback(log.id)} className="bg-green-500 px-3 py-1 rounded-full text-white hover:bg-green-600">
+                      <button onClick={() => handleUpdateFeedback(log.id)} className="bg-gray-500 px-2 py-2 rounded-full text-white hover:bg-green-600">
                         <FaCheck size={12} />
                       </button>
                     </td>
