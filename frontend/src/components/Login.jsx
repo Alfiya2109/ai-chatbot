@@ -66,7 +66,7 @@ function Login() {
             <button
               type="submit"
               disabled={loading}
-              className={`group relative flex w-full justify-center rounded-md bg-blue-900   py-2 px-3 text-sm font-semibold text-white hover:bg-purple-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 ${
+              className={`group relative flex w-full justify-center rounded-md bg-gray-700   py-2 px-3 text-sm font-semibold text-white hover:bg-gray-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 ${
                 loading ? 'opacity-70 cursor-not-allowed' : ''
               }`}
             >
@@ -75,7 +75,7 @@ function Login() {
           </div>
 
           <div className="text-sm text-center">
-            <p className="font-medium text-purple-600 hover:text-purple-500">
+            <p className="font-medium text-gray-700 hover:text-gray-500">
               Don't have an account?{' '}
               <Link to="/register" className="underline">
                 Register here
