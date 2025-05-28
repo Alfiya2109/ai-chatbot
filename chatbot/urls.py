@@ -48,6 +48,7 @@ urlpatterns = [
     path('chatsessions/<int:pk>/add_message/', ChatSessionAddMessageAPIView.as_view(), name='chat-session-add-message'),
      path('userprofiles/', UserProfileListAPI.as_view(), name='userprofile-list'),
     path('chatbot/summarize/', summarize_question, name='summarize-question'),
+    path('joget-sso-login/', JogetSSOLoginAPIView.as_view(), name='joget-sso-login'),
 ]
 
 

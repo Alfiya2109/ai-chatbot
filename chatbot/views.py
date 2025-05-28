@@ -809,4 +809,28 @@ def summarize_question(request):
         return Response({'error': f'Failed to generate summary: {str(e)}'}, status=500)
     return Response({'summary': summary})
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
+from django.contrib.auth import get_user_model
+from rest_framework_simplejwt.tokens import RefreshToken
+
+class JogetSSOLoginAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        username = request.data.get('username')
+        if not username:
+            return Response({'error': 'Username required'}, status=400)
+        User = get_user_model()
+        user, created = User.objects.get_or_create(username=username, defaults={"email": username})
+        # Optionally set more user fields here if available from Joget
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+            'username': user.username,
+            'created': created
+        })
+
 
