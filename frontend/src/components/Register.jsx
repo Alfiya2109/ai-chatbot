@@ -33,7 +33,7 @@ function Register() {
   }
   
   return (
-    <div className="flex min-h-screen items-center justify-center bg-blue-100 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="flex min-h-screen items-center justify-center bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
           <h2 className="text-center text-3xl font-bold tracking-tight text-gray-900">
@@ -54,7 +54,7 @@ function Register() {
                 value={formData.username}
                 
                 onChange={handleChange}
-                className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm py-1.5 px-2 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm py-1.5 px-2 focus:border-gray-500 focus:ring-gray-500 sm:text-sm"
               />
             </div>
             <div>
@@ -68,7 +68,7 @@ function Register() {
                 required
                 value={formData.password}
                 onChange={handleChange}
-                className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm py-1.5 px-2 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm py-1.5 px-2 focus:border-gray-500 focus:ring-gray-500 sm:text-sm"
               />
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -83,7 +83,7 @@ function Register() {
                   required
                   value={formData.first_name}
                   onChange={handleChange}
-                  className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm py-1.5 px-2 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm py-1.5 px-2 focus:border-gray-500 focus:ring-gray-500 sm:text-sm"
                 />
               </div>
               <div>
@@ -97,7 +97,7 @@ function Register() {
                   required
                   value={formData.last_name}
                   onChange={handleChange}
-                  className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm py-1.5 px-2 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm py-1.5 px-2 focus:border-gray-500 focus:ring-gray-500 sm:text-sm"
                 />
               </div>
             </div>
@@ -113,7 +113,7 @@ function Register() {
                 required
                 value={formData.phone_number}
                 onChange={handleChange}
-                className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm py-1.5 px-2 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm py-1.5 px-2 focus:border-gray-500 focus:ring-gray-500 sm:text-sm"
               />
             </div>
             
@@ -127,7 +127,7 @@ function Register() {
             <button
               type="submit"
               disabled={loading}
-              className={`group relative flex w-full justify-center rounded-md bg-blue-900 py-2 px-3 text-sm font-semibold text-white hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-900 ${
+              className={`group relative flex w-full justify-center rounded-md bg-gray-900 py-2 px-3 text-sm font-semibold text-white hover:bg-gray-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900 ${
                 loading ? 'opacity-70 cursor-not-allowed' : ''
               }`}
             >
@@ -136,7 +136,7 @@ function Register() {
           </div>
 
           <div className="text-sm text-center">
-            <p className="font-medium text-blue-600 hover:text-blue-500">
+            <p className="font-medium text-gray-600 hover:text-gray-500">
               Already have an account?{' '}
               <Link to="/login" className="underline">
                 Login here
