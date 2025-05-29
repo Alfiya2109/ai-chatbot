@@ -15,13 +15,14 @@ function App() {
   useEffect(() => {
     // Only run if not already logged in
     if (!localStorage.getItem('access_token')) {
-      fetch('https://jogetdx8dev.iqratechnology.com:8443/jw/web/json/directory/user/sso', {
+      fetch('https://jogetdx9preview.iqratechnology.com:8443/jw/web/json/directory/user/sso', {
         credentials: 'include'
       })
         .then(res => res.json())
         .then(async user => {
           if (user && user.username) {
             // Call backend to get JWT
+            console.log("joget working")
             const res = await fetch(`${BASE_URL}/api/joget-sso-login/`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -31,7 +32,6 @@ function App() {
               const data = await res.json();
               localStorage.setItem('access_token', data.access);
               // Optionally: set user info in localStorage/context
-              window.location.reload(); // reload to trigger ProtectedRoute
             }
           }
         })
