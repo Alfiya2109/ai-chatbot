@@ -1,0 +1,346 @@
+nappturality.com:
+{
+    "english": "Yes",
+    "sign_in": "No",
+    "sign_in_elements": [],
+    "website_error": "None",
+    "website_open": "Yes"
+}
+
+================================================================================
+webflow.com:
+{
+    "english": "Yes",
+    "sign_in": "Yes",
+    "sign_in_elements": [
+        {
+            "isModal": false,
+            "text": "Webinar - Turning Traffic into Revenue, with HubSpot, Zapier and ClayRegister now\u2197\n  /* Make g-nav_wrapper relative if sticky wrapper applied for top notification banner use */\n  .notification_bar + .g-nav-wrapper {\n    position: sticky;\n    top: 0;\n  }\n\n  .notification_bar + .g-nav-wrapper .g-nav-wrapper-position {\n    position: relative;\n  }\n\n  body:has( .notification_bar) {\n    position: relative; \n  }\n\n  /* Make g-nav_wrapper relative if sticky wrapper applied for top notification banner use */\n  [class$=\"notification_bar\"] + [class$=\"g-nav-wrapper\"] {\n    position: sticky;\n    top: 0;\n  }\n\n  [class$=\"notification_bar\"] + [class$=\"g-nav-wrapper\"] [class$=\"g-nav-wrapper-position\"] {\n    position: relative;\n  }\n\n  body:has( [class$=\"notification_bar\"]) {\n    position: relative; \n  }\n  \n  /* Make g-nav_wrapper relative if sticky wrapper applied for top notification banner use */\n  .brand-boilerplate-components--notification_bar + .brand-boilerplate-components--g-nav-wrapper {\n    position: sticky;\n    top: 0;\n  }\n\n  .brand-boilerplate-components--notification_bar + .brand-boilerplate-components--g-nav-wrapper .brand-boilerplate-components--g-nav-wrapper-position {\n    position: relative;\n  }\n\n  body:has( .brand-boilerplate-components--notification_bar) {\n    position: relative; \n  }",
+            "type": "href",
+            "value": "https://webflow.com/resources/webinars/turning-traffic-into-revenue/?utm_source=weblow&utm_medium=website&utm_campaign=announcement-bar-turning-traffic-into-revenue-webinar"
+        },
+        {
+            "isModal": false,
+            "text": "ClassroomsRegister to use Webflow for free",
+            "type": "href",
+            "value": "https://webflow.com/classroom"
+        },
+        {
+            "isModal": false,
+            "text": "DevelopersSubmit an app, explore our APIs, get technical support, and more",
+            "type": "href",
+            "value": "https://developers.webflow.com/"
+        },
+        {
+            "isModal": false,
+            "text": "Log in",
+            "type": "href",
+            "value": "https://webflow.com/login"
+        },
+        {
+            "isModal": false,
+            "text": "Get started \u2014\u00a0it's free",
+            "type": "href",
+            "value": "https://webflow.com/dashboard/signup"
+        },
+        {
+            "isModal": false,
+            "text": "Start building",
+            "type": "href",
+            "value": "https://webflow.com/dashboard/signup"
+        },
+        {
+            "isModal": false,
+            "text": "Get started \u2014 it\u2019s free",
+            "type": "href",
+            "value": "https://webflow.com/dashboard/signup"
+        }
+    ],
+    "website_error": "None",
+    "website_open": "Yes"
+}
+
+================================================================================
+womenridersnow.com - Error: HTTPConnectionPool(host='127.0.0.1', port=5000): Read timed out. (read timeout=60)
+
+================================================================================
+barilliance.com:
+{
+    "english": "Yes",
+    "sign_in": "No",
+    "sign_in_elements": [],
+    "website_error": "None",
+    "website_open": "Yes"
+}
+
+================================================================================
+bharathlisting.com:
+{
+    "english": "Yes",
+    "sign_in": "Yes",
+    "sign_in_elements": [
+        {
+            "isModal": false,
+            "text": "Add Business - FREE",
+            "type": "href",
+            "value": "https://bharathlisting.com/user/register"
+        },
+        {
+            "isModal": false,
+            "text": "Sign in",
+            "type": "href",
+            "value": "https://bharathlisting.com/user/sign-in"
+        },
+        {
+            "isModal": false,
+            "text": "+ Add Your Business",
+            "type": "href",
+            "value": "https://bharathlisting.com/user/select-plan"
+        },
+        {
+            "isModal": false,
+            "text": "AY",
+            "type": "href",
+            "value": "https://addyp.com/user/register"
+        },
+        {
+            "isModal": false,
+            "text": "BL",
+            "type": "href",
+            "value": "https://bharathlisting.com/user/register"
+        },
+        {
+            "isModal": false,
+            "text": "WH",
+            "type": "href",
+            "value": "https://wehelp.in/user/register"
+        }
+    ],
+    "website_error": "None",
+    "website_open": "Yes"
+}
+
+================================================================================
+ranking.com:
+{
+    "english": "Yes",
+    "sign_in": "No",
+    "sign_in_elements": [],
+    "website_error": "None",
+    "website_open": "Yes"
+}
+
+================================================================================
+recme.jp:
+{
+    "website_error": "WebDriverError",
+    "website_open": "No"
+}
+
+================================================================================
+rapid7.com:
+{
+    "english": "Yes",
+    "sign_in": "Yes",
+    "sign_in_elements": [
+        {
+            "isModal": false,
+            "text": "Register Now",
+            "type": "href",
+            "value": "https://rapid7.brighttalk.com/?utm_source=referral&utm_medium=website&utm_campaign=global-pla-take-command-summit-prospect-eng"
+        },
+        {
+            "isModal": false,
+            "text": "Register",
+            "type": "href",
+            "value": "https://rapid7.brighttalk.com/?utm_source=referral&utm_medium=website&utm_campaign=global-pla-take-command-summit-prospect-eng"
+        },
+        {
+            "isModal": false,
+            "text": "CareersJOIN RAPID7",
+            "type": "href",
+            "value": "https://careers.rapid7.com/"
+        },
+        {
+            "isModal": false,
+            "text": "Sign In",
+            "type": "href",
+            "value": "https://insight.rapid7.com/saml/SSO"
+        },
+        {
+            "isModal": false,
+            "text": "Get started",
+            "type": "href",
+            "value": "https://www.rapid7.com/contact/"
+        },
+        {
+            "isModal": false,
+            "type": "button",
+            "url": "",
+            "value": "Submit Search"
+        },
+        {
+            "isModal": false,
+            "type": "button",
+            "url": "",
+            "value": "Submit"
+        }
+    ],
+    "website_error": "None",
+    "website_open": "Yes"
+}
+
+================================================================================
+0-100.it:
+{
+    "english": "Yes",
+    "sign_in": "Yes",
+    "sign_in_elements": [
+        {
+            "isModal": false,
+            "text": "<img width=\"1279\" height=\"634\" src=\"https://www.0-100.it/wp-content/uploads/2023/06/0-100.png\" class=\"custom-logo\" alt=\"0-100 Motori Orologi LifeStyle\" decoding=\"async\">",
+            "type": "href",
+            "value": "https://www-0--100-it.translate.goog/?_x_tr_sl=auto&_x_tr_tl=en&_x_tr_hl=en-GB"
+        },
+        {
+            "isModal": false,
+            "text": "<img width=\"640\" height=\"427\" src=\"https://www.0-100.it/wp-content/uploads/2024/10/auto-elettrica-depositphotos.com-0-100.it__1280.jpeg\" class=\"attachment-large size-large wp-post-image\" alt=\"\" decoding=\"async\">",
+            "type": "href",
+            "value": "https://www-0--100-it.translate.goog/auto-elettriche-risparmi-sul-bollo-ma-per-ripararle-ti-chiedono-30-000e-automobilisti-spennati-e-frustrati-ormai-lhanno-acquistata/?_x_tr_sl=auto&_x_tr_tl=en&_x_tr_hl=en-GB"
+        },
+        {
+            "isModal": false,
+            "text": "<img width=\"300\" height=\"200\" src=\"https://www.0-100.it/wp-content/uploads/2024/10/auto-elettrica-depositphotos.com-0-100.it__1280.jpeg\" class=\"attachment-medium size-medium wp-post-image\" alt=\"\" decoding=\"async\">",
+            "type": "href",
+            "value": "https://www-0--100-it.translate.goog/auto-elettriche-risparmi-sul-bollo-ma-per-ripararle-ti-chiedono-30-000e-automobilisti-spennati-e-frustrati-ormai-lhanno-acquistata/?_x_tr_sl=auto&_x_tr_tl=en&_x_tr_hl=en-GB"
+        },
+        {
+            "isModal": false,
+            "text": "<img width=\"300\" height=\"169\" src=\"https://www.0-100.it/wp-content/uploads/2024/10/Tourbillon_1_-_0-100.it_1280.jpeg\" class=\"attachment-medium size-medium wp-post-image\" alt=\"Tourbillon 1 - 0-100.it\" decoding=\"async\">",
+            "type": "href",
+            "value": "https://www-0--100-it.translate.goog/bugatti-presentato-il-suo-ultimo-gioiello-tourbillon-ma-in-pochi-hanno-notato-alcuni-riferimenti-particolari-te-li-sveliamo-tutti/?_x_tr_sl=auto&_x_tr_tl=en&_x_tr_hl=en-GB"
+        },
+        {
+            "isModal": false,
+            "text": "<img width=\"300\" height=\"172\" src=\"https://www.0-100.it/wp-content/uploads/2024/10/Dacia_Bigster_-_ufficio_stampa_Dacia_-_0-100.it_1280.jpeg\" class=\"attachment-medium size-medium wp-post-image\" alt=\"\" decoding=\"async\">",
+            "type": "href",
+            "value": "https://www-0--100-it.translate.goog/dacia-bigster-la-piu-attesa-adesso-ha-una-data-di-consegna-nessun-altro-suv-costa-cosi-poco-il-nuovo-colpaccio/?_x_tr_sl=auto&_x_tr_tl=en&_x_tr_hl=en-GB"
+        },
+        {
+            "isModal": false,
+            "text": "<img width=\"300\" height=\"167\" src=\"https://www.0-100.it/wp-content/uploads/2024/10/OMODA_5_a_-_0-100.it_1280.jpeg\" class=\"attachment-medium size-medium wp-post-image\" alt=\"OMODA 5 a - 0-100.it\" decoding=\"async\">",
+            "type": "href",
+            "value": "https://www-0--100-it.translate.goog/suv-low-cost-appena-arrivato-in-italia-il-prezzo-che-batte-tutti-i-record-adesso-tutti-ne-avranno-uno/?_x_tr_sl=auto&_x_tr_tl=en&_x_tr_hl=en-GB"
+        },
+        {
+            "isModal": false,
+            "text": "<img width=\"300\" height=\"169\" src=\"https://www.0-100.it/wp-content/uploads/2024/10/MaseratiMC20-0-100.it-2.jpeg\" class=\"attachment-medium size-medium wp-post-image\" alt=\"MaseratiMC20 - 0-100.it\" decoding=\"async\">",
+            "type": "href",
+            "value": "https://www-0--100-it.translate.goog/maserati-presentato-il-modello-esclusivo-e-potente-consegnata-solo-allelite-ecco-perche-non-la-puo-avere-nessuno/?_x_tr_sl=auto&_x_tr_tl=en&_x_tr_hl=en-GB"
+        },
+        {
+            "isModal": false,
+            "text": "<img width=\"300\" height=\"167\" src=\"https://www.0-100.it/wp-content/uploads/2024/09/auto-nuova-0-100.it_.jpeg\" class=\"attachment-medium size-medium wp-post-image\" alt=\"auto nuova - 0-100.it\" decoding=\"async\">",
+            "type": "href",
+            "value": "https://www-0--100-it.translate.goog/auto-nuova-adesso-a-meno-di-10-000e-chiavi-in-mano-le-offerte-sui-modelli-piu-amati-calca-alle-concessionarie/?_x_tr_sl=auto&_x_tr_tl=en&_x_tr_hl=en-GB"
+        },
+        {
+            "isModal": false,
+            "text": "<img width=\"300\" height=\"169\" src=\"https://www.0-100.it/wp-content/uploads/2024/11/Gran_Premio_dellOrologeria_2024_-_0-100.it_1280.jpeg\" class=\"attachment-medium size-medium wp-post-image\" alt=\"Gran_Premio_dellOrologeria_2024_-_0-100.it_1280\" decoding=\"async\">",
+            "type": "href",
+            "value": "https://www-0--100-it.translate.goog/creativita-e-precisione-si-incontrano-i-campioni-del-gran-premio-dellorologeria-2024-svelati-unedizione-da-record/?_x_tr_sl=auto&_x_tr_tl=en&_x_tr_hl=en-GB"
+        },
+        {
+            "isModal": false,
+            "text": "<img width=\"300\" height=\"150\" src=\"https://www.0-100.it/wp-content/uploads/2024/10/Orologi_-depositphoto_0-100.it_1280.jpeg\" class=\"attachment-medium size-medium wp-post-image\" alt=\"\" decoding=\"async\">",
+            "type": "href",
+            "value": "https://www-0--100-it.translate.goog/sogni-un-rolex-i-3-modelli-da-acquistare-a-500e-il-sogno-di-ogni-collezionista-diventa-realta-un-figurone-incredibile/?_x_tr_sl=auto&_x_tr_tl=en&_x_tr_hl=en-GB"
+        },
+        {
+            "isModal": false,
+            "text": "<img width=\"300\" height=\"192\" src=\"https://www.0-100.it/wp-content/uploads/2024/10/Rolex_Datejust_-_0-100.it_1280.jpeg\" class=\"attachment-medium size-medium wp-post-image\" alt=\"\" decoding=\"async\">",
+            "type": "href",
+            "value": "https://www-0--100-it.translate.goog/rolex-per-la-prima-volta-lo-mettono-a-118e-non-lo-avevano-mai-fatto-prima-potrebbe-andare-a-ruba-in-poche-ore/?_x_tr_sl=auto&_x_tr_tl=en&_x_tr_hl=en-GB"
+        },
+        {
+            "isModal": false,
+            "text": "<img width=\"300\" height=\"178\" src=\"https://www.0-100.it/wp-content/uploads/2024/10/rolex_affare_depositphoto-0-100.it_1280.jpeg\" class=\"attachment-medium size-medium wp-post-image\" alt=\"\" decoding=\"async\">",
+            "type": "href",
+            "value": "https://www-0--100-it.translate.goog/rolex-adesso-puoi-comprare-il-modello-da-10-000e-a-soli-830e-il-trucchetto-dei-collezionisti-per-avere-una-collezione-assurda/?_x_tr_sl=auto&_x_tr_tl=en&_x_tr_hl=en-GB"
+        },
+        {
+            "isModal": false,
+            "text": "<img width=\"150\" height=\"100\" src=\"https://www.0-100.it/wp-content/uploads/2024/10/Elettra-Lamborghini-0-100.it_.jpeg\" class=\"attachment-thumbnail size-thumbnail wp-post-image\" alt=\"\" decoding=\"async\">",
+            "type": "href",
+            "value": "https://www-0--100-it.translate.goog/rolex-il-nuovo-modello-di-elettra-lamborghini-costa-piu-della-tua-casa-ma-a-tanti-fa-storcere-il-naso-edizione-limitatissima/?_x_tr_sl=auto&_x_tr_tl=en&_x_tr_hl=en-GB"
+        },
+        {
+            "isModal": false,
+            "text": "<img width=\"150\" height=\"84\" src=\"https://www.0-100.it/wp-content/uploads/2024/09/Viaggio-aereo-StockCake-0-100.it_.jpeg\" class=\"attachment-thumbnail size-thumbnail wp-post-image\" alt=\"\" decoding=\"async\">",
+            "type": "href",
+            "value": "https://www-0--100-it.translate.goog/vola-a-999e-per-un-anno-con-800-destinazioni-disponibili-non-e-un-sogno-ma-realta-lofferta-mai-vista-prima/?_x_tr_sl=auto&_x_tr_tl=en&_x_tr_hl=en-GB"
+        },
+        {
+            "isModal": false,
+            "text": "<img width=\"150\" height=\"84\" src=\"https://www.0-100.it/wp-content/uploads/2024/08/maserati-tridente-motoscafo-0-100.it-1.jpeg\" class=\"attachment-thumbnail size-thumbnail wp-post-image\" alt=\"\" decoding=\"async\">",
+            "type": "href",
+            "value": "https://www-0--100-it.translate.goog/motoscafo-maserati-e-elettrico-ma-va-come-un-fulmine-il-terrore-dei-mari-a-un-prezzo-interessante-600-cv-di-lusso-ecosostenibile/?_x_tr_sl=auto&_x_tr_tl=en&_x_tr_hl=en-GB"
+        },
+        {
+            "isModal": false,
+            "text": "<img width=\"150\" height=\"86\" src=\"https://www.0-100.it/wp-content/uploads/2024/08/Nicolo-Barella-Federica-Schievenin_-_Fortementein.com_1280-1.jpeg\" class=\"attachment-thumbnail size-thumbnail wp-post-image\" alt=\"Nicolo-Barella-Federica-Schievenin_-_Fortementein.com\" decoding=\"async\">",
+            "type": "href",
+            "value": "https://www-0--100-it.translate.goog/nicolo-barella-ha-tradito-la-moglie-con-la-bomba-sexy-dopo-anni-damore-si-e-messa-in-mezzo-laltra-doveva-aspettarselo/?_x_tr_sl=auto&_x_tr_tl=en&_x_tr_hl=en-GB"
+        },
+        {
+            "isModal": false,
+            "text": "<img width=\"150\" height=\"94\" src=\"https://www.0-100.it/wp-content/uploads/2024/07/tudor_-_0-100.it_1280.jpeg\" class=\"attachment-thumbnail size-thumbnail wp-post-image\" alt=\"Un modello che non puoi perderti - 0-100.it\" decoding=\"async\">",
+            "type": "href",
+            "value": "https://www-0--100-it.translate.goog/orologi-di-lusso-il-modello-tudor-adesso-ha-un-prezzo-bassissimo-questo-e-il-mese-dellaffare-poi-salira-collezionisti-impazziti/?_x_tr_sl=auto&_x_tr_tl=en&_x_tr_hl=en-GB"
+        },
+        {
+            "isModal": false,
+            "text": "<img width=\"300\" height=\"180\" src=\"https://www.0-100.it/wp-content/uploads/2024/09/DFSK_E5_-_0-100.it_1280.jpeg\" class=\"attachment-medium size-medium wp-post-image\" alt=\"Nuovo SUV plug-in cinese che stupisce - 0-100.it\" decoding=\"async\">",
+            "type": "href",
+            "value": "https://www-0--100-it.translate.goog/dfsk-e5-il-suv-ibrido-low-cost-cinese-ci-regala-emozioni-tecnologia-e-lusso-in-7-posti-e-che-grinta/?_x_tr_sl=auto&_x_tr_tl=en&_x_tr_hl=en-GB"
+        },
+        {
+            "isModal": false,
+            "text": "<img width=\"300\" height=\"187\" src=\"https://www.0-100.it/wp-content/uploads/2024/09/Aston_Martin_Vanquish_1_-_0-100.it_1280.jpeg\" class=\"attachment-medium size-medium wp-post-image\" alt=\"Aston Martin Vanquish 1 - 0-100.it\" decoding=\"async\">",
+            "type": "href",
+            "value": "https://www-0--100-it.translate.goog/aston-martin-vanquish-e-vero-sono-835-cavalli-ma-non-ti-hanno-detto-tutta-la-verita-ecco-cosa-tenevano-nascosto/?_x_tr_sl=auto&_x_tr_tl=en&_x_tr_hl=en-GB"
+        },
+        {
+            "isModal": false,
+            "text": "<img width=\"300\" height=\"176\" src=\"https://www.0-100.it/wp-content/uploads/2024/09/MG3_Hybrid_-_0-100.it_1280.jpeg\" class=\"attachment-medium size-medium wp-post-image\" alt=\"auto ibrida nuova - Depositphotos - 0-100.it\" decoding=\"async\">",
+            "type": "href",
+            "value": "https://www-0--100-it.translate.goog/auto-ibrida-che-consuma-meno-di-tutte-labbiamo-provata-per-voi-ed-e-una-bomba-potenza-e-resistenza-che-colpaccio/?_x_tr_sl=auto&_x_tr_tl=en&_x_tr_hl=en-GB"
+        },
+        {
+            "isModal": false,
+            "text": "<img width=\"300\" height=\"171\" src=\"https://www.0-100.it/wp-content/uploads/2024/08/Ford-Bronco-Sport-Banca_immagini_Ford-0-100.it_1280.jpeg\" class=\"attachment-medium size-medium wp-post-image\" alt=\"\" decoding=\"async\">",
+            "type": "href",
+            "value": "https://www-0--100-it.translate.goog/ford-bronco-ritorna-sulla-cresta-dellonda-per-motivi-ben-migliori-il-modello-2024-riscrive-la-storia-cosa-ne-pensiamo/?_x_tr_sl=auto&_x_tr_tl=en&_x_tr_hl=en-GB"
+        },
+        {
+            "isModal": false,
+            "text": "<img width=\"300\" height=\"201\" src=\"https://www.0-100.it/wp-content/uploads/2024/08/Alfa_Romeo_Junior_-_0-100.it_1280.jpeg\" class=\"attachment-medium size-medium wp-post-image\" alt=\"Alfa Romeo Junior - 0-100.it\" decoding=\"async\">",
+            "type": "href",
+            "value": "https://www-0--100-it.translate.goog/alfa-romeo-junior-finalmente-labbiamo-vista-ma-e-davvero-pazzesca-come-dicono-parliamo-anche-dei-prezzi/?_x_tr_sl=auto&_x_tr_tl=en&_x_tr_hl=en-GB"
+        }
+    ],
+    "website_error": "None",
+    "website_open": "Yes"
+}
+
+================================================================================
+0-journals-openedition-org.catalogue.libraries.london.ac.uk:
+{
+    "english": "Yes",
+    "sign_in": "No",
+    "sign_in_elements": [],
+    "website_error": "None",
+    "website_open": "Yes"
+}
+
+================================================================================

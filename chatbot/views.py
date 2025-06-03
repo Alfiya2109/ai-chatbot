@@ -796,7 +796,7 @@ def summarize_question(request):
     client = OpenAI(api_key=api_key)
     try:
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "You are a helpful assistant that summarizes a user's first chat message into a short, clear session title (max 8 words)."},
                 {"role": "user", "content": text}
@@ -833,4 +833,109 @@ class JogetSSOLoginAPIView(APIView):
             'created': created
         })
 
+
+# Folder Upload View
+DOC_EXTENSIONS = {'.pdf', '.doc', '.docx', '.txt'}
+EXCEL_EXTENSIONS = {'.csv', '.xls', '.xlsx'}
+
+def list_files_in_folder(folder_path):
+    doc_files = []
+    excel_files = []
+    for root, dirs, files in os.walk(folder_path):
+        for file in files:
+            ext = os.path.splitext(file)[1].lower()
+            full_path = os.path.join(root, file)
+            if ext in DOC_EXTENSIONS:
+                doc_files.append(full_path)
+            elif ext in EXCEL_EXTENSIONS:
+                excel_files.append(full_path)
+    return {"doc_files": doc_files, "excel_files": excel_files}
+
+from rest_framework import viewsets, status
+from django.core.files import File
+import shutil
+
+class FileDataViewSet(viewsets.ModelViewSet):
+    queryset = FileData.objects.all()
+    serializer_class = FileDataSerializer
+    parser_classes = (MultiPartParser, FormParser)
+
+    def create(self, request, *args, **kwargs):
+        import requests
+        from django.conf import settings
+        folder_path = request.data.get('folder_path')
+        if not folder_path or not os.path.exists(folder_path):
+            return Response({"error": "Valid folder path is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Create FileData instance
+        file_data = FileData.objects.create(
+            title=os.path.basename(folder_path)
+        )
+
+        # Prepare for internal API call
+        # Get the current host (assumes running on localhost)
+        api_url = request.build_absolute_uri('/upload-and-train/')
+        headers = {}
+        if request.auth:
+            headers['Authorization'] = f'Bearer {request.auth}'
+
+        # Process files in the folder
+        for root, dirs, files in os.walk(folder_path):
+            for file in files:
+                file_path = os.path.join(root, file)
+                ext = os.path.splitext(file)[1].lower()
+                if ext in DOC_EXTENSIONS:
+                    with open(file_path, 'rb') as f:
+                        DocumentFileData.objects.create(
+                            file_data=file_data,
+                            file=File(f, name=file)
+                        )
+                        # Call upload-and-train API
+                        f.seek(0)
+                        files_data = {'file': (file, f, 'application/octet-stream')}
+                        data = {'type': 'file'}
+                        try:
+                            requests.post(api_url, files=files_data, data=data, headers=headers, timeout=60)
+                        except Exception as e:
+                            pass  # Optionally log error
+                elif ext in EXCEL_EXTENSIONS:
+                    with open(file_path, 'rb') as f:
+                        ExcelFileData.objects.create(
+                            file_data=file_data,
+                            file=File(f, name=file)
+                        )
+                        # Call upload-and-train API
+                        f.seek(0)
+                        files_data = {'file': (file, f, 'application/octet-stream')}
+                        data = {'type': 'file'}
+                        try:
+                            requests.post(api_url, files=files_data, data=data, headers=headers, timeout=60)
+                        except Exception as e:
+                            pass  # Optionally log error
+
+        serializer = self.get_serializer(file_data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data) 
+
+class ExcelFileViewSet(viewsets.ModelViewSet):
+    queryset = ExcelFile.objects.all()
+    serializer_class = ExcelFileSerializer
+    parser_classes = (MultiPartParser, FormParser)
+
+    def perform_create(self, serializer):
+        user = self.request.user if self.request.user and self.request.user.is_authenticated else None
+        serializer.save(added_by=user)
+
+class FileUploadViewSet(viewsets.ModelViewSet):
+    queryset = Files_upload.objects.all()
+    serializer_class = FilesUploadSerializer
+    parser_classes = (MultiPartParser, FormParser)
+
+    def perform_create(self, serializer):
+        user = self.request.user if self.request.user and self.request.user.is_authenticated else None
+        serializer.save(added_by=user)
 

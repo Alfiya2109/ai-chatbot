@@ -123,3 +123,27 @@ class URLModel(models.Model):
     def __str__(self):
         return self.url
 
+# Folder Upload Model
+from django.utils import timezone
+class FileData(models.Model):
+    title = models.CharField(max_length=255)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return self.title
+
+class DocumentFileData(models.Model):
+    file = models.FileField(upload_to='documents/')
+    file_data = models.ForeignKey(FileData, on_delete=models.CASCADE, related_name='document_files')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return os.path.basename(self.file.name)
+
+class ExcelFileData(models.Model):
+    file = models.FileField(upload_to='excel/')
+    file_data = models.ForeignKey(FileData, on_delete=models.CASCADE, related_name='excel_files')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return os.path.basename(self.file.name)

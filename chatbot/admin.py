@@ -30,3 +30,22 @@ admin.site.register(TextContent)
 admin.site.register(ExcelFile)
 admin.site.register(QAData)
 admin.site.register(ChatSession)
+
+# admin for folder upload
+@admin.register(FileData)
+class FileDataAdmin(admin.ModelAdmin):
+    list_display = ('title', 'created_at')
+    search_fields = ('title',)
+    list_filter = ('created_at',)
+
+@admin.register(DocumentFileData)
+class DocumentFileDataAdmin(admin.ModelAdmin):
+    list_display = ('file', 'file_data', 'uploaded_at')
+    search_fields = ('file',)
+    list_filter = ('uploaded_at', 'file_data')
+
+@admin.register(ExcelFileData)
+class ExcelFileDataAdmin(admin.ModelAdmin):
+    list_display = ('file', 'file_data', 'uploaded_at')
+    search_fields = ('file',)
+    list_filter = ('uploaded_at', 'file_data')

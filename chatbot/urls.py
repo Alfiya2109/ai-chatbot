@@ -4,10 +4,12 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 from django.views.generic import TemplateView
-from .views import FeedbackUpsertView
-from .views import ChatbotCategoryListAPIView
-from .views import FileUploadView
-from .views import FileUploadView, TextContentView, ExcelFileView, QADataView
+
+from rest_framework.routers import DefaultRouter
+router = DefaultRouter()
+router.register(r'folder-upload', FileDataViewSet, basename='folder-upload')
+router.register(r'excel-files', ExcelFileViewSet, basename='excel-files')
+router.register(r'document-files', FileUploadViewSet, basename='document-files')
 
 # API endpoints
 urlpatterns = [
@@ -46,9 +48,9 @@ urlpatterns = [
     path('chatsessions/', ChatSessionListCreateAPIView.as_view(), name='chat-session-list-create'),
     path('chatsessions/<int:pk>/', ChatSessionRetrieveUpdateDestroyAPIView.as_view(), name='chat-session-detail'),
     path('chatsessions/<int:pk>/add_message/', ChatSessionAddMessageAPIView.as_view(), name='chat-session-add-message'),
-     path('userprofiles/', UserProfileListAPI.as_view(), name='userprofile-list'),
+    path('userprofiles/', UserProfileListAPI.as_view(), name='userprofile-list'),
     path('chatbot/summarize/', summarize_question, name='summarize-question'),
     path('joget-sso-login/', JogetSSOLoginAPIView.as_view(), name='joget-sso-login'),
+    path('', include(router.urls)),
 ]
-
 
