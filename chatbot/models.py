@@ -147,3 +147,13 @@ class ExcelFileData(models.Model):
 
     def __str__(self):
         return os.path.basename(self.file.name)
+
+class SitemapFetch(models.Model):
+    url = models.URLField(unique=True)
+    fetched_at = models.DateTimeField(auto_now_add=True)
+    urls = models.JSONField(default=list)
+    status = models.CharField(max_length=32, default='pending')
+    error = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return self.url

@@ -10,7 +10,7 @@ from .models import (
     ChatbotCategory,
     ChatbotSubCategory,
 )
-from .models import ChatSession
+from .models import ChatSession, SitemapFetch
 
 # ---------------------------
 # Auth Serializers
@@ -270,3 +270,8 @@ class FileDataSerializer(serializers.ModelSerializer):
     class Meta:
         model = FileData
         fields = ['id', 'title', 'created_at', 'document_files', 'excel_files']
+
+class SitemapFetchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SitemapFetch
+        fields = ['id', 'url', 'fetched_at', 'urls', 'status', 'error']
