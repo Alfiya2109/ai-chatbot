@@ -1,6 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .utils.scraper import scrape_entire_website
+from urllib.parse import urlparse
 from .utils.vector_store import store_in_vector_db, query_vector_db, remove_from_vector_db, clear_vector_db
 from .serializers import *
 from django.contrib.auth.models import *
@@ -11,7 +12,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 
 from rest_framework import generics, filters, status
 from django.db.models import Count
-from .models import Feedback, URLModel
+from .models import Feedback, URLModel, SitemapFetch
 from django.views import View
 from django.http import JsonResponse
 from django.db import models
@@ -854,6 +855,8 @@ def list_files_in_folder(folder_path):
 from rest_framework import viewsets, status
 from django.core.files import File
 import shutil
+import requests
+from bs4 import BeautifulSoup
 
 class FileDataViewSet(viewsets.ModelViewSet):
     queryset = FileData.objects.all()
@@ -938,4 +941,81 @@ class FileUploadViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         user = self.request.user if self.request.user and self.request.user.is_authenticated else None
         serializer.save(added_by=user)
+
+
+class SitemapFetchAPIView(APIView):
+    def post(self, request):
+        url = request.data.get('url')
+        if not url:
+            return Response({'error': 'No URL provided.'}, status=status.HTTP_400_BAD_REQUEST)
+        fetch, created = SitemapFetch.objects.get_or_create(url=url)
+        try:
+            urls = self.get_sitemap_links(url)
+            fetch.urls = urls
+            fetch.status = 'success'
+            fetch.error = ''
+            fetch.save()
+            serializer = SitemapFetchSerializer(fetch)
+            return Response(serializer.data)
+        except Exception as e:
+            fetch.status = 'error'
+            fetch.error = str(e)
+            fetch.save()
+            return Response({'error': str(e)}, status=500)
+
+    def get(self, request):
+        url = request.query_params.get('url')
+        if url:
+            try:
+                fetch = SitemapFetch.objects.get(url=url)
+                serializer = SitemapFetchSerializer(fetch)
+                return Response(serializer.data)
+            except SitemapFetch.DoesNotExist:
+                return Response({'error': 'Not found.'}, status=404)
+        else:
+            fetches = SitemapFetch.objects.all().order_by('-fetched_at')
+            serializer = SitemapFetchSerializer(fetches, many=True)
+            return Response(serializer.data)
+
+    def delete(self, request):
+        url = request.data.get('url') or request.query_params.get('url')
+        if url:
+            deleted, _ = SitemapFetch.objects.filter(url=url).delete()
+            if deleted:
+                return Response({'message': 'Deleted.'}, status=204)
+            else:
+                return Response({'error': 'Not found.'}, status=404)
+        else:
+            SitemapFetch.objects.all().delete()
+            return Response({'message': 'All records deleted.'}, status=204)
+
+    def get_sitemap_links(self, sitemap_url, domain=None, seen=None, urls=None):
+        if domain is None:
+            domain = urlparse(sitemap_url).netloc.lower()
+        if seen is None:
+            seen = set()
+        if urls is None:
+            urls = set()
+        if sitemap_url in seen:
+            return
+        seen.add(sitemap_url)
+        blacklist = {"https://sitemaps.org/", "https://yoa.st/1y5"}
+        if sitemap_url.endswith('.xml'):
+            response = requests.get(sitemap_url)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.content, 'xml')
+            links = [loc.text for loc in soup.find_all('loc')]
+            for link in links:
+                if link.endswith('.xml'):
+                    self.get_sitemap_links(link, domain, seen, urls)
+                else:
+                    link_netloc = urlparse(link).netloc.lower()
+                    if (
+                        link_netloc == domain and
+                        not link.lower().endswith((
+                            '.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp', '.tiff', '.ico')) and
+                        link not in blacklist
+                    ):
+                        urls.add(link)
+        return list(urls)
 

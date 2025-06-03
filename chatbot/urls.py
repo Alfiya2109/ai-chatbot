@@ -52,5 +52,6 @@ urlpatterns = [
     path('chatbot/summarize/', summarize_question, name='summarize-question'),
     path('joget-sso-login/', JogetSSOLoginAPIView.as_view(), name='joget-sso-login'),
     path('', include(router.urls)),
+    path('sitemap-fetch/', SitemapFetchAPIView.as_view(), name='sitemap-fetch'),
 ]
 
