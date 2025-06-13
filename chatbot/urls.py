@@ -58,9 +58,9 @@ urlpatterns = [
     path('knowledgebase/', KnowledgeBaseListCreateAPIView.as_view(), name='knowledgebase-list-create'),
     path('knowledgebase/<int:pk>/', KnowledgeBaseRetrieveUpdateDestroyAPIView.as_view(), name='knowledgebase-detail'),
     path('userprofiles/<int:pk>/update/', UserProfileUpdateAPI.as_view(), name='userprofile-update'),
-
     path('joget-sso-login/', JogetSSOLoginAPIView.as_view(), name='joget-sso-login'),
     path('', include(router.urls)),
     path('sitemap-fetch/', SitemapFetchAPIView.as_view(), name='sitemap-fetch'),
+    path('token/username/', TokenByUsernameView.as_view(), name='token_by_username'),
 ]
 
