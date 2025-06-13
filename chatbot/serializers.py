@@ -290,7 +290,6 @@ class KnowledgeBaseSerializer(serializers.ModelSerializer):
     class Meta:
         model = KnowledgeBase
         fields = '__all__'
-        fields = ['first_name', 'last_name', 'phone_number', 'email', 'created_at', 'role']
 
 # Folder Upload Serializer
 from .models import FileData, DocumentFileData, ExcelFileData
