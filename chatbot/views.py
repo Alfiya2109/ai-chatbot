@@ -19,6 +19,9 @@ from django.db import models
 import subprocess
 import os
 import uuid
+from django.utils import timezone
+from django.core.mail import send_mail
+from datetime import timedelta
 
 class ChatLogListView(generics.ListCreateAPIView):
     queryset = ChatLog.objects.all().order_by('-timestamp')
@@ -256,21 +259,67 @@ class LoginView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
+        username = request.data.get('username')
+        user = None
+        user_profile = None
+        try:
+            user = User.objects.get(username=username)
+            user_profile = UserProfile.objects.get(user=user)
+        except (User.DoesNotExist, UserProfile.DoesNotExist):
+            pass
+
+        # Check lockout before authentication
+        if user_profile:
+            if user_profile.is_locked:
+                now = timezone.now()
+                if user_profile.lockout_time and now < user_profile.lockout_time + timedelta(hours=1):
+                    return Response({'detail': 'Account is locked due to multiple failed login attempts. Please try again after 1 hour.'}, status=403)
+                else:
+                    # Unlock after 1 hour
+                    user_profile.is_locked = False
+                    user_profile.failed_login_attempts = 0
+                    user_profile.lockout_time = None
+                    user_profile.save()
+
         serializer = UserLoginSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        try:
+            serializer.is_valid(raise_exception=True)
+        except Exception as e:
+            # Failed login
+            if user_profile:
+                user_profile.failed_login_attempts += 1
+                if user_profile.failed_login_attempts >= 3:
+                    user_profile.is_locked = True
+                    user_profile.lockout_time = timezone.now()
+                    user_profile.save()
+                    # Send email notification
+                    send_mail(
+                        'Account Locked - AI Chatbot',
+                        'Your account has been locked due to 3 consecutive failed login attempts. It will be unlocked automatically after 1 hour.',
+                        'no-reply@yourdomain.com',
+                        [user.email],
+                        fail_silently=True,
+                    )
+                    return Response({'detail': 'Account is locked due to multiple failed login attempts. Please try again after 1 hour.'}, status=403)
+                user_profile.save()
+            return Response({'detail': 'Invalid username or password.'}, status=401)
+
+        # Successful login
+        if user_profile:
+            user_profile.failed_login_attempts = 0
+            user_profile.is_locked = False
+            user_profile.lockout_time = None
+            user_profile.save()
         user_data = serializer.validated_data
-        
-        # Get the user's role from UserProfile
         user = user_data.get('user')
         try:
             user_profile = UserProfile.objects.get(user=user)
-            role = user_profile.role
+            profile_name = user_profile.profile.name if user_profile.profile else None
         except UserProfile.DoesNotExist:
-            role = 'user'  # Default role
-        
+            profile_name = None
         return Response({
             'username': user_data.get('username'),
-            'role': role,
+            'profile': profile_name,
             'tokens': serializer.get_tokens(user)
         }, status=status.HTTP_200_OK)
 
@@ -326,6 +375,13 @@ class ChatbotCategoryListAPIView(APIView):
         serializer = ChatbotCategorySerializer(categories, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    def post(self, request):
+        serializer = ChatbotCategorySerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 class ChatbotSubCategoryListAPIView(APIView):
     permission_classes = [AllowAny]
 
@@ -333,6 +389,28 @@ class ChatbotSubCategoryListAPIView(APIView):
         subcategories = ChatbotSubCategory.objects.all()
         serializer = ChatbotSubCategorySerializer(subcategories, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        serializer = ChatbotSubCategorySerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def patch(self, request, pk=None):
+        # PATCH /api/subcategories/<id>/
+        subcategory_id = pk or request.data.get('id')
+        if not subcategory_id:
+            return Response({'error': 'Subcategory id is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            subcategory = ChatbotSubCategory.objects.get(pk=subcategory_id)
+        except ChatbotSubCategory.DoesNotExist:
+            return Response({'error': 'Subcategory not found.'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = ChatbotSubCategorySerializer(subcategory, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 from .file_reader import read_uploaded_file
@@ -609,42 +687,36 @@ class ClearVectorDBView(APIView):
 class URLManagementAPIView(APIView):
     def get(self, request):
         urls = URLModel.objects.all()
-        url_list = [
-            {
-                "id": url.id,
-                "url": url.url,
-                "created_at": url.created_at,
-                "added_by": url.added_by.username if url.added_by else None
-            }
-            for url in urls
-        ]
-        return Response(url_list, status=status.HTTP_200_OK)
+        serializer = URLModelSerializer(urls, many=True)
+        data = serializer.data
+        # Add username for added_by and updated_by
+        for i, url in enumerate(urls):
+            data[i]['added_by'] = url.added_by.username if url.added_by else None
+            data[i]['updated_by'] = url.updated_by.username if url.updated_by else None
+        return Response(data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        user = request.user if request.user and request.user.is_authenticated else None
+        data = request.data.copy()
+        data['added_by'] = user.username if user else None
+        serializer = URLModelSerializer(data=data)
+        if serializer.is_valid():
+            url_instance = serializer.save(added_by=user)
+            return Response(URLModelSerializer(url_instance).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, pk):
         try:
             url = URLModel.objects.get(pk=pk)
-            identifier = str(url.id)  # Convert identifier to string for compatibility
+            identifier = str(url.id)
             url.delete()
-
             try:
-                remove_from_vector_db(identifier)  # Remove from vector DB
+                remove_from_vector_db(identifier)
             except Exception as e:
                 return Response({"error": f"Failed to remove from vector DB: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
             return Response({"message": "URL deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
         except URLModel.DoesNotExist:
             return Response({"error": "URL not found."}, status=status.HTTP_404_NOT_FOUND)
-
-    def post(self, request):
-        url = request.data.get("url")
-        if not url:
-            return Response({"error": "URL is required."}, status=status.HTTP_400_BAD_REQUEST)
-        user = request.user if request.user and request.user.is_authenticated else None
-        try:
-            new_url = URLModel.objects.create(url=url, added_by=user)
-            return Response({"id": new_url.id, "url": new_url.url, "created_at": new_url.created_at, "added_by": new_url.added_by.username if new_url.added_by else None}, status=status.HTTP_201_CREATED)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 
 
@@ -809,6 +881,150 @@ def summarize_question(request):
     except Exception as e:
         return Response({'error': f'Failed to generate summary: {str(e)}'}, status=500)
     return Response({'summary': summary})
+
+class ProfileListCreateAPI(generics.ListCreateAPIView):
+    queryset = Profile.objects.all()
+    serializer_class = ProfileSerializer
+    permission_classes = []  # Allow any user (including unauthenticated) to access
+
+class ProfileRetrieveUpdateAPI(generics.RetrieveUpdateAPIView):
+    queryset = Profile.objects.all()
+    serializer_class = ProfileSerializer
+    permission_classes = [IsAuthenticated]
+
+from rest_framework.permissions import IsAuthenticated
+from .models import UserProfile, Profile
+from .serializers import UserProfileSerializer, ProfileSerializer
+
+class CurrentUserProfileAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user_profile = None
+        try:
+            user_profile = UserProfile.objects.select_related('profile').get(user=request.user)
+        except Exception:
+            return Response({'error': 'UserProfile not found.'}, status=404)
+        userprofile_data = UserProfileSerializer(user_profile).data
+        profile_data = ProfileSerializer(user_profile.profile).data if user_profile.profile else None
+
+        # Determine allowed tabs based on user_profile and profile permissions
+        allowed_tabs = []
+        # Check UserProfile fields
+        if user_profile.files_access: allowed_tabs.append('Files')
+        if user_profile.text_access: allowed_tabs.append('Text')
+        if user_profile.excel_access: allowed_tabs.append('Excel/CSV')
+        if user_profile.qna_access: allowed_tabs.append('Q&A')
+        if user_profile.url_access: allowed_tabs.append('URL')
+        if user_profile.chat_history_access: allowed_tabs.append('History')
+        
+        if user_profile.user_details_access: allowed_tabs.append('User Details')
+        # Optionally, check Profile fields (if you want to merge both)
+        if user_profile.profile:
+            if user_profile.profile.files_access and 'Files' not in allowed_tabs: allowed_tabs.append('Files')
+            if user_profile.profile.text_access and 'Text' not in allowed_tabs: allowed_tabs.append('Text')
+            if user_profile.profile.excel_access and 'Excel/CSV' not in allowed_tabs: allowed_tabs.append('Excel/CSV')
+            if user_profile.profile.qna_access and 'Q&A' not in allowed_tabs: allowed_tabs.append('Q&A')
+            if user_profile.profile.url_access and 'URL' not in allowed_tabs: allowed_tabs.append('URL')
+            if user_profile.profile.chat_history_access and 'History' not in allowed_tabs: allowed_tabs.append('History')
+        # Remove 'Profile' from always-allowed tabs, only add if allowed
+        allowed_tabs.append('Chatbot')  # Always allow Chatbot for navigation
+        # Only add 'Profile' if user_profile_access is True in either userprofile or profile
+        if (user_profile.user_profile_access or (user_profile.profile and getattr(user_profile.profile, 'user_profile_access', False))):
+            allowed_tabs.append('Profile')
+
+        return Response({
+            'userprofile': userprofile_data,
+            'profile': profile_data,
+            'allowed_tabs': allowed_tabs
+        }, status=200)
+
+# Add to your urls.py:
+# path('api/userprofiles/me/', CurrentUserProfileAPIView.as_view(), name='current-user-profile')
+
+from .models import KnowledgeBase
+from .serializers import KnowledgeBaseSerializer
+from rest_framework import generics
+from rest_framework.permissions import IsAuthenticated
+
+class KnowledgeBaseListCreateAPIView(generics.ListCreateAPIView):
+    queryset = KnowledgeBase.objects.all()
+    serializer_class = KnowledgeBaseSerializer
+    permission_classes = [IsAuthenticated]
+
+class KnowledgeBaseRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = KnowledgeBase.objects.all()
+    serializer_class = KnowledgeBaseSerializer
+    permission_classes = [IsAuthenticated]
+    def patch(self, request, *args, **kwargs):
+        return self.partial_update(request, *args, **kwargs)
+
+class ChatbotCategoryDetailAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def get_object(self, pk):
+        try:
+            return ChatbotCategory.objects.get(pk=pk)
+        except ChatbotCategory.DoesNotExist:
+            return None
+
+    def get(self, request, pk):
+        category = self.get_object(pk)
+        if not category:
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = ChatbotCategorySerializer(category)
+        return Response(serializer.data)
+
+    def put(self, request, pk):
+        category = self.get_object(pk)
+        if not category:
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = ChatbotCategorySerializer(category, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        category = self.get_object(pk)
+        if not category:
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+        category.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from rest_framework import status
+from .models import UserProfile, Profile, KnowledgeBase
+from .serializers import UserProfileSerializer
+
+class UserProfileUpdateAPI(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, pk):
+        try:
+            user_profile = UserProfile.objects.get(pk=pk)
+        except UserProfile.DoesNotExist:
+            return Response({'error': 'UserProfile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        data = request.data.copy()
+        # Handle profile update
+        profile_id = data.get('profile')
+        if profile_id:
+            try:
+                profile = Profile.objects.get(pk=profile_id)
+                user_profile.profile = profile
+            except Profile.DoesNotExist:
+                return Response({'error': 'Profile not found'}, status=status.HTTP_400_BAD_REQUEST)
+        # Handle knowledge_bases update
+        kb_ids = data.get('knowledge_bases', [])
+        if isinstance(kb_ids, list):
+            kbs = KnowledgeBase.objects.filter(id__in=kb_ids)
+            user_profile.knowledge_bases.set(kbs)
+        user_profile.save()
+        serializer = UserProfileSerializer(user_profile)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 from rest_framework.views import APIView
 from rest_framework.response import Response

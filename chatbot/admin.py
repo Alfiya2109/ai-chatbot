@@ -30,6 +30,8 @@ admin.site.register(TextContent)
 admin.site.register(ExcelFile)
 admin.site.register(QAData)
 admin.site.register(ChatSession)
+admin.site.register(Profile)
+admin.site.register(KnowledgeBase)
 
 # admin for folder upload
 @admin.register(FileData)

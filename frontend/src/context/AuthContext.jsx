@@ -18,13 +18,13 @@ export function AuthProvider({ children }) {
   // Check if there's a token on mount
   useEffect(() => {
     const token = localStorage.getItem('access_token')
-    const role = localStorage.getItem('user_role')
+    const profile = localStorage.getItem('profile')
     
     if (token) {
       // In a real app, you might want to validate the token here
       setCurrentUser({ 
         token,
-        role: role || 'user'
+        profile: profile || 'Non-Sales',
       })
     }
   }, [])
@@ -43,7 +43,13 @@ export function AuthProvider({ children }) {
       })
 
       if (!response.ok) {
-        throw new Error('Login failed')
+        // Try to extract backend error message
+        let errorMsg = 'Login failed'
+        try {
+          const errData = await response.json()
+          if (errData.detail) errorMsg = errData.detail
+        } catch {}
+        throw new Error(errorMsg)
       }
 
       const data = await response.json()
@@ -51,12 +57,12 @@ export function AuthProvider({ children }) {
       // Store tokens in localStorage
       localStorage.setItem('access_token', data.tokens.access)
       localStorage.setItem('refresh_token', data.tokens.refresh)
-      localStorage.setItem('user_role', data.role || 'user')
+      localStorage.setItem('profile', data.profile || 'Non-Sales')
       
       setCurrentUser({
         username: data.username,
         token: data.tokens.access,
-        role: data.role || 'user'
+        profile: data.profile || 'Non-Sales'
       })
       
       navigate('/chatbot')
@@ -91,12 +97,12 @@ export function AuthProvider({ children }) {
       // Store tokens in localStorage
       localStorage.setItem('access_token', data.tokens.access)
       localStorage.setItem('refresh_token', data.tokens.refresh)
-      localStorage.setItem('user_role', userData.role || 'user')
+      localStorage.setItem('profile', userData.profile || 'Non-Sales')
       
       setCurrentUser({
         username: userData.username,
         token: data.tokens.access,
-        role: userData.role || 'user'
+        profile: userData.profile || 'Non-Sales'
       })
       
       navigate('/chatbot')

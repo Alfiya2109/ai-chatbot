@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import axios from 'axios'
+import { BASE_URL } from '../base_url'
 
 function Register() {
   const [formData, setFormData] = useState({
@@ -10,28 +12,54 @@ function Register() {
     last_name: '',
     email: '',
     phone_number: '',
-    role: 'user'
+    profile: ''
   })
-  
+  const [profiles, setProfiles] = useState([])
+
+  useEffect(() => {
+    // Fetch profiles from backend
+    axios.get(`${BASE_URL}/api/profiles/`)
+      .then(res => setProfiles(res.data))
+      .catch(() => setProfiles([]))
+  }, []) // fetch only once on mount
+
+  // Debug: Log profiles to verify data
+  useEffect(() => {
+    console.log('Profiles loaded:', profiles)
+  }, [profiles])
+
+  // Remove profile input and set default profile to first non-sales profile
+  useEffect(() => {
+    if (profiles.length > 0) {
+      const nonSales = profiles.find((p) => p.name.toLowerCase() !== 'sales');
+      if (nonSales) {
+        setFormData((prev) => ({ ...prev, profile: nonSales.id }));
+      }
+    }
+  }, [profiles]);
+
   const { register, loading, error } = useAuth()
-  
+
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData(prev => ({
       ...prev,
       [name]: value,
-      email: name === 'username' ? value : prev.email, // sync email if username changes
-      role: 'user' // always enforce role
+      email: name === 'username' ? value : prev.email
     }))
   }
-  
-  
+
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    
+    e.preventDefault();
+    // Prevent registration if no non-sales profile is available
+    const selectedProfile = profiles.find((p) => p.id === formData.profile);
+    if (!selectedProfile || selectedProfile.name.toLowerCase() === 'sales') {
+      alert('Only non-sales users can register.');
+      return;
+    }
     await register(formData)
   }
-  
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-md space-y-8">
@@ -52,7 +80,6 @@ function Register() {
                 type="text"
                 required
                 value={formData.username}
-                
                 onChange={handleChange}
                 className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm py-1.5 px-2 focus:border-gray-500 focus:ring-gray-500 sm:text-sm"
               />

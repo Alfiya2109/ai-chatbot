@@ -4,17 +4,29 @@ from django.db import models
 import os
 
 class UserProfile(models.Model):
-    ROLE_CHOICES = (
-        ('user', 'User'),
-        ('sales', 'Sales Team'),
-    )
-
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     phone_number = models.CharField(max_length=15)
-    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='user')
+
+    # Login security
+    failed_login_attempts = models.IntegerField(default=0)
+    is_locked = models.BooleanField(default=False)
+    lockout_time = models.DateTimeField(null=True, blank=True)
+
+    # Access permissions
+    files_access = models.BooleanField(default=False)
+    text_access = models.BooleanField(default=False)
+    excel_access = models.BooleanField(default=False)
+    qna_access = models.BooleanField(default=False)
+    url_access = models.BooleanField(default=False)
+    chat_history_access = models.BooleanField(default=False)
+    user_profile_access = models.BooleanField(default=False)
+    user_details_access = models.BooleanField(default=False)
+    profile = models.ForeignKey('Profile', on_delete=models.SET_NULL, null=True, blank=True, related_name='users')
+    knowledge_bases = models.ManyToManyField('KnowledgeBase', blank=True, related_name='user_profiles')
 
     def __str__(self):
-        return f"{self.user.username} - {self.role}"
+        return f"{self.user.username} - {self.profile.name if self.profile else 'No Profile'}"
+
     
 #categories
 
@@ -91,37 +103,81 @@ class Feedback(models.Model):
     
 class Files_upload(models.Model):
     file = models.FileField(upload_to='uploads/')
+    description = models.TextField(blank=True, null=True)  # New field
+    
     uploaded_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)  # New field
     added_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='files_uploaded')
+    updated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='files_updated')  # New field
+    knowledge_bases = models.ManyToManyField('KnowledgeBase', blank=True, related_name='files_documents')
 
     def __str__(self):
         return f"{os.path.basename(self.file.name)} uploaded at {self.uploaded_at}"
 
 class TextContent(models.Model):
     content = models.TextField()
+    description = models.TextField(blank=True, null=True)  # New field
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)  # New field
     added_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='texts_uploaded')
+    updated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='texts_updated')  # New field
+    knowledge_bases = models.ManyToManyField('KnowledgeBase', blank=True, related_name='text_documents')
 
 class ExcelFile(models.Model):
     file = models.FileField(upload_to='excel_files/')
+    description = models.TextField(blank=True, null=True)  # New field
+    
     uploaded_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)  # New field
     added_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='excels_uploaded')
+    updated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='excels_updated')  # New field
+    knowledge_bases = models.ManyToManyField('KnowledgeBase', blank=True, related_name='excel_documents')
 
 class QAData(models.Model):
     question = models.TextField()
     answer = models.TextField()
+    description = models.TextField(blank=True, null=True)  # New field
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)  # New field
+    added_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='qadata_uploaded')
+    updated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='qadata_updated')  # New field
     category = models.ManyToManyField(ChatbotCategory, blank=True)
     subcategory = models.ManyToManyField(ChatbotSubCategory, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    added_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='qadata_uploaded')
+    knowledge_bases = models.ManyToManyField('KnowledgeBase', blank=True, related_name='qa_documents')
 
 class URLModel(models.Model):
     url = models.URLField(max_length=500)
+    description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     added_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='urls_uploaded')
+    updated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='urls_updated')
+    knowledge_bases = models.ManyToManyField('KnowledgeBase', blank=True, related_name='url_documents')
 
     def __str__(self):
         return self.url
+
+class Profile(models.Model):
+    
+    name = models.CharField(max_length=100, unique=True)
+    files_access = models.BooleanField(default=False)
+    text_access = models.BooleanField(default=False)
+    excel_access = models.BooleanField(default=False)
+    qna_access = models.BooleanField(default=False)
+    url_access = models.BooleanField(default=False)
+    chat_history_access = models.BooleanField(default=False)
+    user_profile_access = models.BooleanField(default=False)
+    user_details_access = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.name}"
+
+class KnowledgeBase(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+
+    def __str__(self):
+        return self.name
+
 
 # Folder Upload Model
 from django.utils import timezone
