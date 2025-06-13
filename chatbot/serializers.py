@@ -12,7 +12,7 @@ from .models import (
     Profile,  # <-- import Profile
     KnowledgeBase,
 )
-from .models import ChatSession
+from .models import ChatSession, SitemapFetch
 
 # ---------------------------
 # Auth Serializers
@@ -290,3 +290,30 @@ class KnowledgeBaseSerializer(serializers.ModelSerializer):
     class Meta:
         model = KnowledgeBase
         fields = '__all__'
+        fields = ['first_name', 'last_name', 'phone_number', 'email', 'created_at', 'role']
+
+# Folder Upload Serializer
+from .models import FileData, DocumentFileData, ExcelFileData
+
+class DocumentFileDataSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DocumentFileData
+        fields = ['id', 'file', 'uploaded_at']
+
+class ExcelFileDataSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ExcelFileData
+        fields = ['id', 'file', 'uploaded_at']
+
+class FileDataSerializer(serializers.ModelSerializer):
+    document_files = DocumentFileDataSerializer(many=True, read_only=True)
+    excel_files = ExcelFileDataSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = FileData
+        fields = ['id', 'title', 'created_at', 'document_files', 'excel_files']
+
+class SitemapFetchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SitemapFetch
+        fields = ['id', 'url', 'fetched_at', 'urls', 'status', 'error']

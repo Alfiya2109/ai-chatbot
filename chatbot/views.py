@@ -1,6 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .utils.scraper import scrape_entire_website
+from urllib.parse import urlparse
 from .utils.vector_store import store_in_vector_db, query_vector_db, remove_from_vector_db, clear_vector_db
 from .serializers import *
 from django.contrib.auth.models import *
@@ -11,7 +12,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 
 from rest_framework import generics, filters, status
 from django.db.models import Count
-from .models import Feedback, URLModel
+from .models import Feedback, URLModel, SitemapFetch
 from django.views import View
 from django.http import JsonResponse
 from django.db import models
@@ -868,7 +869,7 @@ def summarize_question(request):
     client = OpenAI(api_key=api_key)
     try:
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "You are a helpful assistant that summarizes a user's first chat message into a short, clear session title (max 8 words)."},
                 {"role": "user", "content": text}
@@ -1025,4 +1026,212 @@ class UserProfileUpdateAPI(APIView):
         serializer = UserProfileSerializer(user_profile)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
+from django.contrib.auth import get_user_model
+from rest_framework_simplejwt.tokens import RefreshToken
+
+class JogetSSOLoginAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        username = request.data.get('username')
+        if not username:
+            return Response({'error': 'Username required'}, status=400)
+        User = get_user_model()
+        user, created = User.objects.get_or_create(username=username, defaults={"email": username})
+        # Optionally set more user fields here if available from Joget
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+            'username': user.username,
+            'created': created
+        })
+
+
+# Folder Upload View
+DOC_EXTENSIONS = {'.pdf', '.doc', '.docx', '.txt'}
+EXCEL_EXTENSIONS = {'.csv', '.xls', '.xlsx'}
+
+def list_files_in_folder(folder_path):
+    doc_files = []
+    excel_files = []
+    for root, dirs, files in os.walk(folder_path):
+        for file in files:
+            ext = os.path.splitext(file)[1].lower()
+            full_path = os.path.join(root, file)
+            if ext in DOC_EXTENSIONS:
+                doc_files.append(full_path)
+            elif ext in EXCEL_EXTENSIONS:
+                excel_files.append(full_path)
+    return {"doc_files": doc_files, "excel_files": excel_files}
+
+from rest_framework import viewsets, status
+from django.core.files import File
+import shutil
+import requests
+from bs4 import BeautifulSoup
+
+class FileDataViewSet(viewsets.ModelViewSet):
+    queryset = FileData.objects.all()
+    serializer_class = FileDataSerializer
+    parser_classes = (MultiPartParser, FormParser)
+
+    def create(self, request, *args, **kwargs):
+        import requests
+        from django.conf import settings
+        folder_path = request.data.get('folder_path')
+        if not folder_path or not os.path.exists(folder_path):
+            return Response({"error": "Valid folder path is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Create FileData instance
+        file_data = FileData.objects.create(
+            title=os.path.basename(folder_path)
+        )
+
+        # Prepare for internal API call
+        # Get the current host (assumes running on localhost)
+        api_url = request.build_absolute_uri('/upload-and-train/')
+        headers = {}
+        if request.auth:
+            headers['Authorization'] = f'Bearer {request.auth}'
+
+        # Process files in the folder
+        for root, dirs, files in os.walk(folder_path):
+            for file in files:
+                file_path = os.path.join(root, file)
+                ext = os.path.splitext(file)[1].lower()
+                if ext in DOC_EXTENSIONS:
+                    with open(file_path, 'rb') as f:
+                        DocumentFileData.objects.create(
+                            file_data=file_data,
+                            file=File(f, name=file)
+                        )
+                        # Call upload-and-train API
+                        f.seek(0)
+                        files_data = {'file': (file, f, 'application/octet-stream')}
+                        data = {'type': 'file'}
+                        try:
+                            requests.post(api_url, files=files_data, data=data, headers=headers, timeout=60)
+                        except Exception as e:
+                            pass  # Optionally log error
+                elif ext in EXCEL_EXTENSIONS:
+                    with open(file_path, 'rb') as f:
+                        ExcelFileData.objects.create(
+                            file_data=file_data,
+                            file=File(f, name=file)
+                        )
+                        # Call upload-and-train API
+                        f.seek(0)
+                        files_data = {'file': (file, f, 'application/octet-stream')}
+                        data = {'type': 'file'}
+                        try:
+                            requests.post(api_url, files=files_data, data=data, headers=headers, timeout=60)
+                        except Exception as e:
+                            pass  # Optionally log error
+
+        serializer = self.get_serializer(file_data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data) 
+
+class ExcelFileViewSet(viewsets.ModelViewSet):
+    queryset = ExcelFile.objects.all()
+    serializer_class = ExcelFileSerializer
+    parser_classes = (MultiPartParser, FormParser)
+
+    def perform_create(self, serializer):
+        user = self.request.user if self.request.user and self.request.user.is_authenticated else None
+        serializer.save(added_by=user)
+
+class FileUploadViewSet(viewsets.ModelViewSet):
+    queryset = Files_upload.objects.all()
+    serializer_class = FilesUploadSerializer
+    parser_classes = (MultiPartParser, FormParser)
+
+    def perform_create(self, serializer):
+        user = self.request.user if self.request.user and self.request.user.is_authenticated else None
+        serializer.save(added_by=user)
+
+
+class SitemapFetchAPIView(APIView):
+    def post(self, request):
+        url = request.data.get('url')
+        if not url:
+            return Response({'error': 'No URL provided.'}, status=status.HTTP_400_BAD_REQUEST)
+        fetch, created = SitemapFetch.objects.get_or_create(url=url)
+        try:
+            urls = self.get_sitemap_links(url)
+            fetch.urls = urls
+            fetch.status = 'success'
+            fetch.error = ''
+            fetch.save()
+            serializer = SitemapFetchSerializer(fetch)
+            return Response(serializer.data)
+        except Exception as e:
+            fetch.status = 'error'
+            fetch.error = str(e)
+            fetch.save()
+            return Response({'error': str(e)}, status=500)
+
+    def get(self, request):
+        url = request.query_params.get('url')
+        if url:
+            try:
+                fetch = SitemapFetch.objects.get(url=url)
+                serializer = SitemapFetchSerializer(fetch)
+                return Response(serializer.data)
+            except SitemapFetch.DoesNotExist:
+                return Response({'error': 'Not found.'}, status=404)
+        else:
+            fetches = SitemapFetch.objects.all().order_by('-fetched_at')
+            serializer = SitemapFetchSerializer(fetches, many=True)
+            return Response(serializer.data)
+
+    def delete(self, request):
+        url = request.data.get('url') or request.query_params.get('url')
+        if url:
+            deleted, _ = SitemapFetch.objects.filter(url=url).delete()
+            if deleted:
+                return Response({'message': 'Deleted.'}, status=204)
+            else:
+                return Response({'error': 'Not found.'}, status=404)
+        else:
+            SitemapFetch.objects.all().delete()
+            return Response({'message': 'All records deleted.'}, status=204)
+
+    def get_sitemap_links(self, sitemap_url, domain=None, seen=None, urls=None):
+        if domain is None:
+            domain = urlparse(sitemap_url).netloc.lower()
+        if seen is None:
+            seen = set()
+        if urls is None:
+            urls = set()
+        if sitemap_url in seen:
+            return
+        seen.add(sitemap_url)
+        blacklist = {"https://sitemaps.org/", "https://yoa.st/1y5"}
+        if sitemap_url.endswith('.xml'):
+            response = requests.get(sitemap_url)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.content, 'xml')
+            links = [loc.text for loc in soup.find_all('loc')]
+            for link in links:
+                if link.endswith('.xml'):
+                    self.get_sitemap_links(link, domain, seen, urls)
+                else:
+                    link_netloc = urlparse(link).netloc.lower()
+                    if (
+                        link_netloc == domain and
+                        not link.lower().endswith((
+                            '.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp', '.tiff', '.ico')) and
+                        link not in blacklist
+                    ):
+                        urls.add(link)
+        return list(urls)
 
