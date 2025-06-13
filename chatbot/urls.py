@@ -4,10 +4,6 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 from django.views.generic import TemplateView
-from .views import FeedbackUpsertView
-from .views import ChatbotCategoryListAPIView
-from .views import FileUploadView
-from .views import FileUploadView, TextContentView, ExcelFileView, QADataView
 
 # API endpoints
 urlpatterns = [
@@ -25,7 +21,9 @@ urlpatterns = [
     path('stats/accuracy-over-time/', AccuracyOverTimeView.as_view(), name='accuracy-over-time'),
     path('chatlog/<int:pk>/correct/', CorrectAnswerView.as_view(), name='correct-answer'),
     path('categories/', ChatbotCategoryListAPIView.as_view(), name='chatbot-categories'),
+    path('categories/<int:pk>/', ChatbotCategoryDetailAPIView.as_view(), name='chatbot-category-detail'),
     path('subcategories/', ChatbotSubCategoryListAPIView.as_view(), name='chatbot-subcategories'),
+    path('subcategories/<int:pk>/', ChatbotSubCategoryListAPIView.as_view(), name='chatbot-subcategory-detail'),
     # path('api/categories/', ChatbotCategoryListAPIView.as_view(), name='chatbot-categories'),
     path("upload-and-train/", UploadAndTrainAPIView.as_view(), name="upload_and_train"),
     path('chatlogs/<int:chatlog_id>/update-category/', UpdateChatLogCategoryByNameAPIView.as_view(), name='update_chatlog_category'),
@@ -48,6 +46,13 @@ urlpatterns = [
     path('chatsessions/<int:pk>/add_message/', ChatSessionAddMessageAPIView.as_view(), name='chat-session-add-message'),
      path('userprofiles/', UserProfileListAPI.as_view(), name='userprofile-list'),
     path('chatbot/summarize/', summarize_question, name='summarize-question'),
+    path('profiles/', ProfileListCreateAPI.as_view(), name='profile-list-create'),
+    path('profiles/<int:pk>/', ProfileRetrieveUpdateAPI.as_view(), name='profile-detail-update'),
+    path('userprofiles/me/', CurrentUserProfileAPIView.as_view(), name='current-user-profile'),
+    path('knowledgebase/', KnowledgeBaseListCreateAPIView.as_view(), name='knowledgebase-list-create'),
+    path('knowledgebase/<int:pk>/', KnowledgeBaseRetrieveUpdateDestroyAPIView.as_view(), name='knowledgebase-detail'),
+    path('userprofiles/<int:pk>/update/', UserProfileUpdateAPI.as_view(), name='userprofile-update'),
+
 ]
 
 

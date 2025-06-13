@@ -55,13 +55,13 @@ function ProtectedRoute({ children }) {
 // Sales-only protected route component
 function SalesProtectedRoute({ children }) {
   const token = localStorage.getItem('access_token')
-  const role = localStorage.getItem('user_role')
+  const profile = localStorage.getItem('profile')
   
   if (!token) {
     return <Navigate to="/login" replace />
   }
   
-  if (role !== 'sales') {
+  if (profile == 'User' || profile == 'Non-Sales') {
     return <Navigate to="/chatbot" replace />
   }
   

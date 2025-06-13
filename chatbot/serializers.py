@@ -9,6 +9,8 @@ from .models import (
     ChatLog,
     ChatbotCategory,
     ChatbotSubCategory,
+    Profile,  # <-- import Profile
+    KnowledgeBase,
 )
 from .models import ChatSession
 
@@ -23,11 +25,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 class UserRegisterSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField(write_only=True)
-    # make role write‑only so DRF won’t look for `user.role` on reads
-    role         = serializers.ChoiceField(
-                       choices=UserProfile.ROLE_CHOICES,
-                       write_only=True
-                   )
+    profile = serializers.PrimaryKeyRelatedField(queryset=Profile.objects.all(), required=False, allow_null=True, write_only=True)
+    knowledge_bases = serializers.PrimaryKeyRelatedField(queryset=KnowledgeBase.objects.all(), many=True, required=False, write_only=True)
     tokens       = serializers.SerializerMethodField()
 
     class Meta:
@@ -36,7 +35,9 @@ class UserRegisterSerializer(serializers.ModelSerializer):
             'username', 'password',
             'first_name', 'last_name',
             'email',
-            'phone_number', 'role',
+            'phone_number',
+            'profile',
+            'knowledge_bases',
             'tokens'
         ]
         extra_kwargs = {
@@ -46,11 +47,15 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         phone = validated_data.pop('phone_number')
-        role  = validated_data.pop('role')
+        profile = validated_data.pop('profile', None)
+        knowledge_bases = validated_data.pop('knowledge_bases', [])
         # create_user will hash the password
         user  = User.objects.create_user(**validated_data)
-        # now attach your profile
-        UserProfile.objects.create(user=user, phone_number=phone, role=role)
+        if not profile:
+            profile = Profile.objects.first()
+        user_profile = UserProfile.objects.create(user=user, phone_number=phone, profile=profile)
+        if knowledge_bases:
+            user_profile.knowledge_bases.set(knowledge_bases)
         return user
 
     def get_tokens(self, user):
@@ -104,9 +109,11 @@ class FeedbackSerializer(serializers.ModelSerializer):
 # ---------------------------
 
 class ChatbotSubCategorySerializer(serializers.ModelSerializer):
+    category = serializers.PrimaryKeyRelatedField(queryset=ChatbotCategory.objects.all())
+
     class Meta:
         model = ChatbotSubCategory
-        fields = ['id', 'name']
+        fields = ['id', 'name', 'category']
 
 class ChatbotCategorySerializer(serializers.ModelSerializer):
     subcategories = ChatbotSubCategorySerializer(many=True, read_only=True)
@@ -174,7 +181,10 @@ import os
 from chatbot.models import Files_upload
 class FilesUploadSerializer(serializers.ModelSerializer):
     file = serializers.FileField(use_url=True)
+    description = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     added_by = serializers.SlugRelatedField(slug_field='username', queryset=User.objects.all(), required=False, allow_null=True)
+    updated_by = serializers.SlugRelatedField(slug_field='username', queryset=User.objects.all(), required=False, allow_null=True)
+    knowledge_bases = serializers.SlugRelatedField(many=True, slug_field='name', queryset=KnowledgeBase.objects.all())
 
     class Meta:
         model = Files_upload
@@ -190,6 +200,9 @@ class FilesUploadSerializer(serializers.ModelSerializer):
 from chatbot.models import TextContent
 class TextContentSerializer(serializers.ModelSerializer):
     added_by = serializers.SlugRelatedField(slug_field='username', queryset=User.objects.all(), required=False, allow_null=True)
+    updated_by = serializers.SlugRelatedField(slug_field='username', queryset=User.objects.all(), required=False, allow_null=True)
+    description = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    knowledge_bases = serializers.SlugRelatedField(many=True, slug_field='name', queryset=KnowledgeBase.objects.all())
     class Meta:
         model = TextContent
         fields = '__all__'
@@ -197,6 +210,9 @@ class TextContentSerializer(serializers.ModelSerializer):
 from chatbot.models import ExcelFile
 class ExcelFileSerializer(serializers.ModelSerializer):
     added_by = serializers.SlugRelatedField(slug_field='username', queryset=User.objects.all(), required=False, allow_null=True)
+    updated_by = serializers.SlugRelatedField(slug_field='username', queryset=User.objects.all(), required=False, allow_null=True)
+    description = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    knowledge_bases = serializers.SlugRelatedField(many=True, slug_field='name', queryset=KnowledgeBase.objects.all())
     def validate_file(self, value):
         ext = os.path.splitext(value.name)[1].lower()
         if ext not in ['.csv', '.xls', '.xlsx']:
@@ -210,6 +226,11 @@ class ExcelFileSerializer(serializers.ModelSerializer):
 from chatbot.models import QAData
 class QADataSerializer(serializers.ModelSerializer):
     added_by = serializers.SlugRelatedField(slug_field='username', queryset=User.objects.all(), required=False, allow_null=True)
+    updated_by = serializers.SlugRelatedField(slug_field='username', queryset=User.objects.all(), required=False, allow_null=True)
+    description = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    knowledge_bases = serializers.SlugRelatedField(many=True, slug_field='name', queryset=KnowledgeBase.objects.all())
+    category = serializers.SlugRelatedField(many=True, slug_field='name', read_only=True)
+    subcategory = serializers.SlugRelatedField(many=True, slug_field='name', read_only=True)
     class Meta:
         model = QAData
         fields = '__all__'
@@ -217,6 +238,9 @@ class QADataSerializer(serializers.ModelSerializer):
 from chatbot.models import URLModel
 class URLModelSerializer(serializers.ModelSerializer):
     added_by = serializers.SlugRelatedField(slug_field='username', queryset=User.objects.all(), required=False, allow_null=True)
+    updated_by = serializers.SlugRelatedField(slug_field='username', queryset=User.objects.all(), required=False, allow_null=True)
+    knowledge_bases = serializers.SlugRelatedField(many=True, slug_field='name', queryset=KnowledgeBase.objects.all())
+    description = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     class Meta:
         model = URLModel
         fields = '__all__'
@@ -244,8 +268,25 @@ class UserProfileSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source='user.email')
     created_at = serializers.DateTimeField(source='user.date_joined')  # User creation date
     phone_number = serializers.CharField()
-    role = serializers.CharField()
+    profile = serializers.PrimaryKeyRelatedField(queryset=Profile.objects.all(), allow_null=True)
+    profile_name = serializers.CharField(source='profile.name', read_only=True)
+    knowledge_bases = serializers.SerializerMethodField()
+    user_id = serializers.IntegerField(source='user.id', read_only=True)
+    userprofile_id = serializers.IntegerField(source='id', read_only=True)
 
     class Meta:
         model = UserProfile
-        fields = ['first_name', 'last_name', 'phone_number', 'email', 'created_at', 'role']
+        fields = ['userprofile_id', 'user_id', 'first_name', 'last_name', 'phone_number', 'email', 'created_at', 'profile', 'profile_name', 'knowledge_bases']
+
+    def get_knowledge_bases(self, obj):
+        return [{'id': kb.id, 'name': kb.name} for kb in obj.knowledge_bases.all()]
+
+class ProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Profile
+        fields = '__all__'
+
+class KnowledgeBaseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = KnowledgeBase
+        fields = '__all__'
