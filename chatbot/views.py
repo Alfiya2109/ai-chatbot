@@ -1234,4 +1234,26 @@ class SitemapFetchAPIView(APIView):
                     ):
                         urls.add(link)
         return list(urls)
+    
+class TokenByUsernameView(APIView):
+    permission_classes = [AllowAny]
+ 
+    def post(self, request):
+        # Try to get username from request body first, then from query params
+        username = request.data.get('username') or request.query_params.get('username')
+ 
+        if not username:
+            return Response({'error': 'Username is required'}, status=400)
+ 
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            return Response({'error': 'Invalid username'}, status=404)
+ 
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+        })
+ 
 
