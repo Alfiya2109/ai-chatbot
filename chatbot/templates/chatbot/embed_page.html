@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chatbot Widget</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { margin: 0; font-family: sans-serif; background: #f9f9f9; }
+        #chatbot-embed {
+            width: 100%;
+            min-height: 500px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+            padding: 0;
+        }
+    </style>
+    <link rel="stylesheet" href="/static/chatbot/style.css">
+    <link rel="stylesheet" href="/static/react/assets/index-cQwBNqqm.css">
+</head>
+<body>
+    <div id="chatbot-embed">
+        <div id="root">
+        </div>
+    </div>
+    <script type="module" src="/static/react/assets/index-CtLlfmWQ.js"></script>
+    <script>
+      window.EMBEDDED_BOT_ID = "{{ bot_id }}";
+    </script>
+</body>
+</html>

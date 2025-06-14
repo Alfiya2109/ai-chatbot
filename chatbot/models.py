@@ -183,7 +183,10 @@ class KnowledgeBase(models.Model):
 from django.utils import timezone
 class FileData(models.Model):
     title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    knowledge_bases = models.ManyToManyField('KnowledgeBase', blank=True, related_name='folder_files')
     created_at = models.DateTimeField(default=timezone.now)
+    added_by = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='folders_uploaded')
 
     def __str__(self):
         return self.title
