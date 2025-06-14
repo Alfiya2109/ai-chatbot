@@ -1080,57 +1080,71 @@ class FileDataViewSet(viewsets.ModelViewSet):
     parser_classes = (MultiPartParser, FormParser)
 
     def create(self, request, *args, **kwargs):
-        import requests
+        import tempfile
         from django.conf import settings
-        folder_path = request.data.get('folder_path')
-        if not folder_path or not os.path.exists(folder_path):
-            return Response({"error": "Valid folder path is required."}, status=status.HTTP_400_BAD_REQUEST)
+        import os
+        import requests
+        folder_name = request.data.get('folder_name') or 'uploaded_folder'
+        description = request.data.get('description', '')
+        knowledge_bases = request.data.getlist('knowledge_bases') if 'knowledge_bases' in request.data else []
+        files = request.FILES.getlist('files')
+        relative_paths = request.data.getlist('relative_paths') if 'relative_paths' in request.data else None
+        if not files or (relative_paths and len(files) != len(relative_paths)):
+            return Response({'error': 'No files or mismatched relative paths.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Create FileData instance
+        # Create a temp directory to reconstruct the folder
+        base_upload_dir = os.path.join(settings.MEDIA_ROOT, 'uploads', folder_name)
+        os.makedirs(base_upload_dir, exist_ok=True)
+
+        # Create FileData instance with description
         file_data = FileData.objects.create(
-            title=os.path.basename(folder_path)
-        )
+                title=folder_name,
+                description=description,
+                added_by=request.user if request.user.is_authenticated else None
+            )        
+        if knowledge_bases:
+            file_data.knowledge_bases.set(knowledge_bases)
 
         # Prepare for internal API call
-        # Get the current host (assumes running on localhost)
-        api_url = request.build_absolute_uri('/upload-and-train/')
+        api_url = request.build_absolute_uri('/api/upload-and-train/')
         headers = {}
         if request.auth:
             headers['Authorization'] = f'Bearer {request.auth}'
 
-        # Process files in the folder
-        for root, dirs, files in os.walk(folder_path):
-            for file in files:
-                file_path = os.path.join(root, file)
-                ext = os.path.splitext(file)[1].lower()
-                if ext in DOC_EXTENSIONS:
-                    with open(file_path, 'rb') as f:
-                        DocumentFileData.objects.create(
-                            file_data=file_data,
-                            file=File(f, name=file)
-                        )
-                        # Call upload-and-train API
-                        f.seek(0)
-                        files_data = {'file': (file, f, 'application/octet-stream')}
-                        data = {'type': 'file'}
-                        try:
-                            requests.post(api_url, files=files_data, data=data, headers=headers, timeout=60)
-                        except Exception as e:
-                            pass  # Optionally log error
-                elif ext in EXCEL_EXTENSIONS:
-                    with open(file_path, 'rb') as f:
-                        ExcelFileData.objects.create(
-                            file_data=file_data,
-                            file=File(f, name=file)
-                        )
-                        # Call upload-and-train API
-                        f.seek(0)
-                        files_data = {'file': (file, f, 'application/octet-stream')}
-                        data = {'type': 'file'}
-                        try:
-                            requests.post(api_url, files=files_data, data=data, headers=headers, timeout=60)
-                        except Exception as e:
-                            pass  # Optionally log error
+        for idx, file in enumerate(files):
+            rel_path = relative_paths[idx] if relative_paths else file.name
+            save_path = os.path.join(base_upload_dir, rel_path)
+            os.makedirs(os.path.dirname(save_path), exist_ok=True)
+            with open(save_path, 'wb+') as destination:
+                for chunk in file.chunks():
+                    destination.write(chunk)
+            ext = os.path.splitext(file.name)[1].lower()
+            if ext in DOC_EXTENSIONS:
+                DocumentFileData.objects.create(
+                    file_data=file_data,
+                    file=os.path.relpath(save_path, settings.MEDIA_ROOT)
+                )
+                # Call upload-and-train API
+                with open(save_path, 'rb') as f:
+                    files_data = {'file': (file.name, f, 'application/octet-stream')}
+                    data = {'type': 'file'}
+                    try:
+                        requests.post(api_url, files=files_data, data=data, headers=headers, timeout=60)
+                    except Exception as e:
+                        pass  # Optionally log error
+            elif ext in EXCEL_EXTENSIONS:
+                ExcelFileData.objects.create(
+                    file_data=file_data,
+                    file=os.path.relpath(save_path, settings.MEDIA_ROOT)
+                )
+                # Call upload-and-train API
+                with open(save_path, 'rb') as f:
+                    files_data = {'file': (file.name, f, 'application/octet-stream')}
+                    data = {'type': 'file'}
+                    try:
+                        requests.post(api_url, files=files_data, data=data, headers=headers, timeout=60)
+                    except Exception as e:
+                        pass  # Optionally log error
 
         serializer = self.get_serializer(file_data)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -1139,6 +1153,26 @@ class FileDataViewSet(viewsets.ModelViewSet):
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data) 
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        # Remove all associated document and excel files from vector DB
+        from .utils.vector_store import remove_from_vector_db
+        errors = []
+        for doc in instance.document_files.all():
+            try:
+                remove_from_vector_db(doc.id)
+            except Exception as e:
+                errors.append(f"DocumentFileData {doc.id}: {str(e)}")
+        for excel in instance.excel_files.all():
+            try:
+                remove_from_vector_db(excel.id)
+            except Exception as e:
+                errors.append(f"ExcelFileData {excel.id}: {str(e)}")
+        response = super().destroy(request, *args, **kwargs)
+        if errors:
+            return Response({"message": "Folder deleted, but some vector DB removals failed.", "errors": errors}, status=status.HTTP_200_OK)
+        return response
 
 class ExcelFileViewSet(viewsets.ModelViewSet):
     queryset = ExcelFile.objects.all()
@@ -1255,5 +1289,5 @@ class TokenByUsernameView(APIView):
             'refresh': str(refresh),
             'access': str(refresh.access_token),
         })
- 
+
 

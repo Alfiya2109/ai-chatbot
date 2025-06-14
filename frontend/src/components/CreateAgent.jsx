@@ -14,6 +14,7 @@ import KnowledgeBaseTab from './KnowledgeBaseTab';
 import CategoriesTab from './CategoriesTab';
 import SubcategoriesTable from './SubcategoriesTable';
 import UserDetailsTab from './UserDetailsTab';
+import FolderListTab from './FolderListTab'; // Import FolderListTab
 
 // Define tab structure as per the provided image
 const tabSections = [
@@ -23,7 +24,7 @@ const tabSections = [
   },
   {
     label: 'source data',
-    tabs: ['files', 'text', 'Excel/CSV', 'URL', 'Q&A']
+    tabs: ['Folder','files', 'text', 'Excel/CSV', 'URL', 'Q&A']
   },
   {
     label: 'chat',
@@ -133,6 +134,7 @@ function CreateAgent() {
     'Excel/CSV',
     'Q&A',
     'URL',
+    'Folders', // Add Folders tab
     'Chatbot', // RESTORED
     'History', // RESTORED
     'User Details',
@@ -1980,6 +1982,8 @@ function CreateAgent() {
         );
       case 'Chatbot History':
         return null;
+      case 'Folder':
+        return <FolderListTab />;
       default:
         return null;
     }

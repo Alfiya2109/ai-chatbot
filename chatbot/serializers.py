@@ -307,10 +307,14 @@ class ExcelFileDataSerializer(serializers.ModelSerializer):
 class FileDataSerializer(serializers.ModelSerializer):
     document_files = DocumentFileDataSerializer(many=True, read_only=True)
     excel_files = ExcelFileDataSerializer(many=True, read_only=True)
+    knowledge_bases = serializers.PrimaryKeyRelatedField(queryset=KnowledgeBase.objects.all(), many=True, required=False)
+    knowledge_bases_info = KnowledgeBaseSerializer(source='knowledge_bases', many=True, read_only=True)
+    description = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    added_by = serializers.SlugRelatedField(slug_field='username', read_only=True)
 
     class Meta:
         model = FileData
-        fields = ['id', 'title', 'created_at', 'document_files', 'excel_files']
+        fields = ['id', 'title', 'description', 'knowledge_bases', 'knowledge_bases_info', 'created_at', 'added_by', 'document_files', 'excel_files']
 
 class SitemapFetchSerializer(serializers.ModelSerializer):
     class Meta:
