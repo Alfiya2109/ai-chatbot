@@ -15,6 +15,7 @@ import CategoriesTab from './CategoriesTab';
 import SubcategoriesTable from './SubcategoriesTable';
 import UserDetailsTab from './UserDetailsTab';
 import FolderListTab from './FolderListTab'; // Import FolderListTab
+import GoogleDrive from './GoogleDrive';
 
 // Define tab structure as per the provided image
 const tabSections = [
@@ -33,6 +34,10 @@ const tabSections = [
   {
     label: 'Master',
     tabs: ['Categories', 'Subcategories']
+  },
+  {
+    label: 'Connections',
+    tabs: ['Google Drive']
   }
 ];
 
@@ -1984,6 +1989,8 @@ function CreateAgent() {
         return null;
       case 'Folder':
         return <FolderListTab />;
+      case 'Google Drive':
+        return <GoogleDrive />;
       default:
         return null;
     }

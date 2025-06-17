@@ -207,6 +207,39 @@ class ExcelFileData(models.Model):
     def __str__(self):
         return os.path.basename(self.file.name)
 
+class GoogleDriveFileData(models.Model):
+    file_id = models.CharField(max_length=255)
+    file_name = models.CharField(max_length=255)
+    mime_type = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    knowledge_bases = models.ManyToManyField('KnowledgeBase', blank=True)
+    added_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    relative_path = models.CharField(max_length=1024, blank=True, null=True)  # <-- Add this line
+
+    def __str__(self):
+        return self.file_name
+
+class GoogleDriveDocumentFileData(models.Model):
+    file_id = models.CharField(max_length=255)  # Google Drive file ID
+    file_name = models.CharField(max_length=255)
+    mime_type = models.CharField(max_length=100, blank=True, null=True)
+    file_data = models.ForeignKey(GoogleDriveFileData, on_delete=models.CASCADE, related_name='google_drive_document_files')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.file_name
+
+class GoogleDriveExcelFileData(models.Model):
+    file_id = models.CharField(max_length=255)  # Google Drive file ID
+    file_name = models.CharField(max_length=255)
+    mime_type = models.CharField(max_length=100, blank=True, null=True)
+    file_data = models.ForeignKey(GoogleDriveFileData, on_delete=models.CASCADE, related_name='google_drive_excel_files')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.file_name
+
 class SitemapFetch(models.Model):
     url = models.URLField(unique=True)
     fetched_at = models.DateTimeField(auto_now_add=True)

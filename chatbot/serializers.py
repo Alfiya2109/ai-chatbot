@@ -12,7 +12,7 @@ from .models import (
     Profile,  # <-- import Profile
     KnowledgeBase,
 )
-from .models import ChatSession, SitemapFetch
+from .models import ChatSession, SitemapFetch, GoogleDriveFileData,GoogleDriveDocumentFileData,GoogleDriveExcelFileData
 
 # ---------------------------
 # Auth Serializers
@@ -320,3 +320,27 @@ class SitemapFetchSerializer(serializers.ModelSerializer):
     class Meta:
         model = SitemapFetch
         fields = ['id', 'url', 'fetched_at', 'urls', 'status', 'error']
+
+class GoogleDriveFileDataSerializer(serializers.ModelSerializer):
+    knowledge_bases = serializers.SerializerMethodField()
+
+    class Meta:
+        model = GoogleDriveFileData
+        fields = [
+            'id', 'file_id', 'file_name', 'mime_type', 'description',
+            'knowledge_bases', 'added_by', 'uploaded_at', 'relative_path'  # <-- Add here
+        ]
+
+    def get_knowledge_bases(self, obj):
+        return [kb.name for kb in obj.knowledge_bases.all()]
+
+class GoogleDriveDocumentFileDataSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GoogleDriveDocumentFileData
+        fields = ['id', 'file_id', 'file_name', 'mime_type', 'file_data', 'uploaded_at']
+
+class GoogleDriveExcelFileDataSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GoogleDriveExcelFileData
+        fields = ['id', 'file_id', 'file_name', 'mime_type', 'file_data', 'uploaded_at']
+

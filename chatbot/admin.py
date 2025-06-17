@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.forms import ModelForm
 from django.forms.widgets import CheckboxSelectMultiple
+from django.utils.html import format_html
 from .models import *
 
 # Define a custom form to use checkboxes
@@ -57,3 +58,38 @@ class SitemapFetchAdmin(admin.ModelAdmin):
     list_display = ('url', 'fetched_at', 'status')
     search_fields = ('url',)
     readonly_fields = ('fetched_at', 'urls', 'status', 'error')
+
+@admin.register(GoogleDriveFileData)
+class GoogleDriveFileDataAdmin(admin.ModelAdmin):
+    list_display = ('file_id', 'file_name', 'mime_type', 'uploaded_at', 'view_link')
+    search_fields = ('file_id', 'file_name')
+
+    def view_link(self, obj):
+        url = f"https://drive.google.com/file/d/{obj.file_id}/view"
+        return format_html('<a href="{}" target="_blank">View</a>', url)
+    view_link.short_description = "View on Google Drive"
+
+@admin.register(GoogleDriveDocumentFileData)
+class GoogleDriveDocumentFileDataAdmin(admin.ModelAdmin):
+    list_display = ('file_name', 'file_id', 'file_data', 'uploaded_at', 'view_on_drive')
+    search_fields = ('file_name', 'file_id')
+    list_filter = ('uploaded_at', 'file_data')
+    readonly_fields = ('view_on_drive',)
+
+    def view_on_drive(self, obj):
+        url = f"https://drive.google.com/file/d/{obj.file_id}/view"
+        return format_html('<a href="{}" target="_blank">View on Google Drive</a>', url)
+    view_on_drive.short_description = "View on Google Drive"
+
+@admin.register(GoogleDriveExcelFileData)
+class GoogleDriveExcelFileDataAdmin(admin.ModelAdmin):
+    list_display = ('file_name', 'file_id', 'file_data', 'uploaded_at', 'view_on_drive')
+    search_fields = ('file_name', 'file_id')
+    list_filter = ('uploaded_at', 'file_data')
+    readonly_fields = ('view_on_drive',)
+
+    def view_on_drive(self, obj):
+        url = f"https://drive.google.com/file/d/{obj.file_id}/view"
+        return format_html('<a href="{}" target="_blank">View on Google Drive</a>', url)
+    view_on_drive.short_description = "View on Google Drive"
+
