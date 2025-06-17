@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaPlus, FaTrash } from 'react-icons/fa';
+import {BASE_URL} from '../base_url';
 
 const GOOGLE_CLIENT_ID = '601820931949-4u7o7k6gvd5its0cmegmgd2pgk8dc0oe.apps.googleusercontent.com';
 const GOOGLE_API_KEY = 'AIzaSyDHWkEDkqzwrm-VS23Vo_8m8AMDRwOyTTk';
@@ -70,7 +71,6 @@ const GoogleDrive = () => {
     if (showModal) fetchKnowledgeBases();
   }, [showModal]);
 
-  const BASE_URL = "http://localhost:8000";
   const fetchDriveFiles = async () => {
     setLoading(true);
     try {
