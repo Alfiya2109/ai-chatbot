@@ -322,13 +322,17 @@ class SitemapFetchSerializer(serializers.ModelSerializer):
         fields = ['id', 'url', 'fetched_at', 'urls', 'status', 'error']
 
 class GoogleDriveFileDataSerializer(serializers.ModelSerializer):
-    knowledge_bases = KnowledgeBaseSerializer(many=True, read_only=True)
-    added_by = serializers.SlugRelatedField(slug_field='username', read_only=True)
-    description = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    knowledge_bases = serializers.SerializerMethodField()
 
     class Meta:
         model = GoogleDriveFileData
-        fields = ['id', 'file_id', 'file_name', 'mime_type', 'description', 'knowledge_bases', 'added_by', 'uploaded_at']
+        fields = [
+            'id', 'file_id', 'file_name', 'mime_type', 'description',
+            'knowledge_bases', 'added_by', 'uploaded_at', 'relative_path'  # <-- Add here
+        ]
+
+    def get_knowledge_bases(self, obj):
+        return [kb.name for kb in obj.knowledge_bases.all()]
 
 class GoogleDriveDocumentFileDataSerializer(serializers.ModelSerializer):
     class Meta:

@@ -208,13 +208,14 @@ class ExcelFileData(models.Model):
         return os.path.basename(self.file.name)
 
 class GoogleDriveFileData(models.Model):
-    file_id = models.CharField(max_length=255)  # Google Drive file ID
+    file_id = models.CharField(max_length=255)
     file_name = models.CharField(max_length=255)
-    mime_type = models.CharField(max_length=100, blank=True, null=True)
-    description = models.TextField(blank=True, null=True)  # New field
-    added_by = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='google_drive_files')  # New field
-    knowledge_bases = models.ManyToManyField('KnowledgeBase', blank=True, related_name='google_drive_files')  # New field
+    mime_type = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    knowledge_bases = models.ManyToManyField('KnowledgeBase', blank=True)
+    added_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)
+    relative_path = models.CharField(max_length=1024, blank=True, null=True)  # <-- Add this line
 
     def __str__(self):
         return self.file_name

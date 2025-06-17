@@ -1380,7 +1380,8 @@ class GoogleDriveUploadAPIView(APIView):
                 file_name=file_name,
                 mime_type=mime_type,
                 description=description,
-                added_by=user
+                added_by=user,
+                relative_path=file.get('relative_path', '')  # <-- Add this
             )
             # print(f"Created GoogleDriveFileData: {parent.id}")
 

@@ -210,7 +210,7 @@ const GoogleDrive = () => {
       file_id: file.id,
       file_name: file.name,
       mime_type: file.mimeType,
-      relative_path: file.relativePath,
+      relative_path: file.relativePath || file.name, // <-- Ensure this is set!
       folder_name: folderName,
       description,
       knowledge_bases: selectedKBs,
@@ -281,6 +281,7 @@ const GoogleDrive = () => {
           <thead>
             <tr className="bg-gray-100">
               <th className="px-3 py-2 text-left">Folder Name</th>
+              <th className="px-3 py-2 text-left">Path</th> {/* New column */}
               <th className="px-3 py-2 text-left">Description</th>
               <th className="px-3 py-2 text-left">Knowledge Bases</th>
               <th className="px-3 py-2 text-left">Added By</th>
@@ -290,15 +291,20 @@ const GoogleDrive = () => {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={6} className="text-center py-4">Loading...</td></tr>
+              <tr><td colSpan={7} className="text-center py-4">Loading...</td></tr>
             ) : driveFiles.length === 0 ? (
-              <tr><td colSpan={6} className="text-center py-4">No Google Drive files uploaded yet.</td></tr>
+              <tr><td colSpan={7} className="text-center py-4">No Google Drive files uploaded yet.</td></tr>
             ) : (
               driveFiles.map((item, idx) => (
                 <tr key={item.id || idx} className="border-b">
                   <td className="px-3 py-2">{item.folder_name || item.file_name}</td>
+                  <td className="px-3 py-2">{item.relative_path || '-'}</td> {/* New column */}
                   <td className="px-3 py-2">{item.description || '-'}</td>
-                  <td className="px-3 py-2">{item.knowledge_bases && item.knowledge_bases.length > 0 ? item.knowledge_bases.map(kb => kb.name || kb).join(', ') : '-'}</td>
+                  <td className="px-3 py-2">
+                    {item.knowledge_bases && item.knowledge_bases.length > 0
+                      ? item.knowledge_bases.join(', ')
+                      : '-'}
+                  </td>
                   <td className="px-3 py-2">{item.added_by || '-'}</td>
                   <td className="px-3 py-2">{item.uploaded_at ? new Date(item.uploaded_at).toLocaleDateString() : '-'}</td>
                   <td className="px-3 py-2 flex gap-2">
