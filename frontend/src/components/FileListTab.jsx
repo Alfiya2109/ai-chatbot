@@ -1,6 +1,6 @@
 import React from 'react';
 
-const FileListTab = ({ uploadedFiles, renderTable, fileModalOpen, setFileModalOpen, fileForm, setFileForm, knowledgeBases, fileFormError, handleFileModalSubmit }) => (
+const FileListTab = ({ uploadedFiles, renderTable, fileModalOpen, setFileModalOpen, fileForm, setFileForm, knowledgeBases, fileFormError, handleFileModalSubmit, fetchKnowledgeBases }) => (
   <div className="mt-6 w-full">
     <div className="flex items-center justify-between mb-4">
       <h3 className="text-2xl font-bold text-gray-800">Uploaded Files</h3>
@@ -8,7 +8,7 @@ const FileListTab = ({ uploadedFiles, renderTable, fileModalOpen, setFileModalOp
         className="bg-gray-500 hover:bg-gray-700 text-white rounded-full w-10 h-10 flex items-center justify-center text-2xl shadow"
         title="Add File"
         aria-label="Add File"
-        onClick={() => setFileModalOpen(true)}
+        onClick={() => { fetchKnowledgeBases && fetchKnowledgeBases(); setFileModalOpen(true); }}
       >
         <span>+</span>
       </button>

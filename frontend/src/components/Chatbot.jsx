@@ -10,6 +10,7 @@ import { FaSearch, FaPlus, FaBook, FaUserCircle } from "react-icons/fa";
 import { FiEdit } from "react-icons/fi";
 import { BsLayoutSidebar } from "react-icons/bs";
 import { IoSearchOutline } from "react-icons/io5";
+import axios from 'axios';
 
   const API_BASE_URL = BASE_URL;
 
@@ -94,6 +95,7 @@ export default function Chatbot() {
   const [chatSessions, setChatSessions] = useState([]);
   const [activeSession, setActiveSession] = useState(null);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
 
     // Scroll to bottom when messages change
     useEffect(() => {
@@ -121,6 +123,22 @@ export default function Chatbot() {
     useEffect(() => {
       if (sidebarOpen) fetchChatSessions();
     }, [sidebarOpen, currentUser]);
+
+    useEffect(() => {
+      // Fetch current user profile on mount
+      const fetchUserProfile = async () => {
+        try {
+          const token = currentUser?.token || localStorage.getItem('access_token');
+          const response = await axios.get(`${API_BASE_URL}/api/userprofiles/me/`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setUserProfile(response.data.userprofile);
+        } catch (error) {
+          setUserProfile(null);
+        }
+      };
+      fetchUserProfile();
+    }, [currentUser]);
 
     const handleSubmit = async (e) => {
       e.preventDefault();
@@ -406,7 +424,15 @@ function formatBotAnswer(text) {
             <div className="flex items-center gap-2">
               <span className="text-lg font-semibold text-gray-800">AI Chatbot</span>
             </div>
-            <FaUserCircle className="text-2xl text-gray-500" />
+            <div className="flex items-center gap-2">
+              <FaUserCircle className="text-2xl text-gray-500" />
+              {userProfile && (
+                <div className="flex flex-col items-start leading-tight">
+                  <span className="font-semibold text-gray-900 text-base">{userProfile.first_name} {userProfile.last_name}</span>
+                  <span className="text-sm text-gray-500">Profile: {userProfile.profile_name || userProfile.profile}</span>
+                </div>
+              )}
+            </div>
           </div>
           <div className={`${sidebarOpen ? 'max-w-2xl' : 'max-w-3xl'} w-full  mx-auto flex flex-col items-center justify-center h-full relative`}>
             <h1 className={`text-3xl font-semibold  text-gray-800 text-center  ${messages.length > 1 ? 'fixed bottom-0 hidden left-1/2 -translate-x-1/2 max-w-xl z-10' : 'mx-auto mt-6'}`} >

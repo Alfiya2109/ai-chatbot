@@ -331,9 +331,23 @@ class EmbedWebsiteAPIView(APIView):
         if not url:
             return Response({"error": "URL is required."}, status=400)
         
-        pages = scrape_entire_website(url)
-        store_in_vector_db(pages)
-        return Response({"message": "Website embedded successfully."})
+        # Get the selected knowledge base
+        knowledge_base = None
+        kb_value = request.data.get("knowledge_base") or request.data.get("knowledge_bases")
+        if isinstance(kb_value, list):
+            knowledge_base = kb_value[0] if kb_value else None
+        else:
+            knowledge_base = kb_value
+            
+        if not knowledge_base:
+            return Response({"error": "Knowledge base is required for training."}, status=400)
+        
+        try:
+            pages = scrape_entire_website(url)
+            store_in_vector_db(pages, knowledge_base=knowledge_base)
+            return Response({"message": "Website embedded successfully."})
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)
 
 class AskWebsiteAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -344,8 +358,17 @@ class AskWebsiteAPIView(APIView):
         if not question:
             return Response({"error": "Question is required."}, status=400)
 
-        # Get both answer and tokens from vector_store
-        answer, tokens = query_vector_db(question)
+        # Get the current user's assigned knowledge bases
+        try:
+            user_profile = UserProfile.objects.get(user=request.user)
+            user_kbs = list(user_profile.knowledge_bases.values_list('name', flat=True))
+        except UserProfile.DoesNotExist:
+            return Response({"error": "User profile not found."}, status=400)
+        if not user_kbs:
+            return Response({"error": "No knowledge base assigned to user."}, status=400)
+
+        # Get both answer and tokens from vector_store, filtered by knowledge base
+        answer, tokens = query_vector_db(question, knowledge_bases=user_kbs)
 
         # Store the chat in ChatLog, including session if provided
         chatlog_kwargs = {
@@ -420,22 +443,27 @@ class UploadAndTrainAPIView(APIView):
     def post(self, request):
         input_type = request.data.get("type")  # "file", "text", "qna"
         pages = []
-
+        # Get the selected knowledge base (assume single selection for simplicity)
+        knowledge_base = None
+        kb_value = request.data.get("knowledge_base") or request.data.get("knowledge_bases")
+        if isinstance(kb_value, list):
+            knowledge_base = kb_value[0] if kb_value else None
+        else:
+            knowledge_base = kb_value
+        if not knowledge_base:
+            return Response({"error": "Knowledge base is required for training."}, status=400)
         try:
             if input_type == "file":
                 uploaded_file = request.FILES.get("file")
                 if not uploaded_file:
                     return Response({"error": "No file provided."}, status=400)
-
                 content = read_uploaded_file(uploaded_file)
                 pages = [(uploaded_file.name, content)]
-
             elif input_type == "text":
                 raw_text = request.data.get("text", "")
                 if not raw_text:
                     return Response({"error": "Text not provided."}, status=400)
                 pages = [("manual_input", raw_text)]
-
             elif input_type == "qna":
                 question = request.data.get("question")
                 answer = request.data.get("answer")
@@ -443,18 +471,13 @@ class UploadAndTrainAPIView(APIView):
                 subcategory = request.data.get("subcategory", "")
                 if not question or not answer:
                     return Response({"error": "Q&A not provided."}, status=400)
-
                 content = f"Category: {category}\nSubcategory: {subcategory}\nQ: {question}\nA: {answer}"
                 pages = [("qna_input", content)]
-
             else:
                 return Response({"error": "Invalid type."}, status=400)
-
-            # Store in vector DB
-            store_in_vector_db(pages)
-
+            # Store in vector DB with knowledge base metadata
+            store_in_vector_db(pages, knowledge_base=knowledge_base)
             return Response({"message": "Trained successfully ✅"})
-
         except Exception as e:
             return Response({"error": str(e)}, status=500)
         
@@ -1289,6 +1312,7 @@ class TokenByUsernameView(APIView):
             'refresh': str(refresh),
             'access': str(refresh.access_token),
         })
+
 
 from .models import GoogleDriveFileData, GoogleDriveDocumentFileData, GoogleDriveExcelFileData
 from .serializers import GoogleDriveFileDataSerializer, GoogleDriveDocumentFileDataSerializer, GoogleDriveExcelFileDataSerializer

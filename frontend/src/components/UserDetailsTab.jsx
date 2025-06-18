@@ -73,16 +73,16 @@ const UserDetailsTab = ({ users, userSearch, setUserSearch, onAddUser, modalOpen
   };
 
   return (
-    <div className="mt-6 w-full max-w-5xl overflow-x-auto bg-white rounded-lg shadow p-6">
+    <div className="bg-white rounded-xl shadow-lg p-6 mt-4 w-full mx-auto">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold">User Details</h3>
         <button
-          className="bg-gray-500 hover:bg-gray-300 font-bold text-white rounded-full w-8 h-8 flex text-center items-center justify-center"
+          className="bg-gray-500 hover:bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center text-xl"
           title="Add Sales User"
           aria-label="Add Sales User"
           onClick={() => setModalOpen(true)}
         >
-          <span className="text-xl">+</span>
+          +
         </button>
       </div>
       <div className="flex flex-wrap gap-2 mb-4">

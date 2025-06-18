@@ -1,14 +1,16 @@
 import React from 'react';
 
 const ProfileTab = ({ profiles, handleEditProfile, handleCreateProfile, profileModalOpen, setProfileModalOpen, editingProfile, profileForm, setProfileForm, handleProfileFormSubmit }) => (
-  <div className="mt-6 w-full max-w-2xl mx-auto">
-    <div className="flex justify-between items-center mb-4">
+  <div className="bg-white rounded-xl shadow-lg p-6 mt-4 w-full mx-auto">
+    <div className="flex items-center justify-between mb-4">
       <h3 className="text-lg font-semibold">Profile Access Table</h3>
       <button
-        className="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded"
+        className="bg-gray-500 hover:bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center text-xl"
         onClick={handleCreateProfile}
+        title="Create New Profile"
+        aria-label="Create New Profile"
       >
-        Create New Profile
+        +
       </button>
     </div>
     <table className="min-w-full border text-sm">
@@ -59,7 +61,7 @@ const ProfileTab = ({ profiles, handleEditProfile, handleCreateProfile, profileM
                 { key: 'excel_access', label: 'Excel' },
                 { key: 'qna_access', label: 'Q&A' },
                 { key: 'url_access', label: 'URL' },
-                { key: 'chat_history_access', label: 'Chat History' },
+                { key: 'chat_history_access', label: 'Chatbot History' },
                 { key: 'user_profile_access', label: 'Profile' },
                 { key: 'user_details_access', label: 'User Details' },
               ].map(({ key, label }) => {
