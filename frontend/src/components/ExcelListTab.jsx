@@ -1,6 +1,6 @@
 import React from 'react';
 
-const ExcelListTab = ({ uploadedFiles, renderTable, excelModalOpen, setExcelModalOpen, excelForm, setExcelForm, knowledgeBases, excelFormError, handleExcelModalSubmit }) => (
+const ExcelListTab = ({ uploadedFiles, renderTable, excelModalOpen, setExcelModalOpen, excelForm, setExcelForm, knowledgeBases, excelFormError, handleExcelModalSubmit, fetchKnowledgeBases }) => (
   <div className="mt-6 w-11/12">
     <div className="flex items-center justify-between mb-4">
       <h3 className="text-lg font-semibold mb-4">Uploaded Excel/CSV Files</h3>
@@ -8,7 +8,7 @@ const ExcelListTab = ({ uploadedFiles, renderTable, excelModalOpen, setExcelModa
         className="bg-gray-500 hover:bg-gray-700 text-white rounded-full w-10 h-10 flex items-center justify-center text-2xl shadow"
         title="Add Excel/CSV File"
         aria-label="Add Excel/CSV File"
-        onClick={() => setExcelModalOpen(true)}
+        onClick={() => { fetchKnowledgeBases && fetchKnowledgeBases(); setExcelModalOpen(true); }}
       >
         <span>+</span>
       </button>

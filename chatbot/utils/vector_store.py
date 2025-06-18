@@ -58,9 +58,11 @@ def prepare_pages(data):
 
     return pages
 
-def store_in_vector_db(pages, namespace="web_scraped"):
+def store_in_vector_db(pages, knowledge_base=None, namespace="web_scraped"):
     print("\n📦 Starting vector DB storage process...")
     print(f"📄 Number of pages to embed: {len(pages)}")
+    if knowledge_base:
+        print(f"🔒 Storing with knowledge base: {knowledge_base}")
 
     try:
         # 🧠 Smart chunking
@@ -73,6 +75,10 @@ def store_in_vector_db(pages, namespace="web_scraped"):
         documents = []
         for url, text in pages:
             chunks = text_splitter.create_documents([text])
+            # Attach knowledge_base as metadata to each chunk
+            for chunk in chunks:
+                chunk.metadata = chunk.metadata or {}
+                chunk.metadata["knowledge_base"] = knowledge_base
             documents.extend(chunks)
 
         print(f"✅ Total chunks created: {len(documents)}")
@@ -88,7 +94,7 @@ def store_in_vector_db(pages, namespace="web_scraped"):
             keyspace=None,
         )
 
-        # Store documents
+        # Store documents with metadata
         print("💾 Adding chunks to vector DB...")
         vector_store.add_documents(documents)
         print("🎉 Chunks successfully stored in vector DB.")
@@ -96,9 +102,11 @@ def store_in_vector_db(pages, namespace="web_scraped"):
     except Exception as e:
         print("❌ Error while storing documents:", e)
 
-def query_vector_db(question, namespace="web_scraped"):
+def query_vector_db(question, knowledge_bases=None, namespace="web_scraped"):
     print("\n❓ Running query on vector DB...")
     print(f"🧠 Question: {question}")
+    if knowledge_bases:
+        print(f"🔒 Filtering by knowledge bases: {knowledge_bases}")
 
     try:
         embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
@@ -110,9 +118,22 @@ def query_vector_db(question, namespace="web_scraped"):
             keyspace=None,
         )
 
-        # ⚡ Use only top 3 chunks to reduce cost
-        relevant_docs = vector_store.similarity_search(question, k=3)
+        # Filter by knowledge base metadata if provided
+        if knowledge_bases:
+            # This assumes your vector store supports metadata filtering by 'knowledge_base' field
+            relevant_docs = []
+            for kb in knowledge_bases:
+                docs = vector_store.similarity_search(question, k=3, filter={"knowledge_base": kb})
+                relevant_docs.extend(docs)
+            # Optionally, sort or deduplicate relevant_docs here
+        else:
+            relevant_docs = vector_store.similarity_search(question, k=3)
         print(f"✅ Retrieved {len(relevant_docs)} relevant chunks.")
+
+        # If no relevant docs, return a custom message
+        if not relevant_docs:
+            print("⚠️ No relevant documents found. Returning access message.")
+            return "Sorry, I do not have access to this data.", 0
 
         # Compose a prompt from the docs
         context = "\n\n".join([doc.page_content for doc in relevant_docs])

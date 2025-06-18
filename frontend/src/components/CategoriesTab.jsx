@@ -1,11 +1,13 @@
 import React from 'react';
 
 const CategoriesTab = ({ categoriesList, handleEditCategory, handleCreateCategory, categoryModalOpen, setCategoryModalOpen, editingCategory, categoryForm, setCategoryForm, categoryFormError, handleCategoryFormSubmit }) => (
-  <div className="mt-6 w-full max-w-2xl mx-auto">
-    <div className="flex justify-between items-center mb-4">
-      <h3 className="text-lg font-semibold">Categories</h3>
+  <div className="bg-white rounded-xl shadow-lg p-6 mt-4 w-full mx-auto">
+    <div className="flex items-center justify-between mb-4">
+      <h3 className="text-lg font-semibold">Categories List</h3>
       <button
-        className="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded"
+        className="bg-gray-500 hover:bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center text-xl"
+        title="Add Category"
+        aria-label="Add Category"
         onClick={handleCreateCategory}
       >
         +

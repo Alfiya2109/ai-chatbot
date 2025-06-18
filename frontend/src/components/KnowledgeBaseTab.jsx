@@ -1,11 +1,13 @@
 import React from 'react';
 
 const KnowledgeBaseTab = ({ knowledgeBases, handleEditKb, handleDeleteKb, handleCreateKb, kbModalOpen, setKbModalOpen, editingKb, kbForm, setKbForm, handleKbFormSubmit }) => (
-  <div className="mt-6 w-full max-w-2xl mx-auto">
-    <div className="flex justify-between items-center mb-4">
-      <h3 className="text-lg font-semibold">Knowledge Base</h3>
+  <div className="bg-white rounded-xl shadow-lg p-6 mt-4 w-full mx-auto">
+    <div className="flex items-center justify-between mb-4">
+      <h3 className="text-lg font-semibold">Knowledge Base List</h3>
       <button
-        className="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded"
+        className="bg-gray-500 hover:bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center text-xl"
+        title="Add Knowledge Base"
+        aria-label="Add Knowledge Base"
         onClick={handleCreateKb}
       >
         +

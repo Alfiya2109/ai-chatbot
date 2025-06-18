@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { FaTrash } from 'react-icons/fa';
+import { FaTrash, FaUserCircle } from 'react-icons/fa';
 import { BASE_URL } from '../base_url';
 import { FaPlus } from 'react-icons/fa6';
 import FileListTab from './FileListTab';
@@ -18,16 +18,16 @@ import UserDetailsTab from './UserDetailsTab';
 // Define tab structure as per the provided image
 const tabSections = [
   {
-    label: 'setup',
-    tabs: [ 'User Details', 'profile', 'Knowledge Base']
+    label: 'chat',
+    tabs: ['chatbot', 'Chatbot History']
   },
   {
     label: 'source data',
     tabs: ['files', 'text', 'Excel/CSV', 'URL', 'Q&A']
   },
   {
-    label: 'chat',
-    tabs: ['chatbot', 'Chatbot History']
+    label: 'setup',
+    tabs: [ 'User Details', 'profile', 'Knowledge Base']
   },
   {
     label: 'Master',
@@ -165,22 +165,9 @@ function CreateAgent() {
         const response = await axios.get(`${BASE_URL}/api/userprofiles/me/`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setUserProfile(response.data);
-        // Dynamically build allowed tabs based on profile access
-        const allowedTabs = [];
-        if (response.data.allowed_tabs) {
-          allowedTabs.push(...response.data.allowed_tabs);
-        }
-        // Add Profile and User Details tabs based on profile access
-        if (response.data.profile && response.data.profile.user_profile_access) {
-          if (!allowedTabs.includes('Profile')) allowedTabs.push('Profile');
-        }
-        if (response.data.profile && response.data.profile.user_details_access) {
-          if (!allowedTabs.includes('User Details')) allowedTabs.push('User Details');
-        }
-        setDynamicTabs(allowedTabs);
+        setUserProfile(response.data.userprofile);
       } catch (error) {
-        console.error('Error fetching user profile:', error);
+        setUserProfile(null);
       }
     };
     fetchUserProfile();
@@ -407,6 +394,8 @@ function CreateAgent() {
   const handleTabClick = (tab) => {
     if (tab === 'Chatbot History') {
       navigate('/config');
+    } else if (tab.toLowerCase() === 'chatbot') {
+      navigate('/chatbot');
     } else {
       setActiveTab(tab);
     }
@@ -416,6 +405,12 @@ function CreateAgent() {
 
   const handleFileUploadAndTrain = async (file) => {
     try {
+      // Validate knowledge base selection
+      if (!fileForm.knowledge_bases || fileForm.knowledge_bases.length === 0) {
+        alert('Please select at least one knowledge base before training.');
+        return;
+      }
+
       const formData = new FormData();
       formData.append('file', file);
       const token = localStorage.getItem('access_token');
@@ -429,9 +424,15 @@ function CreateAgent() {
       const uploadedFile = uploadResponse.data;
       setUploadedFiles((prevFiles) => [...prevFiles, uploadedFile]);
 
+      // Pass knowledge base to train API call
       const trainFormData = new FormData();
       trainFormData.append('type', 'file');
       trainFormData.append('file', file);
+      // Add knowledge base names to the training payload
+      const selectedNames = knowledgeBases
+        .filter(kb => fileForm.knowledge_bases.includes(String(kb.id)))
+        .map(kb => kb.name);
+      selectedNames.forEach((name) => trainFormData.append('knowledge_bases', name));
 
       const trainResponse = await axios.post(`${BASE_URL}/api/upload-and-train/`, trainFormData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -446,6 +447,12 @@ function CreateAgent() {
 
   const handleExcelUploadAndTrain = async (file) => {
     try {
+      // Validate knowledge base selection
+      if (!excelForm.knowledge_bases || excelForm.knowledge_bases.length === 0) {
+        alert('Please select at least one knowledge base before training.');
+        return;
+      }
+
       const formData = new FormData();
       formData.append('file', file);
       const token = localStorage.getItem('access_token');
@@ -462,6 +469,11 @@ function CreateAgent() {
       const trainFormData = new FormData();
       trainFormData.append('type', 'file');
       trainFormData.append('file', file);
+      // Add knowledge base names to the training payload
+      const selectedNames = knowledgeBases
+        .filter(kb => excelForm.knowledge_bases.includes(String(kb.id)))
+        .map(kb => kb.name);
+      selectedNames.forEach((name) => trainFormData.append('knowledge_bases', name));
 
       const trainResponse = await axios.post(`${BASE_URL}/api/upload-and-train/`, trainFormData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -519,6 +531,12 @@ function CreateAgent() {
 
   const handleTextUploadAndTrain = async () => {
     try {
+      // Validate knowledge base selection
+      if (!textForm.knowledge_bases || textForm.knowledge_bases.length === 0) {
+        alert('Please select at least one knowledge base before training.');
+        return;
+      }
+
       setIsTraining(true);
       const token = localStorage.getItem('access_token');
       await axios.post(`${BASE_URL}/api/textupload/`, { content: textInput }, {
@@ -531,6 +549,11 @@ function CreateAgent() {
       const trainFormData = new FormData();
       trainFormData.append('type', 'text');
       trainFormData.append('text', textInput);
+      // Add knowledge base names to the training payload
+      const selectedNames = knowledgeBases
+        .filter(kb => textForm.knowledge_bases.includes(String(kb.id)))
+        .map(kb => kb.name);
+      selectedNames.forEach((name) => trainFormData.append('knowledge_bases', name));
 
       const trainResponse = await axios.post(`${BASE_URL}/api/upload-and-train/`, trainFormData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -578,6 +601,12 @@ function CreateAgent() {
 
   const handleQnAUploadAndTrain = async (qa) => {
     try {
+      // Validate knowledge base selection
+      if (!qa.knowledge_bases || qa.knowledge_bases.length === 0) {
+        alert('Please select at least one knowledge base before training.');
+        return;
+      }
+
       setIsTraining(true);
       const token = localStorage.getItem('access_token');
       const formattedQA = {
@@ -597,6 +626,11 @@ function CreateAgent() {
       trainFormData.append('answer', qa.answer);
       trainFormData.append('category', qa.category || 'general');
       trainFormData.append('subcategory', qa.subcategory || '');
+      // Add knowledge base names to the training payload
+      const selectedNames = knowledgeBases
+        .filter(kb => qa.knowledge_bases.includes(String(kb.id)))
+        .map(kb => kb.name);
+      selectedNames.forEach((name) => trainFormData.append('knowledge_bases', name));
 
       const trainResponse = await axios.post(`${BASE_URL}/api/upload-and-train/`, trainFormData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -613,26 +647,58 @@ function CreateAgent() {
 
   const handleTrain = async () => {
     try {
-      let requestData = {};
+      let requestData = new FormData();
 
       if (activeTab === 'Files') {
-        requestData = { type: 'file', file: uploadedFiles[0]?.file };
+        // Validate knowledge base selection
+        if (!fileForm.knowledge_bases || fileForm.knowledge_bases.length === 0) {
+          alert('Please select at least one knowledge base before training.');
+          return;
+        }
+        requestData.append('type', 'file');
+        requestData.append('file', uploadedFiles[0]?.file);
+        // Add knowledge base names to the training payload
+        const selectedNames = knowledgeBases
+          .filter(kb => fileForm.knowledge_bases.includes(String(kb.id)))
+          .map(kb => kb.name);
+        selectedNames.forEach((name) => requestData.append('knowledge_bases', name));
       } else if (activeTab === 'Text') {
-        requestData = { type: 'text', text: textInput };
+        // Validate knowledge base selection
+        if (!textForm.knowledge_bases || textForm.knowledge_bases.length === 0) {
+          alert('Please select at least one knowledge base before training.');
+          return;
+        }
+        requestData.append('type', 'text');
+        requestData.append('text', textInput);
+        // Add knowledge base names to the training payload
+        const selectedNames = knowledgeBases
+          .filter(kb => textForm.knowledge_bases.includes(String(kb.id)))
+          .map(kb => kb.name);
+        selectedNames.forEach((name) => requestData.append('knowledge_bases', name));
       } else if (activeTab === 'Q&A') {
         if (qaData.length > 0) {
           const qa = qaData[0];
-          requestData = {
-            type: 'qna',
-            question: qa.question,
-            answer: qa.answer,
-            category: qa.category || 'general',
-            subcategory: qa.subcategory || '',
-          };
+          // Validate knowledge base selection
+          if (!qa.knowledge_bases || qa.knowledge_bases.length === 0) {
+            alert('Please select at least one knowledge base before training.');
+            return;
+          }
+          requestData.append('type', 'qna');
+          requestData.append('question', qa.question);
+          requestData.append('answer', qa.answer);
+          requestData.append('category', qa.category || 'general');
+          requestData.append('subcategory', qa.subcategory || '');
+          // Add knowledge base names to the training payload
+          const selectedNames = knowledgeBases
+            .filter(kb => qa.knowledge_bases.includes(String(kb.id)))
+            .map(kb => kb.name);
+          selectedNames.forEach((name) => requestData.append('knowledge_bases', name));
         }
       }
 
-      const response = await axios.post(`${BASE_URL}/api/upload-and-train/`, requestData);
+      const response = await axios.post(`${BASE_URL}/api/upload-and-train/`, requestData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
       alert(response.data.message || 'Training initiated successfully!');
     } catch (error) {
       console.error('Error initiating training:', error);
@@ -819,18 +885,22 @@ function CreateAgent() {
       setFileFormError('Please select a file.');
       return;
     }
+    // Validate knowledge base selection
+    if (!fileForm.knowledge_bases || fileForm.knowledge_bases.length === 0) {
+      setFileFormError('Please select at least one knowledge base.');
+      return;
+    }
     try {
       const formData = new FormData();
       formData.append('file', fileForm.file);
       if (fileForm.description) formData.append('description', fileForm.description);
-      if (fileForm.knowledge_bases.length > 0) {
-        // Map selected IDs to names for the API
-        const selectedNames = knowledgeBases
-          .filter(kb => fileForm.knowledge_bases.includes(String(kb.id)))
-          .map(kb => kb.name);
-        // Send each name as a separate field
-        selectedNames.forEach((name) => formData.append('knowledge_bases', name));
-      }
+      // Map selected IDs to names for the API
+      const selectedNames = knowledgeBases
+        .filter(kb => fileForm.knowledge_bases.includes(String(kb.id)))
+        .map(kb => kb.name);
+      // Send each name as a separate field
+      selectedNames.forEach((name) => formData.append('knowledge_bases', name));
+      
       const token = localStorage.getItem('access_token');
       // First, upload the file
       const uploadResponse = await axios.post(`${BASE_URL}/api/filesupload/`, formData, {
@@ -843,9 +913,10 @@ function CreateAgent() {
       const uploadedFile = uploadResponse.data;
       const trainFormData = new FormData();
       trainFormData.append('type', 'file');
-      // If the backend expects the file itself, send it; if it expects an ID or path, adjust accordingly
-      // Here, we send the file again (adjust if your backend expects a file ID or path)
       trainFormData.append('file', fileForm.file);
+      // Add knowledge base names to the training payload
+      selectedNames.forEach((name) => trainFormData.append('knowledge_bases', name));
+
       try {
         const trainResponse = await axios.post(`${BASE_URL}/api/upload-and-train/`, trainFormData, {
           headers: { 'Content-Type': 'multipart/form-data' },
@@ -870,16 +941,21 @@ function CreateAgent() {
       setExcelFormError('Please select a file.');
       return;
     }
+    // Validate knowledge base selection
+    if (!excelForm.knowledge_bases || excelForm.knowledge_bases.length === 0) {
+      setExcelFormError('Please select at least one knowledge base.');
+      return;
+    }
     try {
       const formData = new FormData();
       formData.append('file', excelForm.file);
       if (excelForm.description) formData.append('description', excelForm.description);
-      if (excelForm.knowledge_bases.length > 0) {
-        const selectedNames = knowledgeBases
-          .filter(kb => excelForm.knowledge_bases.includes(String(kb.id)))
-          .map(kb => kb.name);
-        selectedNames.forEach((name) => formData.append('knowledge_bases', name));
-      }
+      // Map selected IDs to names for the API
+      const selectedNames = knowledgeBases
+        .filter(kb => excelForm.knowledge_bases.includes(String(kb.id)))
+        .map(kb => kb.name);
+      selectedNames.forEach((name) => formData.append('knowledge_bases', name));
+      
       const token = localStorage.getItem('access_token');
       // First, upload the Excel/CSV file
       const uploadResponse = await axios.post(`${BASE_URL}/api/excelupload/`, formData, {
@@ -893,6 +969,9 @@ function CreateAgent() {
       const trainFormData = new FormData();
       trainFormData.append('type', 'file');
       trainFormData.append('file', excelForm.file);
+      // Add knowledge base names to the training payload
+      selectedNames.forEach((name) => trainFormData.append('knowledge_bases', name));
+
       try {
         const trainResponse = await axios.post(`${BASE_URL}/api/upload-and-train/`, trainFormData, {
           headers: { 'Content-Type': 'multipart/form-data' },
@@ -917,16 +996,21 @@ function CreateAgent() {
       setTextFormError('Please enter some text.');
       return;
     }
+    // Validate knowledge base selection
+    if (!textForm.knowledge_bases || textForm.knowledge_bases.length === 0) {
+      setTextFormError('Please select at least one knowledge base.');
+      return;
+    }
     try {
       const formData = new FormData();
       formData.append('content', textForm.content);
       if (textForm.description) formData.append('description', textForm.description);
-      if (textForm.knowledge_bases.length > 0) {
-        const selectedNames = knowledgeBases
-          .filter(kb => textForm.knowledge_bases.includes(String(kb.id)))
-          .map(kb => kb.name);
-        selectedNames.forEach((name) => formData.append('knowledge_bases', name));
-      }
+      // Map selected IDs to names for the API
+      const selectedNames = knowledgeBases
+        .filter(kb => textForm.knowledge_bases.includes(String(kb.id)))
+        .map(kb => kb.name);
+      selectedNames.forEach((name) => formData.append('knowledge_bases', name));
+      
       const token = localStorage.getItem('access_token');
       // First, upload the text
       const uploadResponse = await axios.post(`${BASE_URL}/api/textupload/`, formData, {
@@ -940,6 +1024,9 @@ function CreateAgent() {
       const trainFormData = new FormData();
       trainFormData.append('type', 'text');
       trainFormData.append('text', textForm.content);
+      // Add knowledge base names to the training payload
+      selectedNames.forEach((name) => trainFormData.append('knowledge_bases', name));
+
       try {
         const trainResponse = await axios.post(`${BASE_URL}/api/upload-and-train/`, trainFormData, {
           headers: { 'Content-Type': 'multipart/form-data' },
@@ -1784,14 +1871,20 @@ function CreateAgent() {
           </tr>
         </thead>
         <tbody>
-          {categoriesList.map((cat) => (
-            <tr key={cat.id}>
-              <td className="border px-4 py-2">{cat.name}</td>
-              <td className="border px-4 py-2">
-                <button className="px-3 py-1 bg-blue-500 text-white rounded" onClick={() => handleEditCategory(cat)}>Edit</button>
-              </td>
+          {categoriesList && categoriesList.length > 0 ? (
+            categoriesList.map((cat) => (
+              <tr key={cat.id}>
+                <td className="border px-4 py-2">{cat.name}</td>
+                <td className="border px-4 py-2">
+                  <button className="px-3 py-1 bg-blue-500 text-white rounded" onClick={() => handleEditCategory(cat)}>Edit</button>
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td className="border px-4 py-2 text-center" colSpan={2}>No categories found.</td>
             </tr>
-          ))}
+          )}
         </tbody>
       </table>
       {/* Category Modal */}
@@ -1848,6 +1941,7 @@ function CreateAgent() {
             knowledgeBases={knowledgeBases}
             fileFormError={fileFormError}
             handleFileModalSubmit={handleFileModalSubmit}
+            fetchKnowledgeBases={fetchKnowledgeBases}
           />
         );
       case 'Text':
@@ -1862,6 +1956,7 @@ function CreateAgent() {
             knowledgeBases={knowledgeBases}
             textFormError={textFormError}
             handleTextModalSubmit={handleTextModalSubmit}
+            fetchKnowledgeBases={fetchKnowledgeBases}
           />
         );
       case 'Excel/CSV':
@@ -1876,6 +1971,7 @@ function CreateAgent() {
             knowledgeBases={knowledgeBases}
             excelFormError={excelFormError}
             handleExcelModalSubmit={handleExcelModalSubmit}
+            fetchKnowledgeBases={fetchKnowledgeBases}
           />
         );
       case 'Q&A':
@@ -2053,7 +2149,13 @@ function CreateAgent() {
       });
       // After successful upload, trigger training
       try {
-        const embedResponse = await axios.post(`${BASE_URL}/api/embed-website/`, { url: urlForm.url }, {
+        const embedResponse = await axios.post(`${BASE_URL}/api/embed-website/`, { 
+          url: urlForm.url,
+          knowledge_bases: urlForm.knowledge_bases.length > 0 ? 
+            knowledgeBases
+              .filter(kb => urlForm.knowledge_bases.includes(String(kb.id)))
+              .map(kb => kb.name) : []
+        }, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -2078,6 +2180,11 @@ function CreateAgent() {
       setQaFormError('Question and Answer are required!');
       return;
     }
+    // Validate knowledge base selection
+    if (!qaForm.knowledge_bases || qaForm.knowledge_bases.length === 0) {
+      setQaFormError('Please select at least one knowledge base.');
+      return;
+    }
     try {
       const token = localStorage.getItem('access_token');
       // Map selected knowledge base IDs to names
@@ -2100,6 +2207,9 @@ function CreateAgent() {
       trainFormData.append('answer', qaForm.answer);
       trainFormData.append('category', qaForm.category && qaForm.category.length > 0 ? qaForm.category[0] : 'general');
       trainFormData.append('subcategory', qaForm.subcategory && qaForm.subcategory.length > 0 ? qaForm.subcategory[0] : '');
+      // Add knowledge base names to the training payload
+      selectedKbNames.forEach((name) => trainFormData.append('knowledge_bases', name));
+
       try {
         const trainResponse = await axios.post(`${BASE_URL}/api/upload-and-train/`, trainFormData, {
           headers: { 'Content-Type': 'multipart/form-data' },
@@ -2136,158 +2246,169 @@ function CreateAgent() {
   };
 
   return (
-    <div className="flex  min-h-screen bg-gray-100">
-      <div
-        style={{ width: '20%', top: 0, height: '100vh' }}
-        className="bg-white shadow-md p-6 flex flex-col justify-center sticky left-0"
-      >
-        <div className="space-y-4 text-center">
-          {tabSections.map(section => (
-            <div key={section.label} className="mb-2 w-full">
-              <div
-                className="font-bold text-gray-700 text-left mb-1 uppercase text-xs tracking-wider flex items-center cursor-pointer select-none"
-                onClick={() => handleSectionToggle(section.label)}
-              >
-                <span className="mr-2">{expandedSections[section.label] ? '▼' : '►'}</span>
-                {section.label}
-              </div>
-              {expandedSections[section.label] && (
-                <div className="flex flex-col items-start pl-4">
-                  {section.tabs.map(tab => (
-                    <div
-                      key={tab}
-                      className={`cursor-pointer p-2 rounded-md w-full text-left ${
-                        activeTab.toLowerCase() === tab.toLowerCase() ? 'bg-gray-500 text-white font-bold' : 'text-gray-600 hover:bg-gray-200'
-                      }`}
-                      onClick={() => handleTabClick(tab.charAt(0).toUpperCase() + tab.slice(1))}
-                    >
-                      {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-        {/* Removed + Button from here */}
-      </div>
-
-      <div className="w-full flex flex-col p-6 justify-center items-center">{renderContent()}</div>
-
-      {/* Modal */}
-      {modalOpen && (
-        <div
-          className="fixed inset-0 bg-gray-500 b-50 flex items-center justify-center z-50"
-          onClick={() => setModalOpen(false)}
-        >
-          <div
-            className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className="text-xl font-semibold mb-4">Register User</h2>
-            <form onSubmit={handleRegisterSalesUser} className="space-y-1 text-sm">
-              <div>
-                <label className="block mb-1 font-medium">First Name</label>
-                <input
-                  type="text"
-                  required
-                  value={newUserData.first_name}
-                  onChange={(e) => setNewUserData({ ...newUserData, first_name: e.target.value })}
-                  className="w-full p-2 border rounded"
-                />
-              </div>
-              <div>
-                <label className="block mb-1 font-medium">Last Name</label>
-                <input
-                  type="text"
-                  required
-                  value={newUserData.last_name}
-                  onChange={(e) => setNewUserData({ ...newUserData, last_name: e.target.value })}
-                  className="w-full p-2 border rounded"
-                />
-              </div>
-              <div>
-                <label className="block mb-1 font-medium">Email</label>
-                <input
-                  type="email"
-                  required
-                  value={newUserData.email}
-                  onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value, username: e.target.value })}
-                  className="w-full p-2 border rounded"
-                />
-              </div>
-              <div>
-                <label className="block mb-1 font-medium">Phone Number</label>
-                <input
-                  type="tel"
-                  value={newUserData.phone_number}
-                  onChange={(e) => setNewUserData({ ...newUserData, phone_number: e.target.value })}
-                  className="w-full p-2 border rounded"
-                />
-              </div>
-              <div>
-                <label className="block mb-1 font-medium">Password</label>
-                <input
-                  type="password"
-                  required
-                  value={newUserData.password}
-                  onChange={(e) => setNewUserData({ ...newUserData, password: e.target.value })}
-                  className="w-full p-2 border rounded"
-                />
-              </div>
-              <div>
-                <label className="block mb-1 font-medium">Profile</label>
-                <select
-                  required
-                  value={newUserData.profile}
-                  onChange={(e) => setNewUserData({ ...newUserData, profile: e.target.value })}
-                  className="w-full p-2 border rounded"
-                >
-                  <option value="">Select Profile</option>
-                  {profiles && profiles.map((profile) => (
-                    <option key={profile.id} value={profile.id}>
-                      {profile.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block mb-1 font-medium">Knowledge Base</label>
-                <select
-                  multiple
-                  value={newUserData.knowledge_bases || []}
-                  onChange={e => {
-                    const options = Array.from(e.target.selectedOptions, option => option.value);
-                    setNewUserData({ ...newUserData, knowledge_bases: options });
-                  }}
-                  className="w-full p-2 border rounded"
-                >
-                  {knowledgeBases && knowledgeBases.map(kb => (
-                    <option key={kb.id} value={String(kb.id)}>{kb.name}</option>
-                  ))}
-                </select>
-                <span className="text-xs text-gray-500">Hold Ctrl (Windows) or Cmd (Mac) to select multiple</span>
-              </div>
-              {registerFormError && <div className="text-red-500 text-xs">{registerFormError}</div>}
-              <div className="flex justify-end space-x-2">
-                <button
-                  type="button"
-                  onClick={() => setModalOpen(false)}
-                  className="px-4 py-2 rounded border border-gray-300 hover:bg-gray-100"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded bg-gray-500 text-white hover:bg-gray-700"
-                >
-                  Register
-                </button>
-              </div>
-            </form>
+    <div className="min-h-screen bg-gray-100">
+      <div className="absolute top-4 right-8 flex items-center gap-2 z-50">
+        <FaUserCircle className="text-2xl text-gray-500" />
+        {userProfile && (
+          <div className="flex flex-col items-start leading-tight">
+            <span className="font-semibold text-gray-900 text-base">{userProfile.first_name} {userProfile.last_name}</span>
+            <span className="text-sm text-gray-500">Profile: {userProfile.profile_name || userProfile.profile}</span>
           </div>
+        )}
+      </div>
+      <div className="flex  min-h-screen bg-gray-100">
+        <div
+          style={{ width: '20%', top: 0, height: '100vh' }}
+          className="bg-white shadow-md p-6 flex flex-col justify-center sticky left-0"
+        >
+          <div className="space-y-4 text-center">
+            {tabSections.map(section => (
+              <div key={section.label} className="mb-2 w-full">
+                <div
+                  className="font-bold text-gray-700 text-left mb-1 uppercase text-xs tracking-wider flex items-center cursor-pointer select-none"
+                  onClick={() => handleSectionToggle(section.label)}
+                >
+                  <span className="mr-2">{expandedSections[section.label] ? '▼' : '►'}</span>
+                  {section.label}
+                </div>
+                {expandedSections[section.label] && (
+                  <div className="flex flex-col items-start pl-4">
+                    {section.tabs.map(tab => (
+                      <div
+                        key={tab}
+                        className={`cursor-pointer p-2 rounded-md w-full text-left ${
+                          activeTab.toLowerCase() === tab.toLowerCase() ? 'bg-gray-500 text-white font-bold' : 'text-gray-600 hover:bg-gray-200'
+                        }`}
+                        onClick={() => handleTabClick(tab.charAt(0).toUpperCase() + tab.slice(1))}
+                      >
+                        {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          {/* Removed + Button from here */}
         </div>
-      )}
+
+        <div className="w-full flex flex-col p-6 justify-center items-center">{renderContent()}</div>
+
+        {/* Modal */}
+        {modalOpen && (
+          <div
+            className="fixed inset-0 bg-gray-500 b-50 flex items-center justify-center z-50"
+            onClick={() => setModalOpen(false)}
+          >
+            <div
+              className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2 className="text-xl font-semibold mb-4">Register User</h2>
+              <form onSubmit={handleRegisterSalesUser} className="space-y-1 text-sm">
+                <div>
+                  <label className="block mb-1 font-medium">First Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={newUserData.first_name}
+                    onChange={(e) => setNewUserData({ ...newUserData, first_name: e.target.value })}
+                    className="w-full p-2 border rounded"
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1 font-medium">Last Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={newUserData.last_name}
+                    onChange={(e) => setNewUserData({ ...newUserData, last_name: e.target.value })}
+                    className="w-full p-2 border rounded"
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1 font-medium">Email</label>
+                  <input
+                    type="email"
+                    required
+                    value={newUserData.email}
+                    onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value, username: e.target.value })}
+                    className="w-full p-2 border rounded"
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1 font-medium">Phone Number</label>
+                  <input
+                    type="tel"
+                    value={newUserData.phone_number}
+                    onChange={(e) => setNewUserData({ ...newUserData, phone_number: e.target.value })}
+                    className="w-full p-2 border rounded"
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1 font-medium">Password</label>
+                  <input
+                    type="password"
+                    required
+                    value={newUserData.password}
+                    onChange={(e) => setNewUserData({ ...newUserData, password: e.target.value })}
+                    className="w-full p-2 border rounded"
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1 font-medium">Profile</label>
+                  <select
+                    required
+                    value={newUserData.profile}
+                    onChange={(e) => setNewUserData({ ...newUserData, profile: e.target.value })}
+                    className="w-full p-2 border rounded"
+                  >
+                    <option value="">Select Profile</option>
+                    {profiles && profiles.map((profile) => (
+                      <option key={profile.id} value={profile.id}>
+                        {profile.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block mb-1 font-medium">Knowledge Base</label>
+                  <select
+                    multiple
+                    value={newUserData.knowledge_bases || []}
+                    onChange={e => {
+                      const options = Array.from(e.target.selectedOptions, option => option.value);
+                      setNewUserData({ ...newUserData, knowledge_bases: options });
+                    }}
+                    className="w-full p-2 border rounded"
+                  >
+                    {knowledgeBases && knowledgeBases.map(kb => (
+                      <option key={kb.id} value={String(kb.id)}>{kb.name}</option>
+                    ))}
+                  </select>
+                  <span className="text-xs text-gray-500">Hold Ctrl (Windows) or Cmd (Mac) to select multiple</span>
+                </div>
+                {registerFormError && <div className="text-red-500 text-xs">{registerFormError}</div>}
+                <div className="flex justify-end space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => setModalOpen(false)}
+                    className="px-4 py-2 rounded border border-gray-300 hover:bg-gray-100"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 rounded bg-gray-500 text-white hover:bg-gray-700"
+                  >
+                    Register
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
