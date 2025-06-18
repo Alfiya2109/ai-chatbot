@@ -10,6 +10,7 @@ router = DefaultRouter()
 router.register(r'folder-upload', FileDataViewSet, basename='folder-upload')
 router.register(r'excel-files', ExcelFileViewSet, basename='excel-files')
 router.register(r'document-files', FileUploadViewSet, basename='document-files')
+router.register(r'google-drive-files', GoogleDriveFileDataViewSet, basename='google-drive-files')
 
 # API endpoints
 urlpatterns = [
@@ -43,7 +44,7 @@ urlpatterns = [
     path("excelupload/<int:pk>/", ExcelFileView.as_view(), name="excel_delete"),
     path("qa/", QADataView.as_view(), name="qa_data"),
     path("qa/<int:pk>/", QADataView.as_view(), name="qa_data_detail"),
-    path('clear-vector-db/', ClearVectorDBView.as_view(), name='clear-vector-db'),
+    path('clear-vector-db/', ClearVectorDBView.as_view(), name='clear-vector-db'), #Used Delete method to clear vector db
     path("urls/", URLManagementAPIView.as_view(), name="url_management"),
     path("urls/<int:pk>/", URLManagementAPIView.as_view(), name="url_delete"),
     path("transcribe/", TranscribeAudioAPIView.as_view(), name="transcribe-audio"),
@@ -62,5 +63,6 @@ urlpatterns = [
     path('', include(router.urls)),
     path('sitemap-fetch/', SitemapFetchAPIView.as_view(), name='sitemap-fetch'),
     path('token/username/', TokenByUsernameView.as_view(), name='token_by_username'),
+    path('chatbot/google-drive/upload-folder/', GoogleDriveUploadAPIView.as_view(), name='google-drive-upload-folder'),
 ]
 

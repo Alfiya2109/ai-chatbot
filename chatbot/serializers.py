@@ -12,7 +12,7 @@ from .models import (
     Profile,  # <-- import Profile
     KnowledgeBase,
 )
-from .models import ChatSession, SitemapFetch
+from .models import ChatSession, SitemapFetch, GoogleDriveFileData,GoogleDriveDocumentFileData,GoogleDriveExcelFileData
 
 # ---------------------------
 # Auth Serializers
@@ -307,12 +307,40 @@ class ExcelFileDataSerializer(serializers.ModelSerializer):
 class FileDataSerializer(serializers.ModelSerializer):
     document_files = DocumentFileDataSerializer(many=True, read_only=True)
     excel_files = ExcelFileDataSerializer(many=True, read_only=True)
+    knowledge_bases = serializers.PrimaryKeyRelatedField(queryset=KnowledgeBase.objects.all(), many=True, required=False)
+    knowledge_bases_info = KnowledgeBaseSerializer(source='knowledge_bases', many=True, read_only=True)
+    description = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    added_by = serializers.SlugRelatedField(slug_field='username', read_only=True)
 
     class Meta:
         model = FileData
-        fields = ['id', 'title', 'created_at', 'document_files', 'excel_files']
+        fields = ['id', 'title', 'description', 'knowledge_bases', 'knowledge_bases_info', 'created_at', 'added_by', 'document_files', 'excel_files']
 
 class SitemapFetchSerializer(serializers.ModelSerializer):
     class Meta:
         model = SitemapFetch
         fields = ['id', 'url', 'fetched_at', 'urls', 'status', 'error']
+
+class GoogleDriveFileDataSerializer(serializers.ModelSerializer):
+    knowledge_bases = serializers.SerializerMethodField()
+
+    class Meta:
+        model = GoogleDriveFileData
+        fields = [
+            'id', 'file_id', 'file_name', 'mime_type', 'description',
+            'knowledge_bases', 'added_by', 'uploaded_at', 'relative_path'  # <-- Add here
+        ]
+
+    def get_knowledge_bases(self, obj):
+        return [kb.name for kb in obj.knowledge_bases.all()]
+
+class GoogleDriveDocumentFileDataSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GoogleDriveDocumentFileData
+        fields = ['id', 'file_id', 'file_name', 'mime_type', 'file_data', 'uploaded_at']
+
+class GoogleDriveExcelFileDataSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GoogleDriveExcelFileData
+        fields = ['id', 'file_id', 'file_name', 'mime_type', 'file_data', 'uploaded_at']
+

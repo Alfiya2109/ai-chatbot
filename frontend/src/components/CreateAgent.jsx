@@ -14,6 +14,8 @@ import KnowledgeBaseTab from './KnowledgeBaseTab';
 import CategoriesTab from './CategoriesTab';
 import SubcategoriesTable from './SubcategoriesTable';
 import UserDetailsTab from './UserDetailsTab';
+import FolderListTab from './FolderListTab'; // Import FolderListTab
+import GoogleDrive from './GoogleDrive';
 
 // Define tab structure as per the provided image
 const tabSections = [
@@ -23,7 +25,7 @@ const tabSections = [
   },
   {
     label: 'source data',
-    tabs: ['files', 'text', 'Excel/CSV', 'URL', 'Q&A']
+    tabs: ['Folder','files', 'text', 'Excel/CSV', 'URL', 'Q&A']
   },
   {
     label: 'setup',
@@ -32,6 +34,10 @@ const tabSections = [
   {
     label: 'Master',
     tabs: ['Categories', 'Subcategories']
+  },
+  {
+    label: 'Connections',
+    tabs: ['Google Drive']
   }
 ];
 
@@ -133,6 +139,7 @@ function CreateAgent() {
     'Excel/CSV',
     'Q&A',
     'URL',
+    'Folders', // Add Folders tab
     'Chatbot', // RESTORED
     'History', // RESTORED
     'User Details',
@@ -2076,6 +2083,10 @@ function CreateAgent() {
         );
       case 'Chatbot History':
         return null;
+      case 'Folder':
+        return <FolderListTab />;
+      case 'Google Drive':
+        return <GoogleDrive />;
       default:
         return null;
     }
