@@ -414,7 +414,56 @@ class ChatbotSubCategoryListAPIView(APIView):
 
 
 from .file_reader import read_uploaded_file
+from .utils.vector_store import store_in_vector_db
 
+class JogetFileUploadAPIView(APIView):
+    def post(self, request):
+        file = request.FILES.get('file')
+        knowledge_base = request.POST.get('knowledge_base')
+        form_id = request.POST.get('form_id')
+
+        if not file or not knowledge_base or not form_id:
+            return Response({'error': 'Missing required fields.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        ext = os.path.splitext(file.name)[1].lower()
+        is_excel = ext in ['.xls', '.xlsx', '.csv']
+
+        # Save file and set description and knowledge_bases
+        from chatbot.models import Files_upload
+        from chatbot.serializers import FilesUploadSerializer
+        kb_obj, _ = KnowledgeBase.objects.get_or_create(name=knowledge_base)
+
+        file_obj = Files_upload.objects.create(
+            file=file,
+            description=form_id  # Save form_id in description for filtering
+        )
+        file_obj.knowledge_bases.add(kb_obj)
+        file_obj.save()
+
+        # --- Train vector database with file content ---
+        try:
+            # Use the saved file from storage
+            with file_obj.file.open('rb') as f:
+                content = read_uploaded_file(f)
+            pages = [(file_obj.file.name, content)]
+            store_in_vector_db(pages)
+        except Exception as e:
+            return Response({'error': f'File saved but failed to train vector DB: {str(e)}'}, status=500)
+
+        # Build file URL for client access
+        from django.conf import settings
+        file_url = request.build_absolute_uri(settings.MEDIA_URL + file_obj.file.name)
+
+        response_data = {
+            'filename': file.name,
+            'type': 'excel' if is_excel else 'document',
+            'path': file_obj.file.name,
+            'url': file_url,
+            'knowledge_base': knowledge_base,
+            'form_id': form_id
+        }
+
+        return Response({'message': 'File received, saved, and trained in vector DB.', 'data': response_data}, status=status.HTTP_200_OK)
 
 class UploadAndTrainAPIView(APIView):
     def post(self, request):
@@ -1446,3 +1495,108 @@ class GoogleDriveUploadAPIView(APIView):
         }, status=status.HTTP_201_CREATED)
 
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from django.core.files.storage import default_storage
+import os
+
+class JogetFileUploadAPIView(APIView):
+    def post(self, request):
+        file = request.FILES.get('file')
+        knowledge_base = request.POST.get('knowledge_base')
+        form_id = request.POST.get('form_id')
+
+        if not file or not knowledge_base or not form_id:
+            return Response({'error': 'Missing required fields.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        ext = os.path.splitext(file.name)[1].lower()
+        is_excel = ext in ['.xls', '.xlsx', '.csv']
+
+        # Save file and set description and knowledge_bases
+        from chatbot.models import Files_upload
+        from chatbot.serializers import FilesUploadSerializer
+        kb_obj, _ = KnowledgeBase.objects.get_or_create(name=knowledge_base)
+
+        file_obj = Files_upload.objects.create(
+            file=file,
+            description=form_id  # Save form_id in description for filtering
+        )
+        file_obj.knowledge_bases.add(kb_obj)
+        file_obj.save()
+
+        # --- Train vector database with file content ---
+        try:
+            # Use the saved file from storage
+            with file_obj.file.open('rb') as f:
+                content = read_uploaded_file(f)
+            pages = [(file_obj.file.name, content)]
+            store_in_vector_db(pages)
+        except Exception as e:
+            return Response({'error': f'File saved but failed to train vector DB: {str(e)}'}, status=500)
+
+        # Build file URL for client access
+        from django.conf import settings
+        file_url = request.build_absolute_uri(settings.MEDIA_URL + file_obj.file.name)
+
+        response_data = {
+            'filename': file.name,
+            'type': 'excel' if is_excel else 'document',
+            'path': file_obj.file.name,
+            'url': file_url,
+            'knowledge_base': knowledge_base,
+            'form_id': form_id
+        }
+
+        return Response({'message': 'File received, saved, and trained in vector DB.', 'data': response_data}, status=status.HTTP_200_OK)
+
+    def get(self, request):
+        """
+        List files uploaded via JogetFileUploadAPIView.
+        You can filter by form_id or knowledge_base using query params.
+        """
+        form_id = request.query_params.get('form_id')
+        knowledge_base = request.query_params.get('knowledge_base')
+        queryset = Files_upload.objects.all()
+        if form_id:
+            queryset = queryset.filter(description__icontains=form_id)
+        if knowledge_base:
+            queryset = queryset.filter(knowledge_bases__name__icontains=knowledge_base)
+        serializer = FilesUploadSerializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def delete(self, request):
+        """
+        Delete a file uploaded via JogetFileUploadAPIView and remove it from the vector database.
+        Expects 'file_id' and 'file_type' ('document' or 'excel') in the request data.
+        """
+        file_id = request.data.get('file_id')
+        file_type = request.data.get('file_type')  # 'document' or 'excel'
+
+        if not file_id or not file_type:
+            return Response({'error': 'file_id and file_type are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if file_type == 'document':
+            from chatbot.models import Files_upload
+            try:
+                file_obj = Files_upload.objects.get(id=file_id)
+                file_obj.delete()
+                remove_from_vector_db(file_id)
+                return Response({'message': 'Document file deleted and removed from vector DB.'}, status=status.HTTP_204_NO_CONTENT)
+            except Files_upload.DoesNotExist:
+                return Response({'error': 'Document file not found.'}, status=status.HTTP_404_NOT_FOUND)
+            except Exception as e:
+                return Response({'error': f'Failed to remove from vector DB: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        elif file_type == 'excel':
+            from chatbot.models import ExcelFile
+            try:
+                file_obj = ExcelFile.objects.get(id=file_id)
+                file_obj.delete()
+                remove_from_vector_db(file_id)
+                return Response({'message': 'Excel file deleted and removed from vector DB.'}, status=status.HTTP_204_NO_CONTENT)
+            except ExcelFile.DoesNotExist:
+                return Response({'error': 'Excel file not found.'}, status=status.HTTP_404_NOT_FOUND)
+            except Exception as e:
+                return Response({'error': f'Failed to remove from vector DB: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        else:
+            return Response({'error': 'Invalid file_type. Must be "document" or "excel".'}, status=status.HTTP_400_BAD_REQUEST)
