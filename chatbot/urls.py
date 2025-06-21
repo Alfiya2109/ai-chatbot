@@ -64,5 +64,6 @@ urlpatterns = [
     path('sitemap-fetch/', SitemapFetchAPIView.as_view(), name='sitemap-fetch'),
     path('token/username/', TokenByUsernameView.as_view(), name='token_by_username'),
     path('chatbot/google-drive/upload-folder/', GoogleDriveUploadAPIView.as_view(), name='google-drive-upload-folder'),
+    path("jogetfileupload/", JogetFileUploadAPIView.as_view(), name="joget_file_upload"),
 ]
 

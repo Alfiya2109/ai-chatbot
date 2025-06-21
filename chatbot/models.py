@@ -249,3 +249,14 @@ class SitemapFetch(models.Model):
 
     def __str__(self):
         return self.url
+
+class JogetFile(models.Model):
+    file = models.FileField(upload_to='joget_files/')
+    file_name = models.CharField(max_length=255)
+    knowledge_base = models.CharField(max_length=255)
+    form_id = models.CharField(max_length=255)
+    added_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.file_name
