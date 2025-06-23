@@ -63,6 +63,14 @@ def store_in_vector_db(pages, knowledge_base=None, namespace="web_scraped"):
     print(f"📄 Number of pages to embed: {len(pages)}")
     if knowledge_base:
         print(f"🔒 Storing with knowledge base: {knowledge_base}")
+        # Ensure knowledge_base is always a string
+        if isinstance(knowledge_base, list):
+            if len(knowledge_base) == 1:
+                knowledge_base = str(knowledge_base[0])
+            else:
+                knowledge_base = ",".join(map(str, knowledge_base))
+        else:
+            knowledge_base = str(knowledge_base)
 
     try:
         # 🧠 Smart chunking
@@ -107,6 +115,11 @@ def query_vector_db(question, knowledge_bases=None, namespace="web_scraped"):
     print(f"🧠 Question: {question}")
     if knowledge_bases:
         print(f"🔒 Filtering by knowledge bases: {knowledge_bases}")
+        # Ensure all knowledge_bases are strings
+        if isinstance(knowledge_bases, list):
+            knowledge_bases = [str(kb[0]) if isinstance(kb, list) and len(kb) == 1 else str(kb) for kb in knowledge_bases]
+        else:
+            knowledge_bases = [str(knowledge_bases)]
 
     try:
         embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
