@@ -440,40 +440,54 @@ from .file_reader import read_uploaded_file
 from .utils.vector_store import store_in_vector_db
 
 class JogetFileUploadAPIView(APIView):
+    permission_classes = [AllowAny]
+
     def post(self, request):
         file = request.FILES.get('file')
-        knowledge_base = request.POST.get('knowledge_base')
+        # Accept both single and multiple knowledge bases
+        knowledge_bases = request.data.getlist('knowledge_bases') or request.data.get('knowledge_bases') or []
+        if not knowledge_bases:
+            # Fallback to single knowledge_base for backward compatibility
+            kb = request.data.get('knowledge_base')
+            if kb:
+                knowledge_bases = [kb]
         form_id = request.POST.get('form_id')
 
-        if not file or not knowledge_base or not form_id:
+        if not file or not knowledge_bases or not form_id:
             return Response({'error': 'Missing required fields.'}, status=status.HTTP_400_BAD_REQUEST)
 
         ext = os.path.splitext(file.name)[1].lower()
         is_excel = ext in ['.xls', '.xlsx', '.csv']
 
-        # Save file and set description and knowledge_bases
-        from chatbot.models import Files_upload
+        from chatbot.models import Files_upload, KnowledgeBase
         from chatbot.serializers import FilesUploadSerializer
-        kb_obj, _ = KnowledgeBase.objects.get_or_create(name=knowledge_base)
+
+        # Get or create KnowledgeBase objects
+        kb_objs = []
+        for kb in knowledge_bases:
+            obj, _ = KnowledgeBase.objects.get_or_create(name=kb)
+            kb_objs.append(obj)
+
+        user = request.user if request.user and request.user.is_authenticated else None  # <-- Add this line
 
         file_obj = Files_upload.objects.create(
             file=file,
-            description=form_id  # Save form_id in description for filtering
+            description=form_id,
+            added_by=user,
+            updated_by=user
         )
-        file_obj.knowledge_bases.add(kb_obj)
+        file_obj.knowledge_bases.set(kb_objs)
         file_obj.save()
 
         # --- Train vector database with file content ---
         try:
-            # Use the saved file from storage
             with file_obj.file.open('rb') as f:
                 content = read_uploaded_file(f)
             pages = [(file_obj.file.name, content)]
-            store_in_vector_db(pages)
+            store_in_vector_db(pages,knowledge_base=knowledge_bases)
         except Exception as e:
             return Response({'error': f'File saved but failed to train vector DB: {str(e)}'}, status=500)
 
-        # Build file URL for client access
         from django.conf import settings
         file_url = request.build_absolute_uri(settings.MEDIA_URL + file_obj.file.name)
 
@@ -482,7 +496,7 @@ class JogetFileUploadAPIView(APIView):
             'type': 'excel' if is_excel else 'document',
             'path': file_obj.file.name,
             'url': file_url,
-            'knowledge_base': knowledge_base,
+            'knowledge_bases': [kb.name for kb in kb_objs],
             'form_id': form_id
         }
 
@@ -1482,7 +1496,7 @@ class GoogleDriveUploadAPIView(APIView):
                             extracted_text = read_uploaded_file(tmp_file)
                             pages = [(file_name, extracted_text)]
                             # print(f"Prepared pages for vector DB: {pages[0][0]}, length: {len(pages[0][1])}")
-                            store_in_vector_db(pages)
+                            store_in_vector_db(pages,knowledge_base=knowledge_bases)
                             print(f"[VECTOR DB] Uploaded '{file_name}' to vector database.")
                     except Exception as e:
                         print(f"[VECTOR DB] Exception while uploading '{file_name}' to vector database: {e}")
@@ -1528,25 +1542,39 @@ import os
 class JogetFileUploadAPIView(APIView):
     def post(self, request):
         file = request.FILES.get('file')
-        knowledge_base = request.POST.get('knowledge_base')
+        # Accept both single and multiple knowledge bases
+        knowledge_bases = request.data.getlist('knowledge_bases') or request.data.get('knowledge_bases') or []
+        if not knowledge_bases:
+            # Fallback to single knowledge_base for backward compatibility
+            kb = request.data.get('knowledge_base')
+            if kb:
+                knowledge_bases = [kb]
         form_id = request.POST.get('form_id')
 
-        if not file or not knowledge_base or not form_id:
+        if not file or not knowledge_bases or not form_id:
             return Response({'error': 'Missing required fields.'}, status=status.HTTP_400_BAD_REQUEST)
 
         ext = os.path.splitext(file.name)[1].lower()
         is_excel = ext in ['.xls', '.xlsx', '.csv']
 
-        # Save file and set description and knowledge_bases
-        from chatbot.models import Files_upload
+        from chatbot.models import Files_upload, KnowledgeBase
         from chatbot.serializers import FilesUploadSerializer
-        kb_obj, _ = KnowledgeBase.objects.get_or_create(name=knowledge_base)
 
+        # Get or create KnowledgeBase objects
+        kb_objs = []
+        for kb in knowledge_bases:
+            obj, _ = KnowledgeBase.objects.get_or_create(name=kb)
+            kb_objs.append(obj)
+
+        user = request.user if request.user and request.user.is_authenticated else None  # <-- Add this line
+        print(f"User: {user}")
         file_obj = Files_upload.objects.create(
             file=file,
-            description=form_id  # Save form_id in description for filtering
+            description=form_id,
+            added_by=user,
+            updated_by=user
         )
-        file_obj.knowledge_bases.add(kb_obj)
+        file_obj.knowledge_bases.set(kb_objs)
         file_obj.save()
 
         # --- Train vector database with file content ---
@@ -1555,7 +1583,7 @@ class JogetFileUploadAPIView(APIView):
             with file_obj.file.open('rb') as f:
                 content = read_uploaded_file(f)
             pages = [(file_obj.file.name, content)]
-            store_in_vector_db(pages)
+            store_in_vector_db(pages,knowledge_base=knowledge_bases)
         except Exception as e:
             return Response({'error': f'File saved but failed to train vector DB: {str(e)}'}, status=500)
 
@@ -1568,7 +1596,7 @@ class JogetFileUploadAPIView(APIView):
             'type': 'excel' if is_excel else 'document',
             'path': file_obj.file.name,
             'url': file_url,
-            'knowledge_base': knowledge_base,
+            'knowledge_bases': [kb.name for kb in kb_objs],
             'form_id': form_id
         }
 
