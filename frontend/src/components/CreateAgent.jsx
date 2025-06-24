@@ -1072,6 +1072,10 @@ function CreateAgent() {
     if ((type === 'files' || type === 'excel') && columns.includes('file')) {
       columns = ['file', ...columns.filter((c) => c !== 'file')];
     }
+    // Add 'view' column for files tab
+    if (type === 'files' && !columns.includes('view')) {
+      columns.push('view');
+    }
     if (type === 'text' && columns.includes('created_at')) {
       columns.splice(columns.indexOf('created_at'), 1, 'uploaded_date', 'uploaded_time');
     }
@@ -1135,6 +1139,25 @@ function CreateAgent() {
                     }
                     if (col === 'url') {
                       return <td key={col} className="border px-4 py-2"><a href={row[col]} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{row[col]}</a></td>;
+                    }
+                    // Add view button for files tab
+                    if (col === 'view' && type === 'files') {
+                      return (
+                        <td key="view" className="border px-4 py-2 text-center">
+                          {row.file ? (
+                            <a
+                              href={`${BASE_URL}${row.file}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:underline"
+                            >
+                              View
+                            </a>
+                          ) : (
+                            '-'
+                          )}
+                        </td>
+                      );
                     }
                     return (
                       <td key={col} className="border px-4 py-2">
