@@ -60,6 +60,13 @@ urlpatterns = [
     path('knowledgebase/<int:pk>/', KnowledgeBaseRetrieveUpdateDestroyAPIView.as_view(), name='knowledgebase-detail'),
     path('userprofiles/<int:pk>/update/', UserProfileUpdateAPI.as_view(), name='userprofile-update'),
     path('joget-sso-login/', JogetSSOLoginAPIView.as_view(), name='joget-sso-login'),
+    # Bulk delete endpoints
+    path('bulk-delete-files/', BulkDeleteFileUploadView.as_view(), name='bulk-delete-files'),
+    path('bulk-delete-text/', BulkDeleteTextContentView.as_view(), name='bulk-delete-text'),
+    path('bulk-delete-excel/', BulkDeleteExcelFileView.as_view(), name='bulk-delete-excel'),
+    path('bulk-delete-qa/', BulkDeleteQADataView.as_view(), name='bulk-delete-qa'),
+    path('bulk-delete-urls/', BulkDeleteURLView.as_view(), name='bulk-delete-urls'),
+    path('bulk-delete-folders/', BulkDeleteFolderView.as_view(), name='bulk-delete-folders'),
     path('', include(router.urls)),
     path('sitemap-fetch/', SitemapFetchAPIView.as_view(), name='sitemap-fetch'),
     path('token/username/', TokenByUsernameView.as_view(), name='token_by_username'),

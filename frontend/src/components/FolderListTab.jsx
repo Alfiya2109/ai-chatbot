@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaTrash, FaPlus } from 'react-icons/fa';
 import { BASE_URL } from '../base_url';
 
-const FolderListTab = () => {
+const FolderListTab = ({ onBulkDelete }) => {
   const [folders, setFolders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -13,6 +13,10 @@ const FolderListTab = () => {
   const [uploading, setUploading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [knowledgeBases, setKnowledgeBases] = useState([]);
+  
+  // Multi-select state
+  const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
+  const [selectedItems, setSelectedItems] = useState([]);
 
   // Fetch uploaded folders
   useEffect(() => {
@@ -119,38 +123,145 @@ const FolderListTab = () => {
     }
   };
 
+  // Multi-select handlers
+  const handleSelectAll = (isChecked) => {
+    if (isChecked) {
+      setSelectedItems(folders.map(item => item.id));
+    } else {
+      setSelectedItems([]);
+    }
+  };
+
+  const handleItemSelect = (itemId, isChecked) => {
+    if (isChecked) {
+      setSelectedItems(prev => [...prev, itemId]);
+    } else {
+      setSelectedItems(prev => prev.filter(id => id !== itemId));
+    }
+  };
+
+  const handleDeleteAll = () => {
+    setIsMultiSelectMode(true);
+    setSelectedItems([]);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (selectedItems.length === 0) {
+      alert('Please select at least one item to delete.');
+      return;
+    }
+
+    if (window.confirm(`Are you sure you want to delete ${selectedItems.length} folder(s)? This action cannot be undone.`)) {
+      try {
+        if (onBulkDelete) {
+          const result = await onBulkDelete(selectedItems);
+          if (result.success) {
+            setIsMultiSelectMode(false);
+            setSelectedItems([]);
+            alert(`Successfully deleted ${selectedItems.length} folder(s).`);
+            fetchFolders(); // Refresh the folder list
+          } else {
+            alert(result.error || 'Failed to delete folders. Please try again.');
+          }
+        }
+      } catch (error) {
+        console.error('Error deleting items:', error);
+        alert('Failed to delete items. Please try again.');
+      }
+    }
+  };
+
+  const handleCancelMultiSelect = () => {
+    setIsMultiSelectMode(false);
+    setSelectedItems([]);
+  };
+
   return (
     <div className="w-full">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">Uploaded Folders</h2>
-        <button
-          onClick={() => setShowModal(true)}
-          className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow flex items-center justify-center"
-          title="Upload Folder"
-        >
-          <FaPlus />
-        </button>
+        <div className="flex items-center space-x-2">
+          {!isMultiSelectMode ? (
+            <>
+              <button
+                className="bg-red-500 hover:bg-red-700 text-white rounded px-4 py-2 text-sm shadow"
+                title="Delete Multiple"
+                onClick={handleDeleteAll}
+              >
+                Delete All
+              </button>
+              <button
+                onClick={() => setShowModal(true)}
+                className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow flex items-center justify-center"
+                title="Upload Folder"
+              >
+                <FaPlus />
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="text-sm text-gray-600">
+                {selectedItems.length} selected
+              </span>
+              <button
+                className="bg-red-500 hover:bg-red-700 text-white rounded px-4 py-2 text-sm"
+                onClick={handleConfirmDelete}
+                disabled={selectedItems.length === 0}
+              >
+                Confirm Delete ({selectedItems.length})
+              </button>
+              <button
+                className="bg-gray-500 hover:bg-gray-700 text-white rounded px-4 py-2 text-sm"
+                onClick={handleCancelMultiSelect}
+              >
+                Cancel
+              </button>
+            </>
+          )}
+        </div>
       </div>
       <div className="bg-white rounded-lg shadow p-4">
         <table className="min-w-full text-sm">
           <thead>
             <tr className="bg-gray-100">
+              {isMultiSelectMode && (
+                <th className="px-3 py-2 text-left">
+                  <input
+                    type="checkbox"
+                    onChange={e => handleSelectAll(e.target.checked)}
+                    className="form-checkbox h-4 w-4 text-blue-600"
+                    checked={selectedItems.length === folders.length && folders.length > 0}
+                  />
+                </th>
+              )}
               <th className="px-3 py-2 text-left">Folder Name</th>
               <th className="px-3 py-2 text-left">Description</th>
               <th className="px-3 py-2 text-left">Knowledge Bases</th>
               <th className="px-3 py-2 text-left">Added By</th>
               <th className="px-3 py-2 text-left">Uploaded Date</th>
-              <th className="px-3 py-2 text-left">Actions</th>
+              {!isMultiSelectMode && (
+                <th className="px-3 py-2 text-left">Actions</th>
+              )}
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={6} className="text-center py-4">Loading...</td></tr>
+              <tr><td colSpan={isMultiSelectMode ? 6 : 6} className="text-center py-4">Loading...</td></tr>
             ) : folders.length === 0 ? (
-              <tr><td colSpan={6} className="text-center py-4">No folders uploaded.</td></tr>
+              <tr><td colSpan={isMultiSelectMode ? 6 : 6} className="text-center py-4">No folders uploaded.</td></tr>
             ) : (
               folders.map(folder => (
                 <tr key={folder.id} className="border-b">
+                  {isMultiSelectMode && (
+                    <td className="px-3 py-2">
+                      <input
+                        type="checkbox"
+                        onChange={e => handleItemSelect(folder.id, e.target.checked)}
+                        className="form-checkbox h-4 w-4 text-blue-600"
+                        checked={selectedItems.includes(folder.id)}
+                      />
+                    </td>
+                  )}
                   <td className="px-3 py-2">{folder.title}</td>
                   <td className="px-3 py-2">{folder.description || '-'}</td>
                   <td className="px-3 py-2">
@@ -160,20 +271,38 @@ const FolderListTab = () => {
                   </td>
                   <td className="px-3 py-2">{folder.added_by || '-'}</td>
                   <td className="px-3 py-2">{folder.created_at ? new Date(folder.created_at).toLocaleDateString() : '-'}</td>
-                  <td className="px-3 py-2">
-                    <button
-                      onClick={() => handleDelete(folder.id)}
-                      className="text-red-600 hover:text-red-800"
-                      title="Delete"
-                    >
-                      <FaTrash />
-                    </button>
-                  </td>
+                  {!isMultiSelectMode && (
+                    <td className="px-3 py-2">
+                      <button
+                        onClick={() => handleDelete(folder.id)}
+                        className="text-red-600 hover:text-red-800"
+                        title="Delete"
+                      >
+                        <FaTrash />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))
             )}
           </tbody>
         </table>
+        {isMultiSelectMode && (
+          <div className="mt-4 flex justify-end gap-2">
+            <button
+              onClick={handleConfirmDelete}
+              className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700"
+            >
+              Delete Selected
+            </button>
+            <button
+              onClick={handleCancelMultiSelect}
+              className="px-4 py-2 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
       </div>
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-600 bg-opacity-70">

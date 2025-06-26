@@ -72,6 +72,25 @@ const UserDetailsTab = ({ users, userSearch, setUserSearch, onAddUser, modalOpen
     }
   };
 
+  const handleDeleteUser = async (user) => {
+    if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+      try {
+        const userId = user.userprofile_id || user.id;
+        const res = await fetch(`${BASE_URL}/api/userprofiles/${userId}/update/`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+          }
+        });
+        if (!res.ok) throw new Error('Failed to delete user');
+        if (onRefreshUsers) onRefreshUsers();
+        alert('User deleted successfully!');
+      } catch (err) {
+        alert('Failed to delete user.');
+      }
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-lg p-6 mt-4 w-full mx-auto">
       <div className="flex items-center justify-between mb-4">
@@ -104,7 +123,7 @@ const UserDetailsTab = ({ users, userSearch, setUserSearch, onAddUser, modalOpen
             <th className="border px-2 py-1 bg-gray-100 text-left">Created Date</th>
             <th className="border px-2 py-1 bg-gray-100 text-left">Profile</th>
             <th className="border px-2 py-1 bg-gray-100 text-left">Knowledge Base</th>
-            <th className="border px-2 py-1 bg-gray-100 text-left">Action</th>
+            <th className="border px-2 py-1 bg-gray-100 text-left">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -126,12 +145,18 @@ const UserDetailsTab = ({ users, userSearch, setUserSearch, onAddUser, modalOpen
                   <td className="border px-3 py-2">{new Date(user.created_at).toLocaleDateString()}</td>
                   <td className="border px-3 py-2">{user.profile_name || ''}</td>
                   <td className="border px-3 py-2">{Array.isArray(user.knowledge_bases) ? user.knowledge_bases.map(kb => typeof kb === 'string' ? kb : kb.name).join(', ') : ''}</td>
-                  <td className="border px-3 py-2">
+                  <td className="border px-3 py-2 space-x-2">
                     <button
                       className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded"
                       onClick={() => openEditModal(user)}
                     >
                       Edit
+                    </button>
+                    <button
+                      className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded"
+                      onClick={() => handleDeleteUser(user)}
+                    >
+                      Delete
                     </button>
                   </td>
                 </tr>

@@ -1,6 +1,6 @@
 import React from 'react';
 
-const CategoriesTab = ({ categoriesList, handleEditCategory, handleCreateCategory, categoryModalOpen, setCategoryModalOpen, editingCategory, categoryForm, setCategoryForm, categoryFormError, handleCategoryFormSubmit }) => (
+const CategoriesTab = ({ categoriesList, handleEditCategory, handleDeleteCategory, handleCreateCategory, categoryModalOpen, setCategoryModalOpen, editingCategory, categoryForm, setCategoryForm, categoryFormError, handleCategoryFormSubmit }) => (
   <div className="bg-white rounded-xl shadow-lg p-6 mt-4 w-full mx-auto">
     <div className="flex items-center justify-between mb-4">
       <h3 className="text-lg font-semibold">Categories List</h3>
@@ -25,7 +25,8 @@ const CategoriesTab = ({ categoriesList, handleEditCategory, handleCreateCategor
           <tr key={cat.id}>
             <td className="border px-4 py-2">{cat.name}</td>
             <td className="border px-4 py-2">
-              <button className="px-3 py-1 bg-blue-500 text-white rounded" onClick={() => handleEditCategory(cat)}>Edit</button>
+              <button className="px-3 py-1 bg-blue-500 text-white rounded mr-2" onClick={() => handleEditCategory(cat)}>Edit</button>
+              <button className="px-3 py-1 bg-red-500 text-white rounded" onClick={() => handleDeleteCategory(cat)}>Delete</button>
             </td>
           </tr>
         ))}
