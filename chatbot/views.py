@@ -12,7 +12,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 
 from rest_framework import generics, filters, status
 from django.db.models import Count
-from .models import Feedback, URLModel, SitemapFetch
+from .models import Feedback, URLModel, SitemapFetch, FileData
 from django.views import View
 from django.http import JsonResponse
 from django.db import models
@@ -973,7 +973,7 @@ class ProfileListCreateAPI(generics.ListCreateAPIView):
     serializer_class = ProfileSerializer
     permission_classes = []  # Allow any user (including unauthenticated) to access
 
-class ProfileRetrieveUpdateAPI(generics.RetrieveUpdateAPIView):
+class ProfileRetrieveUpdateAPI(generics.RetrieveUpdateDestroyAPIView):
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
     permission_classes = [IsAuthenticated]
@@ -1111,6 +1111,19 @@ class UserProfileUpdateAPI(APIView):
         user_profile.save()
         serializer = UserProfileSerializer(user_profile)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def delete(self, request, pk):
+        try:
+            user_profile = UserProfile.objects.get(pk=pk)
+            # Also delete the associated User
+            user = user_profile.user
+            user_profile.delete()
+            user.delete()
+            return Response({'message': 'User profile deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+        except UserProfile.DoesNotExist:
+            return Response({'error': 'UserProfile not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': f'Failed to delete user profile: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -1652,3 +1665,195 @@ class JogetFileUploadAPIView(APIView):
                 return Response({'error': f'Failed to remove from vector DB: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         else:
             return Response({'error': 'Invalid file_type. Must be "document" or "excel".'}, status=status.HTTP_400_BAD_REQUEST)
+
+class BulkDeleteFileUploadView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def delete(self, request):
+        try:
+            ids = request.data.get('ids', [])
+            if not ids:
+                return Response({"error": "No IDs provided"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            files = Files_upload.objects.filter(id__in=ids)
+            if not files.exists():
+                return Response({"error": "No files found with provided IDs"}, status=status.HTTP_404_NOT_FOUND)
+            
+            # Remove from vector DB for each file
+            for file in files:
+                try:
+                    remove_from_vector_db(file.id)
+                except Exception as e:
+                    # Log error but continue with deletion
+                    print(f"Failed to remove file {file.id} from vector DB: {str(e)}")
+            
+            deleted_count = files.count()
+            files.delete()
+            
+            return Response({
+                "message": f"Successfully deleted {deleted_count} files",
+                "deleted_count": deleted_count
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class BulkDeleteTextContentView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def delete(self, request):
+        try:
+            ids = request.data.get('ids', [])
+            if not ids:
+                return Response({"error": "No IDs provided"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            texts = TextContent.objects.filter(id__in=ids)
+            if not texts.exists():
+                return Response({"error": "No text content found with provided IDs"}, status=status.HTTP_404_NOT_FOUND)
+            
+            # Remove from vector DB for each text
+            for text in texts:
+                try:
+                    remove_from_vector_db(text.id)
+                except Exception as e:
+                    print(f"Failed to remove text {text.id} from vector DB: {str(e)}")
+            
+            deleted_count = texts.count()
+            texts.delete()
+            
+            return Response({
+                "message": f"Successfully deleted {deleted_count} text entries",
+                "deleted_count": deleted_count
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class BulkDeleteExcelFileView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def delete(self, request):
+        try:
+            ids = request.data.get('ids', [])
+            if not ids:
+                return Response({"error": "No IDs provided"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            files = ExcelFile.objects.filter(id__in=ids)
+            if not files.exists():
+                return Response({"error": "No Excel files found with provided IDs"}, status=status.HTTP_404_NOT_FOUND)
+            
+            # Remove from vector DB for each file
+            for file in files:
+                try:
+                    remove_from_vector_db(file.id)
+                except Exception as e:
+                    print(f"Failed to remove Excel file {file.id} from vector DB: {str(e)}")
+            
+            deleted_count = files.count()
+            files.delete()
+            
+            return Response({
+                "message": f"Successfully deleted {deleted_count} Excel files",
+                "deleted_count": deleted_count
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class BulkDeleteQADataView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def delete(self, request):
+        try:
+            ids = request.data.get('ids', [])
+            if not ids:
+                return Response({"error": "No IDs provided"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            qa_items = QAData.objects.filter(id__in=ids)
+            if not qa_items.exists():
+                return Response({"error": "No Q&A items found with provided IDs"}, status=status.HTTP_404_NOT_FOUND)
+            
+            # Remove from vector DB for each Q&A item
+            for item in qa_items:
+                try:
+                    remove_from_vector_db(item.id)
+                except Exception as e:
+                    print(f"Failed to remove Q&A item {item.id} from vector DB: {str(e)}")
+            
+            deleted_count = qa_items.count()
+            qa_items.delete()
+            
+            return Response({
+                "message": f"Successfully deleted {deleted_count} Q&A items",
+                "deleted_count": deleted_count
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class BulkDeleteURLView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def delete(self, request):
+        try:
+            ids = request.data.get('ids', [])
+            if not ids:
+                return Response({"error": "No IDs provided"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            urls = URLModel.objects.filter(id__in=ids)
+            if not urls.exists():
+                return Response({"error": "No URLs found with provided IDs"}, status=status.HTTP_404_NOT_FOUND)
+            
+            # Remove from vector DB for each URL
+            for url in urls:
+                try:
+                    remove_from_vector_db(str(url.id))
+                except Exception as e:
+                    print(f"Failed to remove URL {url.id} from vector DB: {str(e)}")
+            
+            deleted_count = urls.count()
+            urls.delete()
+            
+            return Response({
+                "message": f"Successfully deleted {deleted_count} URLs",
+                "deleted_count": deleted_count
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class BulkDeleteFolderView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def delete(self, request):
+        try:
+            ids = request.data.get('ids', [])
+            if not ids:
+                return Response({"error": "No IDs provided"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            folders = FileData.objects.filter(id__in=ids)
+            if not folders.exists():
+                return Response({"error": "No folders found with provided IDs"}, status=status.HTTP_404_NOT_FOUND)
+            
+            # Remove from vector DB for each folder
+            for folder in folders:
+                try:
+                    remove_from_vector_db(folder.id)
+                except Exception as e:
+                    print(f"Failed to remove folder {folder.id} from vector DB: {str(e)}")
+            
+            deleted_count = folders.count()
+            folders.delete()
+            
+            return Response({
+                "message": f"Successfully deleted {deleted_count} folders",
+                "deleted_count": deleted_count
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

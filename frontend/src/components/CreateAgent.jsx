@@ -375,6 +375,22 @@ function CreateAgent() {
     }
   };
 
+  // Delete category
+  const handleDeleteCategory = async (category) => {
+    if (window.confirm(`Are you sure you want to delete the category "${category.name}"?`)) {
+      try {
+        const token = localStorage.getItem('access_token');
+        await axios.delete(`${BASE_URL}/api/categories/${category.id}/`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        fetchCategoriesList(); // Refresh the list
+      } catch (error) {
+        console.error('Error deleting category:', error);
+        alert('Failed to delete category.');
+      }
+    }
+  };
+
   // Fetch categories when any modal opens
   useEffect(() => {
     if (fileModalOpen || excelModalOpen || textModalOpen || categoryModalOpen) {
@@ -535,6 +551,173 @@ function CreateAgent() {
       console.error('Error deleting text:', error);
     }
   };
+
+  // Bulk delete handlers
+  const handleBulkFileDelete = async (fileIds) => {
+    try {
+      const token = localStorage.getItem('access_token');
+      await axios.delete(`${BASE_URL}/api/bulk-delete-files/`, 
+        {
+          data: { ids: fileIds },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      fetchFiles();
+      return { success: true };
+    } catch (error) {
+      console.error('Error bulk deleting files:', error);
+      return { success: false, error: error.response?.data?.error || 'Failed to delete files' };
+    }
+  };
+
+  const handleBulkTextDelete = async (textIds) => {
+    try {
+      const token = localStorage.getItem('access_token');
+      await axios.delete(`${BASE_URL}/api/bulk-delete-textcontents/`, 
+        {
+          data: { ids: textIds },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      fetchText();
+      return { success: true };
+    } catch (error) {
+      console.error('Error bulk deleting text content:', error);
+      return { success: false, error: error.response?.data?.error || 'Failed to delete text content' };
+    }
+  };
+
+  const handleBulkExcelDelete = async (excelIds) => {
+    try {
+      const token = localStorage.getItem('access_token');
+      await axios.delete(`${BASE_URL}/api/bulk-delete-excel/`, 
+        {
+          data: { ids: excelIds },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      fetchExcel();
+      return { success: true };
+    } catch (error) {
+      console.error('Error bulk deleting Excel files:', error);
+      return { success: false, error: error.response?.data?.error || 'Failed to delete Excel files' };
+    }
+  };
+
+  const handleBulkQADelete = async (qaIds) => {
+    try {
+      const token = localStorage.getItem('access_token');
+      await axios.delete(`${BASE_URL}/api/bulk-delete-qa/`, 
+        {
+          data: { ids: qaIds },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      fetchQA();
+      return { success: true };
+    } catch (error) {
+      console.error('Error bulk deleting Q&A data:', error);
+      return { success: false, error: error.response?.data?.error || 'Failed to delete Q&A data' };
+    }
+  };
+
+  const handleBulkURLDelete = async (urlIds) => {
+    try {
+      const token = localStorage.getItem('access_token');
+      await axios.delete(`${BASE_URL}/api/bulk-delete-urls/`, 
+        {
+          data: { ids: urlIds },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      fetchURLs();
+      return { success: true };
+    } catch (error) {
+      console.error('Error bulk deleting URLs:', error);
+      return { success: false, error: error.response?.data?.error || 'Failed to delete URLs' };
+    }
+  };
+
+  const handleBulkFolderDelete = async (folderIds) => {
+    try {
+      const token = localStorage.getItem('access_token');
+      await axios.delete(`${BASE_URL}/api/bulk-delete-folders/`, 
+        {
+          data: { ids: folderIds },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      // Assuming there's a fetchFolders function, if not we'll need to create it
+      // fetchFolders();
+      return { success: true };
+    } catch (error) {
+      console.error('Error bulk deleting folders:', error);
+      return { success: false, error: error.response?.data?.error || 'Failed to delete folders' };
+    }
+  };
+  // Profile Upload and Train Handlers
+
+  const handleProfileUploadAndTrain = async (file) => {
+    try {
+      // Validate knowledge base selection
+      if (!fileForm.knowledge_bases || fileForm.knowledge_bases.length === 0) {
+        alert('Please select at least one knowledge base before training.');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+      const token = localStorage.getItem('access_token');
+      const uploadResponse = await axios.post(`${BASE_URL}/api/filesupload/`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const uploadedFile = uploadResponse.data;
+      setUploadedFiles((prevFiles) => [...prevFiles, uploadedFile]);
+
+      // Pass knowledge base to train API call
+      const trainFormData = new FormData();
+      trainFormData.append('type', 'file');
+      trainFormData.append('file', file);
+      // Add knowledge base names to the training payload
+      const selectedNames = knowledgeBases
+        .filter(kb => fileForm.knowledge_bases.includes(String(kb.id)))
+        .map(kb => kb.name);
+      selectedNames.forEach((name) => trainFormData.append('knowledge_bases', name));
+
+      const trainResponse = await axios.post(`${BASE_URL}/api/upload-and-train/`, trainFormData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      alert(trainResponse.data.message || 'Training initiated successfully!');
+    } catch (error) {
+      console.error('Error during profile upload and training:', error);
+      alert('Failed to upload and train. Please try again.');
+    }
+  };
+
+  // Text Upload and Train Handler
 
   const handleTextUploadAndTrain = async () => {
     try {
@@ -837,6 +1020,22 @@ function CreateAgent() {
     setProfileModalOpen(true);
   };
 
+  // Delete profile
+  const handleDeleteProfile = async (id) => {
+    if (window.confirm('Are you sure you want to delete this profile? This action cannot be undone.')) {
+      try {
+        const token = localStorage.getItem('access_token');
+        await axios.delete(`${BASE_URL}/api/profiles/${id}/`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        fetchProfiles();
+        alert('Profile deleted successfully!');
+      } catch (error) {
+        alert('Failed to delete profile.');
+      }
+    }
+  };
+
   // Create or update knowledge base
   const handleKbFormSubmit = async (e) => {
     e.preventDefault();
@@ -1064,8 +1263,10 @@ function CreateAgent() {
 
   // Render table helper for various data types
 
-  const renderTable = (data, type) => {
+  const renderTable = (data, type, multiSelectOptions = null) => {
     if (!data || data.length === 0) return <div>No data available.</div>;
+
+    const { isMultiSelectMode, selectedItems, onSelectAll, onItemSelect } = multiSelectOptions || {};
 
     // Unified table rendering for all types, including URL
     let columns = Object.keys(data[0]).filter((col) => col !== 'id');
@@ -1106,6 +1307,16 @@ function CreateAgent() {
           <table className="w-full border text-sm rounded-lg overflow-hidden">
             <thead>
               <tr>
+                {isMultiSelectMode && (
+                  <th className="border px-4 py-2 bg-gray-100 text-gray-700 font-semibold">
+                    <input
+                      type="checkbox"
+                      onChange={e => onSelectAll && onSelectAll(e.target.checked)}
+                      checked={selectedItems && selectedItems.length === data.length && data.length > 0}
+                      className="rounded"
+                    />
+                  </th>
+                )}
                 {columns.map((col) => (
                   <th key={col} className="border px-4 py-2 bg-gray-100 text-gray-700 font-semibold">
                     {col === 'file' ? 'File attachment' :
@@ -1120,12 +1331,24 @@ function CreateAgent() {
                      col.charAt(0).toUpperCase() + col.slice(1)}
                   </th>
                 ))}
-                <th className="border px-4 py-2 bg-gray-100 text-gray-700 font-semibold">Actions</th>
+                {!isMultiSelectMode && (
+                  <th className="border px-4 py-2 bg-gray-100 text-gray-700 font-semibold">Actions</th>
+                )}
               </tr>
             </thead>
             <tbody>
               {data.map((row, idx) => (
                 <tr key={row.file || row.content || row.url || row.question || row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                  {isMultiSelectMode && (
+                    <td className="border px-4 py-2 text-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedItems && selectedItems.includes(row.id)}
+                        onChange={e => onItemSelect && onItemSelect(row.id, e.target.checked)}
+                        className="rounded"
+                      />
+                    </td>
+                  )}
                   {columns.map((col) => {
                     if (col === 'uploaded_date') return <td key="uploaded_date" className="border px-4 py-2">{formatDate(row.uploaded_at || row.created_at)}</td>;
                     if (col === 'uploaded_time') return <td key="uploaded_time" className="border px-4 py-2">{formatTime(row.uploaded_at || row.created_at)}</td>;
@@ -1175,21 +1398,23 @@ function CreateAgent() {
                       </td>
                     );
                   })}
-                  <td className="border px-4 py-2 text-center">
-                    <FaTrash
-                      className="text-red-500 cursor-pointer hover:text-red-700"
-                      onClick={() => {
-                        if (type === 'files') handleFileDelete(row.id);
-                        else if (type === 'excel') handleExcelDelete(row.id);
-                        else if (type === 'text') handleTextDelete(row.id);
-                        else if (type === 'qa') {
-                          axios.delete(`${BASE_URL}/api/qa/${row.id}/`).then(fetchQA);
-                        } else if (type === 'url') {
-                          axios.delete(`${BASE_URL}/api/urls/${row.id}/`).then(fetchURLs);
-                        }
-                      }}
-                    />
-                  </td>
+                  {!isMultiSelectMode && (
+                    <td className="border px-4 py-2 text-center">
+                      <FaTrash
+                        className="text-red-500 cursor-pointer hover:text-red-700"
+                        onClick={() => {
+                          if (type === 'files') handleFileDelete(row.id);
+                          else if (type === 'excel') handleExcelDelete(row.id);
+                          else if (type === 'text') handleTextDelete(row.id);
+                          else if (type === 'qa') {
+                            axios.delete(`${BASE_URL}/api/qa/${row.id}/`).then(fetchQA);
+                          } else if (type === 'url') {
+                            axios.delete(`${BASE_URL}/api/urls/${row.id}/`).then(fetchURLs);
+                          }
+                        }}
+                      />
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -1660,12 +1885,13 @@ function CreateAgent() {
     const filteredUsers = users.filter((user) => {
       const searchLower = userSearch.toLowerCase();
       return (
+
         (user.first_name && user.first_name.toLowerCase().includes(searchLower)) ||
         (user.last_name && user.last_name.toLowerCase().includes(searchLower)) ||
         (user.phone_number && user.phone_number.toLowerCase().includes(searchLower)) ||
         (user.email && user.email.toLowerCase().includes(searchLower)) ||
         (user.created_at && new Date(user.created_at).toLocaleDateString().includes(searchLower))
-      );
+           );
     });
 
     return (
@@ -1742,19 +1968,25 @@ function CreateAgent() {
         <thead>
           <tr>
             <th className="border px-4 py-2 bg-gray-100 text-left">Profile</th>
-            <th className="border px-4 py-2 bg-gray-100 text-left">Access</th>
+            <th className="border px-4 py-2 bg-gray-100 text-left">Actions</th>
           </tr>
         </thead>
         <tbody>
           {profiles.map((profile) => (
             <tr key={profile.id}>
               <td className="border px-4 py-2">{profile.name}</td>
-              <td className="border px-4 py-2">
+              <td className="border px-4 py-2 space-x-2">
                 <button
                   className="px-3 py-1 bg-blue-500 text-white rounded"
                   onClick={() => handleEditProfile(profile)}
                 >
                   Edit
+                </button>
+                <button
+                  className="px-3 py-1 bg-red-500 text-white rounded"
+                  onClick={() => handleDeleteProfile(profile.id)}
+                >
+                  Delete
                 </button>
               </td>
             </tr>
@@ -1906,7 +2138,8 @@ function CreateAgent() {
               <tr key={cat.id}>
                 <td className="border px-4 py-2">{cat.name}</td>
                 <td className="border px-4 py-2">
-                  <button className="px-3 py-1 bg-blue-500 text-white rounded" onClick={() => handleEditCategory(cat)}>Edit</button>
+                  <button className="px-3 py-1 bg-blue-500 text-white rounded mr-2" onClick={() => handleEditCategory(cat)}>Edit</button>
+                  <button className="px-3 py-1 bg-red-500 text-white rounded" onClick={() => handleDeleteCategory(cat)}>Delete</button>
                 </td>
               </tr>
             ))
@@ -1972,6 +2205,7 @@ function CreateAgent() {
             fileFormError={fileFormError}
             handleFileModalSubmit={handleFileModalSubmit}
             fetchKnowledgeBases={fetchKnowledgeBases}
+            onBulkDelete={handleBulkFileDelete}
           />
         );
       case 'Text':
@@ -1987,6 +2221,7 @@ function CreateAgent() {
             textFormError={textFormError}
             handleTextModalSubmit={handleTextModalSubmit}
             fetchKnowledgeBases={fetchKnowledgeBases}
+            onBulkDelete={handleBulkTextDelete}
           />
         );
       case 'Excel/CSV':
@@ -2002,6 +2237,7 @@ function CreateAgent() {
             excelFormError={excelFormError}
             handleExcelModalSubmit={handleExcelModalSubmit}
             fetchKnowledgeBases={fetchKnowledgeBases}
+            onBulkDelete={handleBulkExcelDelete}
           />
         );
       case 'Q&A':
@@ -2018,6 +2254,7 @@ function CreateAgent() {
             knowledgeBases={knowledgeBases}
             qaFormError={qaFormError}
             handleQaModalSubmit={handleQaModalSubmit}
+            onBulkDelete={handleBulkQADelete}
           />
         );
       case 'URL':
@@ -2032,6 +2269,7 @@ function CreateAgent() {
             knowledgeBases={knowledgeBases}
             urlFormError={urlFormError}
             handleUrlModalSubmit={handleUrlModalSubmit}
+            onBulkDelete={handleBulkURLDelete}
           />
         );
       case 'Profile':
@@ -2039,6 +2277,7 @@ function CreateAgent() {
           <ProfileTab
             profiles={profiles}
             handleEditProfile={handleEditProfile}
+            handleDeleteProfile={handleDeleteProfile}
             handleCreateProfile={handleCreateProfile}
             profileModalOpen={profileModalOpen}
             setProfileModalOpen={setProfileModalOpen}
@@ -2068,6 +2307,7 @@ function CreateAgent() {
           <CategoriesTab
             categoriesList={categoriesList}
             handleEditCategory={handleEditCategory}
+            handleDeleteCategory={handleDeleteCategory}
             handleCreateCategory={handleCreateCategory}
             categoryModalOpen={categoryModalOpen}
             setCategoryModalOpen={setCategoryModalOpen}
@@ -2107,7 +2347,7 @@ function CreateAgent() {
       case 'Chatbot History':
         return null;
       case 'Folder':
-        return <FolderListTab />;
+        return <FolderListTab onBulkDelete={handleBulkFolderDelete} />;
       case 'Google Drive':
         return <GoogleDrive />;
       default:

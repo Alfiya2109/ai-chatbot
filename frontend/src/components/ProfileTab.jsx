@@ -1,6 +1,6 @@
 import React from 'react';
 
-const ProfileTab = ({ profiles, handleEditProfile, handleCreateProfile, profileModalOpen, setProfileModalOpen, editingProfile, profileForm, setProfileForm, handleProfileFormSubmit }) => (
+const ProfileTab = ({ profiles, handleEditProfile, handleDeleteProfile, handleCreateProfile, profileModalOpen, setProfileModalOpen, editingProfile, profileForm, setProfileForm, handleProfileFormSubmit }) => (
   <div className="bg-white rounded-xl shadow-lg p-6 mt-4 w-full mx-auto">
     <div className="flex items-center justify-between mb-4">
       <h3 className="text-lg font-semibold">Profile Access Table</h3>
@@ -17,19 +17,25 @@ const ProfileTab = ({ profiles, handleEditProfile, handleCreateProfile, profileM
       <thead>
         <tr>
           <th className="border px-4 py-2 bg-gray-100 text-left">Profile</th>
-          <th className="border px-4 py-2 bg-gray-100 text-left">Access</th>
+          <th className="border px-4 py-2 bg-gray-100 text-left">Actions</th>
         </tr>
       </thead>
       <tbody>
         {profiles.map((profile) => (
           <tr key={profile.id}>
             <td className="border px-4 py-2">{profile.name}</td>
-            <td className="border px-4 py-2">
+            <td className="border px-4 py-2 space-x-2">
               <button
                 className="px-3 py-1 bg-blue-500 text-white rounded"
                 onClick={() => handleEditProfile(profile)}
               >
                 Edit
+              </button>
+              <button
+                className="px-3 py-1 bg-red-500 text-white rounded"
+                onClick={() => handleDeleteProfile(profile.id)}
+              >
+                Delete
               </button>
             </td>
           </tr>
