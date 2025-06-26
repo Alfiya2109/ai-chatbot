@@ -6,7 +6,7 @@ import { IoMicOutline } from "react-icons/io5";
 import { FaStop } from "react-icons/fa6";
 import { IoSend } from "react-icons/io5";
 import { FaRobot } from "react-icons/fa";
-import { FaSearch, FaPlus, FaBook, FaUserCircle } from "react-icons/fa";
+import { FaSearch, FaPlus, FaBook, FaUserCircle, FaSignOutAlt } from "react-icons/fa";
 import { FiEdit } from "react-icons/fi";
 import { BsLayoutSidebar } from "react-icons/bs";
 import { IoSearchOutline } from "react-icons/io5";
@@ -96,6 +96,9 @@ export default function Chatbot() {
   const [activeSession, setActiveSession] = useState(null);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
+
+  // Profile dropdown state
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
     // Scroll to bottom when messages change
     useEffect(() => {
@@ -259,6 +262,14 @@ export default function Chatbot() {
 
     const handleOptionClick = (option) => {
       setQuestion(option)
+    }
+
+    // Logout handler
+    const handleLogout = () => {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      logout(); // Use the logout from AuthContext
+      navigate('/login');
     }
     
     // Sample quick options
@@ -425,13 +436,35 @@ function formatBotAnswer(text) {
               <span className="text-lg font-semibold text-gray-800">AI Chatbot</span>
             </div>
             <div className="flex items-center gap-2">
-              <FaUserCircle className="text-2xl text-gray-500" />
-              {userProfile && (
-                <div className="flex flex-col items-start leading-tight">
-                  <span className="font-semibold text-gray-900 text-base">{userProfile.first_name} {userProfile.last_name}</span>
-                  <span className="text-sm text-gray-500">Profile: {userProfile.profile_name || userProfile.profile}</span>
+              <div className="relative">
+                <div
+                  className="flex items-center gap-2 cursor-pointer select-none"
+                  onClick={() => setProfileDropdownOpen((open) => !open)}
+                >
+                  <FaUserCircle className="text-2xl text-gray-500" />
+                  {userProfile && (
+                    <div className="flex flex-col items-start leading-tight">
+                      <span className="font-semibold text-gray-900 text-base">
+                        {userProfile.first_name} {userProfile.last_name}
+                      </span>
+                      <span className="text-sm text-gray-500">
+                        Profile: {userProfile.profile_name || userProfile.profile}
+                      </span>
+                    </div>
+                  )}
                 </div>
-              )}
+                {profileDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-32 text-sm bg-white rounded shadow-lg border z-50">
+                    <div
+                      className="px-4 py-3 flex items-center gap-2 cursor-pointer hover:bg-gray-100"
+                      onClick={handleLogout}
+                    >
+                      <FaSignOutAlt className="text-lg text-gray-700" />
+                      <span className="font-semibold text-gray-900 text-sm">Logout</span>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
           <div className={`${sidebarOpen ? 'max-w-2xl' : 'max-w-3xl'} w-full  mx-auto flex flex-col items-center justify-center h-full relative`}>

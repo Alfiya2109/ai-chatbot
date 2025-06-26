@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import * as XLSX from 'xlsx';
 import { IoFilter, IoBarChart } from 'react-icons/io5';
-import { FaPencilAlt, FaCheck } from 'react-icons/fa';
+import { FaPencilAlt, FaCheck, FaUserCircle, FaSignOutAlt } from 'react-icons/fa';
 import { MdSimCardDownload } from 'react-icons/md';
 import Multiselect from 'multiselect-react-dropdown';
 import { BASE_URL } from '../base_url';
@@ -30,24 +30,64 @@ function Config() {
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
 
+  // Add state for user profile
+  const [userProfile, setUserProfile] = useState(null);
+
+  // Profile dropdown state
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+
+  // Logout handler
+  const handleLogout = () => {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    logout();
+    navigate('/login');
+  };
+
+  // Fetch user profile
   useEffect(() => {
-    if (!currentUser || currentUser.role !== 'sales') {
-      navigate('/chatbot');
-    } else {
-      fetchChatLogs();
+    const fetchUserProfile = async () => {
+      try {
+        const token = currentUser?.token || localStorage.getItem('access_token');
+        const response = await fetch(`${API_BASE_URL}/api/userprofiles/me/`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setUserProfile(data.userprofile);
+        }
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+        setUserProfile(null);
+      }
+    };
+    if (currentUser) {
+      fetchUserProfile();
     }
+  }, [currentUser]);
+
+  useEffect(() => {
+    // Check if user has access, but don't redirect - just show appropriate content
+    fetchChatLogs();
   }, [currentUser]);
 
   const fetchChatLogs = async () => {
     try {
       const token = currentUser?.token || localStorage.getItem('access_token');
+      
       const res = await fetch(`${API_BASE_URL}/api/chatlogs/`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      
       const data = await res.json();
       setChatLogs(data);
     } catch (err) {
-      console.error(err);
+      console.error('Error fetching chat logs:', err);
+      setChatLogs([]); // Set empty array on error
     }
   };
 
@@ -96,6 +136,49 @@ function Config() {
       }
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleUpdateFeedback = async (id) => {
+    const token = currentUser?.token || localStorage.getItem('access_token');
+    try {
+      // If we're in editing mode, update the answer
+      if (editId === id) {
+        const res = await fetch(`${API_BASE_URL}/api/chatlogs/${id}/update-answer/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ gpt_answer: editAnswer })
+        });
+        if (res.ok) {
+          setChatLogs(prev => prev.map(log => log.id === id ? { ...log, gpt_answer: editAnswer } : log));
+          setEditId(null);
+          setEditAnswer('');
+        } else {
+          const errorData = await res.json();
+          console.error("Error updating answer:", errorData);
+        }
+      } else {
+        // Mark as correct/approved
+        const res = await fetch(`${API_BASE_URL}/api/chatlogs/${id}/mark-correct/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ is_correct: true })
+        });
+        if (res.ok) {
+          setChatLogs(prev => prev.map(log => log.id === id ? { ...log, is_correct: true } : log));
+        } else {
+          const errorData = await res.json();
+          console.error("Error marking as correct:", errorData);
+        }
+      }
+    } catch (err) {
+      console.error('Error in handleUpdateFeedback:', err);
     }
   };
 
@@ -190,8 +273,48 @@ function Config() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100 py-8 px-2">
+      {/* Header with user profile and logout */}
+      <div className="absolute top-4 right-8 flex items-center gap-2 z-50">
+        <div className="relative">
+          <div
+            className="flex items-center gap-2 cursor-pointer select-none"
+            onClick={() => setProfileDropdownOpen((open) => !open)}
+          >
+            <FaUserCircle className="text-2xl text-gray-500" />
+            {userProfile && (
+              <div className="flex flex-col items-start leading-tight">
+                <span className="font-semibold text-gray-900 text-base">
+                  {userProfile.first_name} {userProfile.last_name}
+                </span>
+                <span className="text-sm text-gray-500">
+                  Profile: {userProfile.profile_name || userProfile.profile}
+                </span>
+              </div>
+            )}
+          </div>
+          {profileDropdownOpen && (
+            <div className="absolute right-0 mt-2 w-32 text-sm bg-white rounded shadow-lg border z-50">
+              <div
+                className="px-4 py-3 flex items-center gap-2 cursor-pointer hover:bg-gray-100"
+                onClick={handleLogout}
+              >
+                <FaSignOutAlt className="text-lg text-gray-700" />
+                <span className="font-semibold text-gray-900 text-sm">Logout</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className="w-full max-w-7xl bg-white rounded-xl shadow-lg p-2">
-        <h2 className="text-3xl font-semibold text-gray-800 mb-6 text-center">Configuration</h2>
+        {chatLogs.length === 0 ? (
+          <div className="text-center py-8">
+            <h2 className="text-3xl font-semibold text-gray-800 mb-6">Configuration</h2>
+            <p className="text-gray-600">Loading chat logs...</p>
+          </div>
+        ) : (
+          <>
+            <h2 className="text-3xl font-semibold text-gray-800 mb-6 text-center">Configuration</h2>
         <div>
           <div className="flex justify-between mb-2">
             <h2 className="text-lg font-semibold text-gray-800 mb-2">Chat Logs</h2>
@@ -384,6 +507,8 @@ function Config() {
             </tbody>
           </table>
         </div>
+          </>
+        )}
       </div>
     </div>
   );

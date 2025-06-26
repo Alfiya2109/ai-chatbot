@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { FaTrash, FaUserCircle } from 'react-icons/fa';
+import { FaTrash, FaUserCircle, FaSignOutAlt } from 'react-icons/fa';
 import { BASE_URL } from '../base_url';
 import { FaPlus } from 'react-icons/fa6';
 import FileListTab from './FileListTab';
@@ -153,9 +153,12 @@ function CreateAgent() {
   const navigate = useNavigate();
 
   // Store current user's profile
-  const [userProfile, setUserProfile] = useState(null); // Store current user's profile
+  const [userProfile, setUserProfile] = useState(null);
   // Remove static tabs, will build dynamically
   const [dynamicTabs, setDynamicTabs] = useState([]);
+
+  // Add this line:
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
   // Set the first accessible tab as active when tabs change
   useEffect(() => {
@@ -415,13 +418,26 @@ function CreateAgent() {
   }, [activeTab]);
 
   const handleTabClick = (tab) => {
-    if (tab === 'Chatbot History') {
+    if (tab.toLowerCase() === 'chatbot history' || tab.toLowerCase() === 'history') {
+      // Check if user is Non-Sales and show alert
+      const profile = localStorage.getItem('profile') || userProfile?.profile;
+      if (profile && (profile.toLowerCase() === 'non-sales' || profile.toLowerCase() === 'nonsales')) {
+        alert('Access Denied: Non-Sales users are not authorized to view Chatbot History. Please contact your administrator for access.');
+        return;
+      }
       navigate('/config');
     } else if (tab.toLowerCase() === 'chatbot') {
       navigate('/chatbot');
     } else {
       setActiveTab(tab);
     }
+  };
+
+  // Logout handler
+  const handleLogout = () => {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    navigate('/login');
   };
 
   // File Upload and Train Handlers
@@ -2522,13 +2538,31 @@ function CreateAgent() {
   return (
     <div className="min-h-screen bg-gray-100">
       <div className="absolute top-4 right-8 flex items-center gap-2 z-50">
-        <FaUserCircle className="text-2xl text-gray-500" />
-        {userProfile && (
-          <div className="flex flex-col items-start leading-tight">
-            <span className="font-semibold text-gray-900 text-base">{userProfile.first_name} {userProfile.last_name}</span>
-            <span className="text-sm text-gray-500">Profile: {userProfile.profile_name || userProfile.profile}</span>
+        <div className="relative">
+          <div
+            className="flex items-center gap-2 cursor-pointer select-none"
+            onClick={() => setProfileDropdownOpen((open) => !open)}
+          >
+            <FaUserCircle className="text-2xl text-gray-500" />
+            {userProfile && (
+              <div className="flex flex-col items-start leading-tight">
+                <span className="font-semibold text-gray-900 text-base">{userProfile.first_name} {userProfile.last_name}</span>
+                <span className="text-sm text-gray-500">Profile: {userProfile.profile_name || userProfile.profile}</span>
+              </div>
+            )}
           </div>
-        )}
+          {profileDropdownOpen && (
+            <div className="absolute right-0 mt-2 w-32 text-sm bg-white rounded shadow-lg border z-50">
+              <div
+                className="px-4 py-3 flex items-center gap-2 cursor-pointer hover:bg-gray-100"
+                onClick={handleLogout}
+              >
+                <FaSignOutAlt className="text-lg text-gray-700" />
+                <span className="font-semibold text-gray-900 text-sm">Logout</span>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
       <div className="flex  min-h-screen bg-gray-100">
         <div
@@ -2553,7 +2587,7 @@ function CreateAgent() {
                         className={`cursor-pointer p-2 rounded-md w-full text-left ${
                           activeTab.toLowerCase() === tab.toLowerCase() ? 'bg-gray-500 text-white font-bold' : 'text-gray-600 hover:bg-gray-200'
                         }`}
-                        onClick={() => handleTabClick(tab.charAt(0).toUpperCase() + tab.slice(1))}
+                        onClick={() => handleTabClick(tab)}
                       >
                         {tab.charAt(0).toUpperCase() + tab.slice(1)}
                       </div>
@@ -2563,7 +2597,6 @@ function CreateAgent() {
               </div>
             ))}
           </div>
-          {/* Removed + Button from here */}
         </div>
 
         <div className="w-full flex flex-col p-6 justify-center items-center">{renderContent()}</div>
