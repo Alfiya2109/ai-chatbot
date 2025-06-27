@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { FaTrash, FaUserCircle, FaSignOutAlt } from 'react-icons/fa';
 import { BASE_URL } from '../base_url';
-import { FaPlus } from 'react-icons/fa6';
 import FileListTab from './FileListTab';
 import TextListTab from './TextListTab';
 import ExcelListTab from './ExcelListTab';
@@ -25,11 +24,11 @@ const tabSections = [
   },
   {
     label: 'source data',
-    tabs: ['Folder','files', 'text', 'Excel/CSV', 'URL', 'Q&A']
+    tabs: ['Folder','Files', 'Text', 'Excel/CSV', 'URL', 'Q&A']
   },
   {
     label: 'setup',
-    tabs: [ 'User Details', 'profile', 'Knowledge Base']
+    tabs: [ 'User Details', 'Profile', 'Knowledge Base']
   },
   {
     label: 'Master',
@@ -42,7 +41,6 @@ const tabSections = [
 ];
 
 function CreateAgent() {
-  // Modal state for file upload (must be at the very top, before any useEffect or function that uses it)
   const [fileModalOpen, setFileModalOpen] = useState(false);
   const [fileForm, setFileForm] = useState({
     file: null,
@@ -50,8 +48,6 @@ function CreateAgent() {
     knowledge_bases: [],
   });
   const [fileFormError, setFileFormError] = useState('');
-
-  // Excel/CSV Modal state
   const [excelModalOpen, setExcelModalOpen] = useState(false);
   const [excelForm, setExcelForm] = useState({
     file: null,
@@ -59,8 +55,6 @@ function CreateAgent() {
     knowledge_bases: [],
   });
   const [excelFormError, setExcelFormError] = useState('');
-
-  // TextContent Modal state
   const [textModalOpen, setTextModalOpen] = useState(false);
   const [textForm, setTextForm] = useState({
     content: '',
@@ -68,8 +62,6 @@ function CreateAgent() {
     knowledge_bases: [],
   });
   const [textFormError, setTextFormError] = useState('');
-
-  // Q&A Modal state
   const [qaModalOpen, setQaModalOpen] = useState(false);
   const [qaForm, setQaForm] = useState({
     question: '',
@@ -80,14 +72,10 @@ function CreateAgent() {
     knowledge_bases: [],
   });
   const [qaFormError, setQaFormError] = useState('');
-
-  // Add URL Modal state
   const [urlModalOpen, setUrlModalOpen] = useState(false);
   const [urlForm, setUrlForm] = useState({ url: '', description: '', knowledge_bases: [] });
   const [urlFormError, setUrlFormError] = useState('');
-
   const [activeTab, setActiveTab] = useState('Files');
-  const [dragging, setDragging] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [uploadedTexts, setUploadedTexts] = useState([]);
   const [textInput, setTextInput] = useState('');
@@ -98,7 +86,6 @@ function CreateAgent() {
   const [urlList, setUrlList] = useState([]);
   const [users, setUsers] = useState([]); // For User Details tab
   const [userSearch, setUserSearch] = useState(''); // User search filter
-
   const [modalOpen, setModalOpen] = useState(false);
   const [newUserData, setNewUserData] = useState({
     first_name: '',
@@ -109,7 +96,6 @@ function CreateAgent() {
     password: '',
     profile: '', // Added profile field
   });
-
   // Profile Tab State
   const [profiles, setProfiles] = useState([]);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
@@ -125,49 +111,22 @@ function CreateAgent() {
     user_profile_access: false, // NEW
     user_details_access: false, // NEW
   });
-
   // Knowledge Base State
   const [knowledgeBases, setKnowledgeBases] = useState([]);
   const [kbModalOpen, setKbModalOpen] = useState(false);
   const [editingKb, setEditingKb] = useState(null);
   const [kbForm, setKbForm] = useState({ name: '' });
-
-  // Add 'Categories', 'Subcategories', 'Chatbot', and 'History' to the tabs array
-  const tabs = [
-    'Files',
-    'Text',
-    'Excel/CSV',
-    'Q&A',
-    'URL',
-    'Folders', // Add Folders tab
-    'Chatbot', // RESTORED
-    'History', // RESTORED
-    'User Details',
-    'Profile',
-    'Knowledge Base',
-    'Categories',
-    'Subcategories',
-    
-  ];
-
   const navigate = useNavigate();
-
-  // Store current user's profile
   const [userProfile, setUserProfile] = useState(null);
-  // Remove static tabs, will build dynamically
   const [dynamicTabs, setDynamicTabs] = useState([]);
-
-  // Add this line:
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
-  // Set the first accessible tab as active when tabs change
   useEffect(() => {
     if (dynamicTabs.length > 0 && !dynamicTabs.includes(activeTab)) {
       setActiveTab(dynamicTabs[0]);
     }
   }, [dynamicTabs]);
 
-  // Fetch current user's profile on mount
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
@@ -288,7 +247,6 @@ function CreateAgent() {
     }
   };
 
-  // Fetch profiles from backend
   const fetchProfiles = async () => {
     try {
       const token = localStorage.getItem('access_token');
@@ -301,7 +259,6 @@ function CreateAgent() {
     }
   };
 
-  // Fetch Knowledge Bases
   const fetchKnowledgeBases = async () => {
     try {
       const token = localStorage.getItem('access_token');
@@ -417,6 +374,7 @@ function CreateAgent() {
     }
   }, [activeTab]);
 
+
   const handleTabClick = (tab) => {
     if (tab.toLowerCase() === 'chatbot history' || tab.toLowerCase() === 'history') {
       // Check if user is Non-Sales and show alert
@@ -429,6 +387,9 @@ function CreateAgent() {
     } else if (tab.toLowerCase() === 'chatbot') {
       navigate('/chatbot');
     } else {
+      if (tab === 'Profile') {
+        fetchProfiles(); // Always fetch profiles on Profile tab click
+      }
       setActiveTab(tab);
     }
   };
@@ -439,93 +400,6 @@ function CreateAgent() {
     localStorage.removeItem('refresh_token');
     navigate('/login');
   };
-
-  // File Upload and Train Handlers
-
-  const handleFileUploadAndTrain = async (file) => {
-    try {
-      // Validate knowledge base selection
-      if (!fileForm.knowledge_bases || fileForm.knowledge_bases.length === 0) {
-        alert('Please select at least one knowledge base before training.');
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append('file', file);
-      const token = localStorage.getItem('access_token');
-      const uploadResponse = await axios.post(`${BASE_URL}/api/filesupload/`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const uploadedFile = uploadResponse.data;
-      setUploadedFiles((prevFiles) => [...prevFiles, uploadedFile]);
-
-      // Pass knowledge base to train API call
-      const trainFormData = new FormData();
-      trainFormData.append('type', 'file');
-      trainFormData.append('file', file);
-      // Add knowledge base names to the training payload
-      const selectedNames = knowledgeBases
-        .filter(kb => fileForm.knowledge_bases.includes(String(kb.id)))
-        .map(kb => kb.name);
-      selectedNames.forEach((name) => trainFormData.append('knowledge_bases', name));
-
-      const trainResponse = await axios.post(`${BASE_URL}/api/upload-and-train/`, trainFormData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-
-      alert(trainResponse.data.message || 'Training initiated successfully!');
-    } catch (error) {
-      console.error('Error during file upload and training:', error);
-      alert('Failed to upload and train. Please try again.');
-    }
-  };
-
-  const handleExcelUploadAndTrain = async (file) => {
-    try {
-      // Validate knowledge base selection
-      if (!excelForm.knowledge_bases || excelForm.knowledge_bases.length === 0) {
-        alert('Please select at least one knowledge base before training.');
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append('file', file);
-      const token = localStorage.getItem('access_token');
-      const uploadResponse = await axios.post(`${BASE_URL}/api/excelupload/`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const uploadedFile = uploadResponse.data;
-      setUploadedFiles((prevFiles) => [...prevFiles, uploadedFile]);
-
-      const trainFormData = new FormData();
-      trainFormData.append('type', 'file');
-      trainFormData.append('file', file);
-      // Add knowledge base names to the training payload
-      const selectedNames = knowledgeBases
-        .filter(kb => excelForm.knowledge_bases.includes(String(kb.id)))
-        .map(kb => kb.name);
-      selectedNames.forEach((name) => trainFormData.append('knowledge_bases', name));
-
-      const trainResponse = await axios.post(`${BASE_URL}/api/upload-and-train/`, trainFormData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-
-      alert(trainResponse.data.message || 'Training initiated successfully!');
-    } catch (error) {
-      console.error('Error during Excel upload and training:', error);
-      alert('Failed to upload and train. Please try again.');
-    }
-  };
-
-  // Delete handlers
 
   const handleFileDelete = async (fileId) => {
     try {
@@ -545,19 +419,6 @@ function CreateAgent() {
     }
   };
 
-  const handleTextUpload = async () => {
-    try {
-      const token = localStorage.getItem('access_token');
-      await axios.post(`${BASE_URL}/api/textupload/`, { text: textInput }, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      fetchText();
-    } catch (error) {
-      console.error('Error uploading text:', error);
-    }
-  };
 
   const handleTextDelete = async (textId) => {
     try {
@@ -689,90 +550,7 @@ function CreateAgent() {
       return { success: false, error: error.response?.data?.error || 'Failed to delete folders' };
     }
   };
-  // Profile Upload and Train Handlers
-
-  const handleProfileUploadAndTrain = async (file) => {
-    try {
-      // Validate knowledge base selection
-      if (!fileForm.knowledge_bases || fileForm.knowledge_bases.length === 0) {
-        alert('Please select at least one knowledge base before training.');
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append('file', file);
-      const token = localStorage.getItem('access_token');
-      const uploadResponse = await axios.post(`${BASE_URL}/api/filesupload/`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const uploadedFile = uploadResponse.data;
-      setUploadedFiles((prevFiles) => [...prevFiles, uploadedFile]);
-
-      // Pass knowledge base to train API call
-      const trainFormData = new FormData();
-      trainFormData.append('type', 'file');
-      trainFormData.append('file', file);
-      // Add knowledge base names to the training payload
-      const selectedNames = knowledgeBases
-        .filter(kb => fileForm.knowledge_bases.includes(String(kb.id)))
-        .map(kb => kb.name);
-      selectedNames.forEach((name) => trainFormData.append('knowledge_bases', name));
-
-      const trainResponse = await axios.post(`${BASE_URL}/api/upload-and-train/`, trainFormData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-
-      alert(trainResponse.data.message || 'Training initiated successfully!');
-    } catch (error) {
-      console.error('Error during profile upload and training:', error);
-      alert('Failed to upload and train. Please try again.');
-    }
-  };
-
   // Text Upload and Train Handler
-
-  const handleTextUploadAndTrain = async () => {
-    try {
-      // Validate knowledge base selection
-      if (!textForm.knowledge_bases || textForm.knowledge_bases.length === 0) {
-        alert('Please select at least one knowledge base before training.');
-        return;
-      }
-
-      setIsTraining(true);
-      const token = localStorage.getItem('access_token');
-      await axios.post(`${BASE_URL}/api/textupload/`, { content: textInput }, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      fetchText();
-
-      const trainFormData = new FormData();
-      trainFormData.append('type', 'text');
-      trainFormData.append('text', textInput);
-      // Add knowledge base names to the training payload
-      const selectedNames = knowledgeBases
-        .filter(kb => textForm.knowledge_bases.includes(String(kb.id)))
-        .map(kb => kb.name);
-      selectedNames.forEach((name) => trainFormData.append('knowledge_bases', name));
-
-      const trainResponse = await axios.post(`${BASE_URL}/api/upload-and-train/`, trainFormData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-
-      alert(trainResponse.data.message || 'Training initiated successfully!');
-    } catch (error) {
-      console.error('Error during text upload and training:', error);
-      alert('Failed to upload and train. Please try again.');
-    } finally {
-      setIsTraining(false);
-    }
-  };
 
   const handleExcelUpload = async (file) => {
     const formData = new FormData();
@@ -1440,760 +1218,6 @@ function CreateAgent() {
     );
   };
 
-  // Renderers for each tab content
-
-  const renderFileList = () => (
-    <div className="mt-6 w-full">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-2xl font-bold text-gray-800">Uploaded Files</h3>
-        <button
-          className="bg-gray-500 hover:bg-gray-700 text-white rounded-full w-10 h-10 flex items-center justify-center text-2xl shadow"
-          title="Add File"
-          aria-label="Add File"
-          onClick={() => setFileModalOpen(true)}
-        >
-          <span>+</span>
-        </button>
-      </div>
-      {renderTable(uploadedFiles, 'files')}
-      {/* File Upload Modal */}
-      {fileModalOpen && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50" onClick={() => setFileModalOpen(false)}>
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
-            <h2 className="text-xl font-semibold mb-4">Upload File</h2>
-            <form onSubmit={handleFileModalSubmit} className="space-y-4 text-sm">
-              <div>
-                <label className="block mb-1 font-medium">File <span className="text-red-500">*</span></label>
-                <input
-                  type="file"
-                  required
-                  onChange={e => setFileForm({ ...fileForm, file: e.target.files[0] })}
-                  className="w-full p-2 border rounded"
-                  accept=".pdf,.doc,.docx,.txt"
-                />
-              </div>
-              <div>
-                <label className="block mb-1 font-medium">Description</label>
-                <textarea
-                  value={fileForm.description}
-                  onChange={e => setFileForm({ ...fileForm, description: e.target.value })}
-                  className="w-full p-2 border rounded"
-                  rows={2}
-                  placeholder="Enter a description (optional)"
-                />
-              </div>
-              <div>
-                <label className="block mb-1 font-medium">Knowledge Base</label>
-                <select
-                  multiple
-                  value={fileForm.knowledge_bases}
-                  onChange={e => {
-                    const options = Array.from(e.target.selectedOptions, option => option.value);
-                    setFileForm({ ...fileForm, knowledge_bases: options });
-                  }}
-                  className="w-full p-2 border rounded"
-                >
-                  {knowledgeBases.map((kb) => (
-                    <option key={kb.id} value={String(kb.id)}>{kb.name}</option>
-                  ))}
-                </select>
-                <span className="text-xs text-gray-500">Hold Ctrl (Windows) or Cmd (Mac) to select multiple</span>
-              </div>
-              {fileFormError && <div className="text-red-500 text-xs">{fileFormError}</div>}
-              <div className="flex justify-end space-x-2">
-                <button type="button" onClick={() => { setFileModalOpen(false); setFileForm({ file: null, description: '', knowledge_bases: [] }); }} className="px-4 py-2 rounded border border-gray-300 hover:bg-gray-100">Cancel</button>
-                <button type="submit" className="px-4 py-2 rounded bg-gray-500 text-white hover:bg-gray-700">Submit</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
-  const renderTextList = () => (
-    <div className="mt-6 w-11/12">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold mb-4">Uploaded Text</h3>
-        <button
-          className="bg-gray-500 hover:bg-gray-700 text-white rounded-full w-10 h-10 flex items-center justify-center text-2xl shadow"
-          title="Add Text"
-          aria-label="Add Text"
-          onClick={() => setTextModalOpen(true)}
-        >
-          <span>+</span>
-        </button>
-      </div>
-      {renderTable(uploadedTexts, 'text')}
-      {/* Text Upload Modal */}
-      {textModalOpen && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50" onClick={() => setTextModalOpen(false)}>
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
-            <h2 className="text-xl font-semibold mb-4">Upload Text</h2>
-            <form onSubmit={handleTextModalSubmit} className="space-y-4 text-sm">
-              <div>
-                <label className="block mb-1 font-medium">Text <span className="text-red-500">*</span></label>
-                <textarea
-                  required
-                  value={textForm.content}
-                  onChange={e => setTextForm({ ...textForm, content: e.target.value })}
-                  className="w-full p-2 border rounded"
-                  rows={4}
-                  placeholder="Enter your text here..."
-                />
-              </div>
-              <div>
-                <label className="block mb-1 font-medium">Description</label>
-                <textarea
-                  value={textForm.description}
-                  onChange={e => setTextForm({ ...textForm, description: e.target.value })}
-                  className="w-full p-2 border rounded"
-                  rows={2}
-                  placeholder="Enter a description (optional)"
-                />
-              </div>
-              <div>
-                <label className="block mb-1 font-medium">Knowledge Base</label>
-                <select
-                  multiple
-                  value={textForm.knowledge_bases}
-                  onChange={e => {
-                    const options = Array.from(e.target.selectedOptions, option => option.value);
-                    setTextForm({ ...textForm, knowledge_bases: options });
-                  }}
-                  className="w-full p-2 border rounded"
-                >
-                  {knowledgeBases.map((kb) => (
-                    <option key={kb.id} value={String(kb.id)}>{kb.name}</option>
-                  ))}
-                </select>
-                <span className="text-xs text-gray-500">Hold Ctrl (Windows) or Cmd (Mac) to select multiple</span>
-              </div>
-              {textFormError && <div className="text-red-500 text-xs">{textFormError}</div>}
-              <div className="flex justify-end space-x-2">
-                <button type="button" onClick={() => { setTextModalOpen(false); setTextForm({ content: '', description: '', knowledge_bases: [] }); }} className="px-4 py-2 rounded border border-gray-300 hover:bg-gray-100">Cancel</button>
-                <button type="submit" className="px-4 py-2 rounded bg-gray-500 text-white hover:bg-gray-700">Submit</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
-  const renderExcelList = () => (
-    <div className="mt-6 w-11/12">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold mb-4">Uploaded Excel/CSV Files</h3>
-        <button
-          className="bg-gray-500 hover:bg-gray-700 text-white rounded-full w-10 h-10 flex items-center justify-center text-2xl shadow"
-          title="Add Excel/CSV File"
-          aria-label="Add Excel/CSV File"
-          onClick={() => setExcelModalOpen(true)}
-        >
-          <span>+</span>
-        </button>
-      </div>
-      {renderTable(uploadedFiles, 'excel')}
-      {/* Excel Upload Modal */}
-      {excelModalOpen && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50" onClick={() => setExcelModalOpen(false)}>
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
-            <h2 className="text-xl font-semibold mb-4">Upload Excel/CSV File</h2>
-            <form onSubmit={handleExcelModalSubmit} className="space-y-4 text-sm">
-              <div>
-                <label className="block mb-1 font-medium">File <span className="text-red-500">*</span></label>
-                <input
-                  type="file"
-                  required
-                  onChange={e => setExcelForm({ ...excelForm, file: e.target.files[0] })}
-                  className="w-full p-2 border rounded"
-                  accept=".csv,.xls,.xlsx"
-                />
-              </div>
-              <div>
-                <label className="block mb-1 font-medium">Description</label>
-                <textarea
-                  value={excelForm.description}
-                  onChange={e => setExcelForm({ ...excelForm, description: e.target.value })}
-                  className="w-full p-2 border rounded"
-                  rows={2}
-                  placeholder="Enter a description (optional)"
-                />
-              </div>
-              <div>
-                <label className="block mb-1 font-medium">Knowledge Base</label>
-                <select
-                  multiple
-                  value={excelForm.knowledge_bases}
-                  onChange={e => {
-                    const options = Array.from(e.target.selectedOptions, option => option.value);
-                    setExcelForm({ ...excelForm, knowledge_bases: options });
-                  }}
-                  className="w-full p-2 border rounded"
-                >
-                  {knowledgeBases.map((kb) => (
-                    <option key={kb.id} value={String(kb.id)}>{kb.name}</option>
-                  ))}
-                </select>
-                <span className="text-xs text-gray-500">Hold Ctrl (Windows) or Cmd (Mac) to select multiple</span>
-              </div>
-              {excelFormError && <div className="text-red-500 text-xs">{excelFormError}</div>}
-              <div className="flex justify-end space-x-2">
-                <button type="button" onClick={() => { setExcelModalOpen(false); setExcelForm({ file: null, description: '', knowledge_bases: [] }); }} className="px-4 py-2 rounded border border-gray-300 hover:bg-gray-100">Cancel</button>
-                <button type="submit" className="px-4 py-2 rounded bg-gray-500 text-white hover:bg-gray-700">Submit</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
-  const renderQAList = () => (
-    <div className="mt-6 w-11/12">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold mb-4">Q&A Data</h3>
-        <button
-          className="bg-gray-500 hover:bg-gray-700 text-white rounded-full w-10 h-10 flex items-center justify-center text-2xl shadow"
-          title="Add Q&A"
-          aria-label="Add Q&A"
-          onClick={() => setQaModalOpen(true)}
-        >
-          <span>+</span>
-        </button>
-      </div>
-      {renderTable(qaData, 'qa')}
-      {/* Q&A Upload Modal */}
-      {qaModalOpen && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50" onClick={() => setQaModalOpen(false)}>
-          <div
-            className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md"
-            style={{ maxHeight: '90vh', overflowY: 'auto' }}
-            onClick={e => e.stopPropagation()}
-          >
-            <h2 className="text-xl font-semibold mb-4">Upload Q&A</h2>
-            <form onSubmit={handleQaModalSubmit} className="space-y-4 text-sm">
-              <div>
-                <label className="block mb-1 font-medium">Question <span className="text-red-500">*</span></label>
-                <textarea
-                  required
-                  value={qaForm.question}
-                  onChange={e => setQaForm({ ...qaForm, question: e.target.value })}
-                  className="w-full p-2 border rounded"
-                  rows={2}
-                  placeholder="Enter the question..."
-                />
-              </div>
-              <div>
-                <label className="block mb-1 font-medium">Answer <span className="text-red-500">*</span></label>
-                <textarea
-                  required
-                  value={qaForm.answer}
-                  onChange={e => setQaForm({ ...qaForm, answer: e.target.value })}
-                  className="w-full p-2 border rounded"
-                  rows={2}
-                  placeholder="Enter the answer..."
-                />
-              </div>
-              <div>
-                <label className="block mb-1 font-medium">Description</label>
-                <textarea
-                  value={qaForm.description}
-                  onChange={e => setQaForm({ ...qaForm, description: e.target.value })}
-                  className="w-full p-2 border rounded"
-                  rows={2}
-                  placeholder="Enter a description (optional)"
-                />
-              </div>
-              <div>
-                <label className="block mb-1 font-medium">Category</label>
-                <select
-                  multiple
-                  value={qaForm.category}
-                  onChange={e => {
-                    const options = Array.from(e.target.selectedOptions, option => option.value);
-                    setQaForm({ ...qaForm, category: options });
-                  }}
-                  className="w-full p-2 border rounded"
-                >
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={String(cat.id)}>{cat.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block mb-1 font-medium">Subcategory</label>
-                <select
-                  multiple
-                  value={qaForm.subcategory}
-                  onChange={e => {
-                    const options = Array.from(e.target.selectedOptions, option => option.value);
-                    setQaForm({ ...qaForm, subcategory: options });
-                  }}
-                  className="w-full p-2 border rounded"
-                >
-                  {subCategories.map((sub) => (
-                    <option key={sub.id} value={String(sub.id)}>{sub.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block mb-1 font-medium">Knowledge Base</label>
-                <select
-                  multiple
-                  value={qaForm.knowledge_bases}
-                  onChange={e => {
-                    const options = Array.from(e.target.selectedOptions, option => option.value);
-                    setQaForm({ ...qaForm, knowledge_bases: options });
-                  }}
-                  className="w-full p-2 border rounded"
-                >
-                  {knowledgeBases.map((kb) => (
-                    <option key={kb.id} value={String(kb.id)}>{kb.name}</option>
-                  ))}
-                </select>
-                <span className="text-xs text-gray-500">Hold Ctrl (Windows) or Cmd (Mac) to select multiple</span>
-              </div>
-              {qaFormError && <div className="text-red-500 text-xs">{qaFormError}</div>}
-              <div className="flex justify-end space-x-2">
-                <button type="button" onClick={() => { setQaModalOpen(false); setQaForm({ question: '', answer: '', description: '', category: [], subcategory: [], knowledge_bases: [] }); }} className="px-4 py-2 rounded border border-gray-300 hover:bg-gray-100">Cancel</button>
-                <button type="submit" className="px-4 py-2 rounded bg-gray-500 text-white hover:bg-gray-700">Submit</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
-  const renderURLList = () => (
-    <div className="mt-6 w-11/12">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold mb-4">Uploaded URLs</h3>
-        <button
-          className="bg-gray-500 hover:bg-gray-700 text-white rounded-full w-10 h-10 flex items-center justify-center text-2xl shadow"
-          title="Add URL"
-          aria-label="Add URL"
-          onClick={() => setUrlModalOpen(true)}
-        >
-          <span>+</span>
-        </button>
-      </div>
-      {renderTable(urlList, 'url')}
-      {/* URL Upload Modal */}
-      {urlModalOpen && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50" onClick={() => setUrlModalOpen(false)}>
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
-            <h2 className="text-xl font-semibold mb-4">Add URL</h2>
-            <form onSubmit={handleUrlModalSubmit} className="space-y-4 text-sm">
-              <div>
-                <label className="block mb-1 font-medium">URL <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  required
-                  value={urlForm.url}
-                  onChange={e => setUrlForm({ ...urlForm, url: e.target.value })}
-                  className="w-full p-2 border rounded"
-                  placeholder="Enter the URL"
-                />
-              </div>
-              <div>
-                <label className="block mb-1 font-medium">Description</label>
-                <textarea
-                  value={urlForm.description}
-                  onChange={e => setUrlForm({ ...urlForm, description: e.target.value })}
-                  className="w-full p-2 border rounded"
-                  rows={2}
-                  placeholder="Enter a description (optional)"
-                />
-              </div>
-              <div>
-                <label className="block mb-1 font-medium">Knowledge Base</label>
-                <select
-                  multiple
-                  value={urlForm.knowledge_bases}
-                  onChange={e => {
-                    const options = Array.from(e.target.selectedOptions, option => option.value);
-                    setUrlForm({ ...urlForm, knowledge_bases: options });
-                  }}
-                  className="w-full p-2 border rounded"
-                >
-                  {knowledgeBases.map((kb) => (
-                    <option key={kb.id} value={String(kb.id)}>{kb.name}</option>
-                  ))}
-                </select>
-                <span className="text-xs text-gray-500">Hold Ctrl (Windows) or Cmd (Mac) to select multiple</span>
-              </div>
-              {urlFormError && <div className="text-red-500 text-xs">{urlFormError}</div>}
-              <div className="flex justify-end space-x-2">
-                <button type="button" onClick={() => { setUrlModalOpen(false); setUrlForm({ url: '', description: '', knowledge_bases: [] }); }} className="px-4 py-2 rounded border border-gray-300 hover:bg-gray-100">Cancel</button>
-                <button type="submit" className="px-4 py-2 rounded bg-gray-500 text-white hover:bg-gray-700">Submit</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
-  // Helper to group subcategories by category
-  const getCategorySubcategoryMap = () => {
-    const map = {};
-    categories.forEach(cat => {
-      map[cat.id] = { name: cat.name, subcategories: [] };
-    });
-    subCategories.forEach(sub => {
-      if (map[sub.category]) {
-        map[sub.category].subcategories.push(sub.name);
-      }
-    });
-    return Object.values(map);
-  };
-
-  const renderSubcategoriesTable = () => {
-    // Flatten subcategories for table: each row is a subcategory with its parent category
-    const data = subCategories.map((sub) => {
-      const parent = categories.find((cat) => cat.id === sub.category);
-      return {
-        subcategoryId: sub.id,
-        subcategoryName: sub.name,
-        categoryId: parent ? parent.id : '',
-        categoryName: parent ? parent.name : '',
-      };
-    });
-    if (!data.length) return <div>No subcategories available.</div>;
-    return (
-      <div className="bg-white rounded-xl shadow-lg p-6 mt-4 w-full mx-auto">
-        <h3 className="text-lg font-semibold mb-4">Subcategories List</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full border text-sm rounded-lg overflow-hidden">
-            <thead>
-              <tr>
-                <th className="border px-4 py-2 bg-gray-100 text-gray-700 font-semibold">Category</th>
-                <th className="border px-4 py-2 bg-gray-100 text-gray-700 font-semibold">Subcategory</th>
-                <th className="border px-4 py-2 bg-gray-100 text-gray-700 font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.map((row, idx) => (
-                <tr key={row.subcategoryId} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                  <td className="border px-4 py-2">{row.categoryName}</td>
-                  <td className="border px-4 py-2">{row.subcategoryName}</td>
-                  <td className="border px-4 py-2 text-center">
-                    {/* TODO: Add edit/delete buttons here for each subcategory */}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    );
-  };
-
-  // Render User Details (remove Role column)
-  const renderUserDetails = () => {
-    if (!users || users.length === 0) {
-      return <p className="text-gray-500">No users found.</p>;
-    }
-
-    const filteredUsers = users.filter((user) => {
-      const searchLower = userSearch.toLowerCase();
-      return (
-
-        (user.first_name && user.first_name.toLowerCase().includes(searchLower)) ||
-        (user.last_name && user.last_name.toLowerCase().includes(searchLower)) ||
-        (user.phone_number && user.phone_number.toLowerCase().includes(searchLower)) ||
-        (user.email && user.email.toLowerCase().includes(searchLower)) ||
-        (user.created_at && new Date(user.created_at).toLocaleDateString().includes(searchLower))
-           );
-    });
-
-    return (
-      <div className="mt-6 w-full max-w-5xl overflow-x-auto bg-white rounded-lg shadow p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">User Details</h3>
-          <button
-            className="bg-gray-500 hover:bg-gray-300 font-bold text-white rounded-full w-8 h-8 flex text-center items-center justify-center"
-            title="Add Sales User"
-            aria-label="Add Sales User"
-            onClick={() => setModalOpen(true)}
-          >
-            <span className="text-xl"><FaPlus/></span>
-          </button>
-        </div>
-        <div className="flex flex-wrap gap-2 mb-4">
-          <input
-            type="text"
-            placeholder="Filter by Name, Phone, Email, or Date..."
-            value={userSearch}
-            onChange={(e) => setUserSearch(e.target.value)}
-            className="p-2 border border-gray-300 rounded-md w-full max-w-xs"
-          />
-        </div>
-
-        <table className="min-w-full border text-sm">
-          <thead>
-            <tr>
-              <th className="border px-2 py-1 bg-gray-100 text-left">First Name</th>
-              <th className="border px-2 py-1 bg-gray-100 text-left">Last Name</th>
-              <th className="border px-2 py-1 bg-gray-100 text-left">Phone</th>
-              <th className="border px-2 py-1 bg-gray-100 text-left">Email</th>
-              <th className="border px-2 py-1 bg-gray-100 text-left">Created Date</th>
-              <th className="border px-2 py-1 bg-gray-100 text-left">Profile</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredUsers.length === 0 ? (
-              <tr>
-                <td colSpan="6" className="border px-3 py-2 text-center text-gray-500">
-                  No matching users found.
-                </td>
-              </tr>
-            ) : (
-              filteredUsers.map((user, idx) => (
-                <tr key={user.id || idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                  <td className="border px-3 py-2">{user.first_name}</td>
-                  <td className="border px-3 py-2">{user.last_name}</td>
-                  <td className="border px-3 py-2">{user.phone_number}</td>
-                  <td className="border px-3 py-2">{user.email}</td>
-                  <td className="border px-3 py-2">{new Date(user.created_at).toLocaleDateString()}</td>
-                  <td className="border px-3 py-2">{user.profile_name || ''}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-    );
-  };
-
-  const renderProfileTab = () => (
-    <div className="mt-6 w-full max-w-2xl mx-auto">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold">Profile Access Table</h3>
-        <button
-          className="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded"
-          onClick={handleCreateProfile}
-        >
-          Create New Profile
-        </button>
-      </div>
-      <table className="min-w-full border text-sm">
-        <thead>
-          <tr>
-            <th className="border px-4 py-2 bg-gray-100 text-left">Profile</th>
-            <th className="border px-4 py-2 bg-gray-100 text-left">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {profiles.map((profile) => (
-            <tr key={profile.id}>
-              <td className="border px-4 py-2">{profile.name}</td>
-              <td className="border px-4 py-2 space-x-2">
-                <button
-                  className="px-3 py-1 bg-blue-500 text-white rounded"
-                  onClick={() => handleEditProfile(profile)}
-                >
-                  Edit
-                </button>
-                <button
-                  className="px-3 py-1 bg-red-500 text-white rounded"
-                  onClick={() => handleDeleteProfile(profile.id)}
-                >
-                  Delete
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {/* Profile Modal */}
-      {profileModalOpen && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50" onClick={() => setProfileModalOpen(false)}>
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
-            <h2 className="text-xl font-semibold mb-4">{editingProfile ? 'Edit Profile' : 'Create New Profile'}</h2>
-            <form onSubmit={handleProfileFormSubmit} className="space-y-3 text-sm">
-              <div>
-                <label className="block mb-1 font-medium">Profile Name</label>
-                <input
-                  type="text"
-                  required
-                  value={profileForm.name}
-                  onChange={e => setProfileForm({ ...profileForm, name: e.target.value })}
-                  className="w-full p-2 border rounded"
-                  disabled={!!editingProfile}
-                />
-              </div>
-              {/* Access toggles: if editingProfile is admin, all on and disabled */}
-              <div className="grid grid-cols-2 gap-2">
-                { [
-                  { key: 'files_access', label: 'Files' },
-                  { key: 'text_access', label: 'Text' },
-                  { key: 'excel_access', label: 'Excel' },
-                  { key: 'qna_access', label: 'Q&A' },
-                  { key: 'url_access', label: 'URL' },
-                  { key: 'chat_history_access', label: 'Chat History' },
-                  { key: 'user_profile_access', label: 'Profile' }, // NEW
-                  { key: 'user_details_access', label: 'User Details' }, // NEW
-                ].map(({ key, label }) => {
-                  const isAdmin = editingProfile && editingProfile.name.toLowerCase() === 'Admin';
-                  const checked = isAdmin ? true : profileForm[key];
-                  return (
-                    <label key={key} className="flex items-center cursor-pointer select-none">
-                      <span className="mr-2">{label}</span>
-                      <span className="relative inline-block w-10 align-middle select-none transition duration-200 ease-in">
-                        <input
-                          type="checkbox"
-                          className="sr-only"
-                          checked={checked}
-                          onChange={e => setProfileForm({ ...profileForm, [key]: e.target.checked })}
-                          disabled={isAdmin}
-                        />
-                        <span
-                          className={`block w-10 h-6 rounded-full transition-colors duration-200 ${checked ? 'bg-green-500' : 'bg-gray-300'} ${isAdmin ? 'opacity-60' : ''}`}
-                        ></span>
-                        <span
-                          className={`dot absolute left-1 top-1 w-4 h-4 rounded-full bg-white shadow transition transform duration-200 ${checked ? 'translate-x-4' : ''}`}
-                        ></span>
-                      </span>
-                    </label>
-                  );
-                }) }
-              </div>
-              <div className="flex justify-end space-x-2">
-                <button type="button" onClick={() => { setProfileModalOpen(false); setEditingProfile(null); }} className="px-4 py-2 rounded border border-gray-300 hover:bg-gray-100">Cancel</button>
-                <button type="submit" className="px-4 py-2 rounded bg-gray-500 text-white hover:bg-gray-700">{editingProfile ? 'Update' : 'Create'}</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
-  const renderKnowledgeBaseTab = () => (
-    <div className="mt-6 w-full max-w-2xl mx-auto">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold">Knowledge Base</h3>
-        <button
-          className="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded"
-          onClick={handleCreateKb}
-        >
-          <FaPlus />
-        </button>
-      </div>
-      <table className="min-w-full border text-sm">
-        <thead>
-          <tr>
-            <th className="border px-4 py-2 bg-gray-100 text-left">Name</th>
-            <th className="border px-4 py-2 bg-gray-100 text-left">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {knowledgeBases.map((kb) => (
-            <tr key={kb.id}>
-              <td className="border px-4 py-2">{kb.name}</td>
-              <td className="border px-4 py-2 space-x-2">
-                <button className="px-3 py-1 bg-blue-500 text-white rounded" onClick={() => handleEditKb(kb)}>Edit</button>
-                <button className="px-3 py-1 bg-red-500 text-white rounded" onClick={() => handleDeleteKb(kb.id)}>Delete</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {/* Knowledge Base Modal */}
-      {kbModalOpen && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50" onClick={() => setKbModalOpen(false)}>
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
-            <h2 className="text-xl font-semibold mb-4">{editingKb ? 'Edit Knowledge Base' : 'Create New Knowledge Base'}</h2>
-            <form onSubmit={handleKbFormSubmit} className="space-y-3 text-sm">
-              <div>
-                <label className="block mb-1 font-medium">Name</label>
-                <input
-                  type="text"
-                  required
-                  value={kbForm.name}
-                  onChange={e => setKbForm({ name: e.target.value })}
-                  className="w-full p-2 border rounded"
-                />
-              </div>
-              <div className="flex justify-end space-x-2">
-                <button type="button" onClick={() => { setKbModalOpen(false); setEditingKb(null); }} className="px-4 py-2 rounded border border-gray-300 hover:bg-gray-100">Cancel</button>
-                <button type="submit" className="px-4 py-2 rounded bg-gray-500 text-white hover:bg-gray-700">{editingKb ? 'Update' : 'Create'}</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
-  const renderCategoriesTab = () => (
-    <div className="mt-6 w-full max-w-2xl mx-auto">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold">Categories</h3>
-        <button
-          className="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded"
-          onClick={handleCreateCategory}
-        >
-          +
-        </button>
-      </div>
-      <table className="min-w-full border text-sm">
-        <thead>
-          <tr>
-            <th className="border px-4 py-2 bg-gray-100 text-left">Name</th>
-            <th className="border px-4 py-2 bg-gray-100 text-left">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {categoriesList && categoriesList.length > 0 ? (
-            categoriesList.map((cat) => (
-              <tr key={cat.id}>
-                <td className="border px-4 py-2">{cat.name}</td>
-                <td className="border px-4 py-2">
-                  <button className="px-3 py-1 bg-blue-500 text-white rounded mr-2" onClick={() => handleEditCategory(cat)}>Edit</button>
-                  <button className="px-3 py-1 bg-red-500 text-white rounded" onClick={() => handleDeleteCategory(cat)}>Delete</button>
-                </td>
-              </tr>
-            ))
-          ) : (
-            <tr>
-              <td className="border px-4 py-2 text-center" colSpan={2}>No categories found.</td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-      {/* Category Modal */}
-      {categoryModalOpen && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50" onClick={() => setCategoryModalOpen(false)}>
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
-            <h2 className="text-xl font-semibold mb-4">{editingCategory ? 'Edit Category' : 'Create New Category'}</h2>
-            <form onSubmit={handleCategoryFormSubmit} className="space-y-3 text-sm">
-              <div>
-                <label className="block mb-1 font-medium">Category Name</label>
-                <input
-                  type="text"
-                  required
-                  value={categoryForm.name}
-                  onChange={e => setCategoryForm({ name: e.target.value })}
-                  className="w-full p-2 border rounded"
-                />
-              </div>
-              {categoryFormError && <div className="text-red-500 text-xs">{categoryFormError}</div>}
-              <div className="flex justify-end space-x-2">
-                <button type="button" onClick={() => { setCategoryModalOpen(false); setEditingCategory(null); }} className="px-4 py-2 rounded border border-gray-300 hover:bg-gray-100">Cancel</button>
-                <button type="submit" className="px-4 py-2 rounded bg-gray-500 text-white hover:bg-gray-700">{editingCategory ? 'Update' : 'Create'}</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
   // Collapsible section state
   const [expandedSections, setExpandedSections] = useState(() => {
     // By default, expand all sections
@@ -2292,6 +1316,7 @@ function CreateAgent() {
         return (
           <ProfileTab
             profiles={profiles}
+            fetchProfiles={fetchProfiles}
             handleEditProfile={handleEditProfile}
             handleDeleteProfile={handleDeleteProfile}
             handleCreateProfile={handleCreateProfile}
@@ -2580,7 +1605,7 @@ function CreateAgent() {
                   {section.label}
                 </div>
                 {expandedSections[section.label] && (
-                  <div className="flex flex-col items-start pl-4">
+                  <div className="flex text-xs uppercase flex-col items-start pl-4">
                     {section.tabs.map(tab => (
                       <div
                         key={tab}
