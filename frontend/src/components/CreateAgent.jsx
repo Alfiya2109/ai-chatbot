@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { FaTrash, FaUserCircle, FaSignOutAlt } from 'react-icons/fa';
+import { FaTrash, FaEdit, FaUserCircle, FaSignOutAlt } from 'react-icons/fa';
 import { BASE_URL } from '../base_url';
 import FileListTab from './FileListTab';
 import TextListTab from './TextListTab';
@@ -62,6 +62,8 @@ function CreateAgent() {
     knowledge_bases: [],
   });
   const [textFormError, setTextFormError] = useState('');
+  const [editingText, setEditingText] = useState(null);
+  const [textEditModalOpen, setTextEditModalOpen] = useState(false);
   const [qaModalOpen, setQaModalOpen] = useState(false);
   const [qaForm, setQaForm] = useState({
     question: '',
@@ -72,6 +74,8 @@ function CreateAgent() {
     knowledge_bases: [],
   });
   const [qaFormError, setQaFormError] = useState('');
+  const [editingQa, setEditingQa] = useState(null);
+  const [qaEditModalOpen, setQaEditModalOpen] = useState(false);
   const [urlModalOpen, setUrlModalOpen] = useState(false);
   const [urlForm, setUrlForm] = useState({ url: '', description: '', knowledge_bases: [] });
   const [urlFormError, setUrlFormError] = useState('');
@@ -426,6 +430,126 @@ function CreateAgent() {
       fetchText();
     } catch (error) {
       console.error('Error deleting text:', error);
+    }
+  };
+
+  const handleTextEdit = (textItem) => {
+    setEditingText(textItem);
+    setTextForm({
+      content: textItem.content || '',
+      description: textItem.description || '',
+      knowledge_bases: textItem.knowledge_bases ? textItem.knowledge_bases.map(kb => String(typeof kb === 'object' ? kb.id : kb)) : [],
+    });
+    // Fetch knowledge bases when edit modal opens
+    fetchKnowledgeBases();
+    setTextEditModalOpen(true);
+  };
+
+  const handleTextEditSubmit = async (e) => {
+    e.preventDefault();
+    setTextFormError('');
+    if (!textForm.content) {
+      setTextFormError('Please enter some text.');
+      return;
+    }
+    if (!textForm.knowledge_bases || textForm.knowledge_bases.length === 0) {
+      setTextFormError('Please select at least one knowledge base.');
+      return;
+    }
+    try {
+      const formData = new FormData();
+      formData.append('content', textForm.content);
+      if (textForm.description) formData.append('description', textForm.description);
+      const selectedNames = knowledgeBases
+        .filter(kb => textForm.knowledge_bases.includes(String(kb.id)))
+        .map(kb => kb.name);
+      selectedNames.forEach((name) => formData.append('knowledge_bases', name));
+      
+      const token = localStorage.getItem('access_token');
+      await axios.patch(`${BASE_URL}/api/textupload/${editingText.id}/`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      alert('Text updated successfully!');
+      setTextEditModalOpen(false);
+      setEditingText(null);
+      setTextForm({ content: '', description: '', knowledge_bases: [] });
+      fetchText();
+    } catch (error) {
+      setTextFormError('Failed to update text. Please try again.');
+      console.error('Error updating text:', error);
+    }
+  };
+
+  // Q&A edit handlers
+  const handleQaEdit = (qaItem) => {
+    setEditingQa(qaItem);
+    setQaForm({
+      question: qaItem.question || '',
+      answer: qaItem.answer || '',
+      description: qaItem.description || '',
+      category: qaItem.category && qaItem.category.length > 0 ? (typeof qaItem.category[0] === 'object' ? qaItem.category[0].id : qaItem.category[0]) : '',
+      subcategory: qaItem.subcategory && qaItem.subcategory.length > 0 ? (typeof qaItem.subcategory[0] === 'object' ? qaItem.subcategory[0].id : qaItem.subcategory[0]) : '',
+      knowledge_bases: qaItem.knowledge_bases ? qaItem.knowledge_bases.map(kb => String(typeof kb === 'object' ? kb.id : kb)) : [],
+    });
+    // Fetch knowledge bases when edit modal opens
+    fetchKnowledgeBases();
+    setQaEditModalOpen(true);
+  };
+
+  const handleQaEditSubmit = async (e) => {
+    e.preventDefault();
+    setQaFormError('');
+    if (!qaForm.question || !qaForm.answer) {
+      setQaFormError('Question and Answer are required.');
+      return;
+    }
+    if (!qaForm.knowledge_bases || qaForm.knowledge_bases.length === 0) {
+      setQaFormError('Please select at least one knowledge base.');
+      return;
+    }
+    try {
+      const token = localStorage.getItem('access_token');
+      
+      // Convert knowledge base IDs to names
+      const selectedNames = knowledgeBases
+        .filter(kb => qaForm.knowledge_bases.includes(String(kb.id)))
+        .map(kb => kb.name);
+      
+      const formattedQA = {
+        question: qaForm.question,
+        answer: qaForm.answer,
+        description: qaForm.description,
+        category: qaForm.category ? [parseInt(qaForm.category)] : [],
+        subcategory: qaForm.subcategory ? [parseInt(qaForm.subcategory)] : [],
+        knowledge_bases: selectedNames,
+      };
+      
+      await axios.patch(`${BASE_URL}/api/qa/${editingQa.id}/`, formattedQA, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      alert('Q&A updated successfully!');
+      setQaEditModalOpen(false);
+      setEditingQa(null);
+      setQaForm({
+        question: '',
+        answer: '',
+        description: '',
+        category: [],
+        subcategory: [],
+        knowledge_bases: [],
+      });
+      fetchQA();
+    } catch (error) {
+      setQaFormError('Failed to update Q&A. Please try again.');
+      console.error('Error updating Q&A:', error);
     }
   };
 
@@ -1057,7 +1181,7 @@ function CreateAgent() {
 
   // Render table helper for various data types
 
-  const renderTable = (data, type, multiSelectOptions = null) => {
+  const renderTable = (data, type, multiSelectOptions = null, editHandler = null) => {
     if (!data || data.length === 0) return <div>No data available.</div>;
 
     const { isMultiSelectMode, selectedItems, onSelectAll, onItemSelect } = multiSelectOptions || {};
@@ -1149,7 +1273,7 @@ function CreateAgent() {
                     if (col === 'updated_date') return <td key="updated_date" className="border px-4 py-2">{formatDate(row.updated_at)}</td>;
                     if (col === 'updated_time') return <td key="updated_time" className="border px-4 py-2">{formatTime(row.updated_at)}</td>;
                     if (type === 'qa' && (col === 'category' || col === 'subcategory')) {
-                      return <td key={col} className="border px-4 py-2">{Array.isArray(row[col]) ? row[col].join(', ') : ''}</td>;
+                      return <td key={col} className="border px-4 py-2">{Array.isArray(row[col]) ? row[col].map(item => typeof item === 'object' ? item.name : item).join(', ') : ''}</td>;
                     }
                     if (col === 'knowledge_bases') {
                       return <td key={col} className="border px-4 py-2">{row[col] && row[col].length > 0 ? row[col].map((kb) => (typeof kb === 'string' ? kb : kb.name)).join(', ') : '-'}</td>;
@@ -1194,19 +1318,36 @@ function CreateAgent() {
                   })}
                   {!isMultiSelectMode && (
                     <td className="border px-4 py-2 text-center">
-                      <FaTrash
-                        className="text-red-500 cursor-pointer hover:text-red-700"
-                        onClick={() => {
-                          if (type === 'files') handleFileDelete(row.id);
-                          else if (type === 'excel') handleExcelDelete(row.id);
-                          else if (type === 'text') handleTextDelete(row.id);
-                          else if (type === 'qa') {
-                            axios.delete(`${BASE_URL}/api/qa/${row.id}/`).then(fetchQA);
-                          } else if (type === 'url') {
-                            axios.delete(`${BASE_URL}/api/urls/${row.id}/`).then(fetchURLs);
-                          }
-                        }}
-                      />
+                      <div className="flex items-center justify-center space-x-2">
+                        {editHandler && type === 'text' && (
+                          <FaEdit
+                            className="text-blue-500 cursor-pointer hover:text-blue-700"
+                            onClick={() => editHandler(row)}
+                            title="Edit"
+                          />
+                        )}
+                        {type === 'qa' && (
+                          <FaEdit
+                            className="text-blue-500 cursor-pointer hover:text-blue-700"
+                            onClick={() => handleQaEdit(row)}
+                            title="Edit"
+                          />
+                        )}
+                        <FaTrash
+                          className="text-red-500 cursor-pointer hover:text-red-700"
+                          onClick={() => {
+                            if (type === 'files') handleFileDelete(row.id);
+                            else if (type === 'excel') handleExcelDelete(row.id);
+                            else if (type === 'text') handleTextDelete(row.id);
+                            else if (type === 'qa') {
+                              axios.delete(`${BASE_URL}/api/qa/${row.id}/`).then(fetchQA);
+                            } else if (type === 'url') {
+                              axios.delete(`${BASE_URL}/api/urls/${row.id}/`).then(fetchURLs);
+                            }
+                          }}
+                          title="Delete"
+                        />
+                      </div>
                     </td>
                   )}
                 </tr>
@@ -1262,6 +1403,11 @@ function CreateAgent() {
             handleTextModalSubmit={handleTextModalSubmit}
             fetchKnowledgeBases={fetchKnowledgeBases}
             onBulkDelete={handleBulkTextDelete}
+            handleTextEdit={handleTextEdit}
+            textEditModalOpen={textEditModalOpen}
+            setTextEditModalOpen={setTextEditModalOpen}
+            editingText={editingText}
+            handleTextEditSubmit={handleTextEditSubmit}
           />
         );
       case 'Excel/CSV':
@@ -1295,6 +1441,10 @@ function CreateAgent() {
             qaFormError={qaFormError}
             handleQaModalSubmit={handleQaModalSubmit}
             onBulkDelete={handleBulkQADelete}
+            qaEditModalOpen={qaEditModalOpen}
+            setQaEditModalOpen={setQaEditModalOpen}
+            editingQa={editingQa}
+            handleQaEditSubmit={handleQaEditSubmit}
           />
         );
       case 'URL':
@@ -1412,12 +1562,12 @@ function CreateAgent() {
 
   // Fetch knowledge bases, categories, and subcategories when Q&A modal opens
   useEffect(() => {
-    if (qaModalOpen) {
+    if (qaModalOpen || qaEditModalOpen) {
       fetchKnowledgeBases();
       fetchCategories();
       fetchSubCategories();
     }
-  }, [qaModalOpen]);
+  }, [qaModalOpen, qaEditModalOpen]);
 
   // Fetch knowledge bases when URL modal opens
   useEffect(() => {

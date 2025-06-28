@@ -680,6 +680,20 @@ class TextContentView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    def patch(self, request, pk=None):
+        try:
+            text = TextContent.objects.get(pk=pk)
+            data = request.data.copy()
+            data.pop('added_by', None)
+            user = request.user if request.user and request.user.is_authenticated else None
+            serializer = TextContentSerializer(text, data=data, partial=True)
+            if serializer.is_valid():
+                serializer.save(updated_by=user)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except TextContent.DoesNotExist:
+            return Response({"error": "Text not found"}, status=status.HTTP_404_NOT_FOUND)
+
     def delete(self, request, pk=None):
         try:
             text = TextContent.objects.get(pk=pk)
@@ -733,6 +747,13 @@ class QADataView(APIView):
         data = serializer.data
         for i, item in enumerate(items):
             data[i]['added_by'] = item.added_by.username if item.added_by else None
+            data[i]['updated_by'] = item.updated_by.username if item.updated_by else None
+            # Format knowledge bases with both id and name
+            data[i]['knowledge_bases'] = [{'id': kb.id, 'name': kb.name} for kb in item.knowledge_bases.all()]
+            # Format categories with both id and name
+            data[i]['category'] = [{'id': cat.id, 'name': cat.name} for cat in item.category.all()]
+            # Format subcategories with both id and name  
+            data[i]['subcategory'] = [{'id': subcat.id, 'name': subcat.name} for subcat in item.subcategory.all()]
         return Response(data)
 
     def post(self, request):
@@ -744,6 +765,22 @@ class QADataView(APIView):
             serializer.save(added_by=user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def patch(self, request, pk=None):
+        try:
+            item = QAData.objects.get(pk=pk)
+            data = request.data.copy()
+            data.pop('added_by', None)
+            data.pop('updated_by', None)
+            user = request.user if request.user and request.user.is_authenticated else None
+            
+            serializer = QADataSerializer(item, data=data, partial=True)
+            if serializer.is_valid():
+                serializer.save(updated_by=user)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except QAData.DoesNotExist:
+            return Response({"error": "Item not found"}, status=status.HTTP_404_NOT_FOUND)
     
     def delete(self, request, pk=None):
         try:

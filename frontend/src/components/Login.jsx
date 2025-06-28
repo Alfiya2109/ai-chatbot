@@ -11,10 +11,14 @@ function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    await login(username, password)
-    if (localStorage.getItem('profile') !== 'Non-Sales') {
+    const success = await login(username, password)
+    
+    // Only navigate if login was successful and profile is not 'Non-Sales'
+    if (success && localStorage.getItem('profile') !== 'Non-Sales') {
       navigate('/train')
     }
+    // If login failed, the AuthContext will already show the error
+    // If login succeeded with 'Non-Sales' profile, AuthContext navigates to '/chatbot'
   }
 
   return (
