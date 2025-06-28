@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import Loader from './Loader';
 
-const TextListTab = ({ uploadedTexts, renderTable, textModalOpen, setTextModalOpen, textForm, setTextForm, knowledgeBases, textFormError, handleTextModalSubmit, fetchKnowledgeBases, onBulkDelete }) => {
+const TextListTab = ({ uploadedTexts, renderTable, textModalOpen, setTextModalOpen, textForm, setTextForm, knowledgeBases, textFormError, handleTextModalSubmit, fetchKnowledgeBases, onBulkDelete, isLoading }) => {
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState([]);
 
@@ -55,6 +56,12 @@ const TextListTab = ({ uploadedTexts, renderTable, textModalOpen, setTextModalOp
 
   return (
     <div className="mt-6 w-11/12">
+      {/* Loader overlay */}
+      {isLoading && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-white bg-opacity-60">
+          <Loader />
+        </div>
+      )}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold mb-4">Uploaded Text</h3>
         <div className="flex items-center space-x-2">

@@ -488,6 +488,7 @@ class JogetFileUploadAPIView(APIView):
         except Exception as e:
             return Response({'error': f'File saved but failed to train vector DB: {str(e)}'}, status=500)
 
+        # Build file URL for client access
         from django.conf import settings
         file_url = request.build_absolute_uri(settings.MEDIA_URL + file_obj.file.name)
 
@@ -1226,7 +1227,7 @@ class FileDataViewSet(viewsets.ModelViewSet):
                 # Call upload-and-train API
                 with open(save_path, 'rb') as f:
                     files_data = {'file': (file.name, f, 'application/octet-stream')}
-                    data = {'type': 'file'}
+                    data = {'type': 'file', 'knowledge_bases': knowledge_bases}
                     try:
                         requests.post(api_url, files=files_data, data=data, headers=headers, timeout=60)
                     except Exception as e:
@@ -1239,7 +1240,7 @@ class FileDataViewSet(viewsets.ModelViewSet):
                 # Call upload-and-train API
                 with open(save_path, 'rb') as f:
                     files_data = {'file': (file.name, f, 'application/octet-stream')}
-                    data = {'type': 'file'}
+                    data = {'type': 'file', 'knowledge_bases': knowledge_bases}
                     try:
                         requests.post(api_url, files=files_data, data=data, headers=headers, timeout=60)
                     except Exception as e:
