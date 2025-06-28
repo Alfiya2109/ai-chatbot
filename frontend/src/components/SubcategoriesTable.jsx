@@ -46,7 +46,6 @@ const SubcategoriesTable = ({ subCategories, categories, onAddSubcategory, onEdi
     setModalOpen(true);
   };
 
-  if (!data.length) return <div>No subcategories available.</div>;
   return (
     <div className="bg-white rounded-xl shadow-lg p-6 mt-4 w-full mx-auto">
       <div className="flex items-center justify-between mb-4">
@@ -61,32 +60,36 @@ const SubcategoriesTable = ({ subCategories, categories, onAddSubcategory, onEdi
         </button>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full border text-sm rounded-lg overflow-hidden">
-          <thead>
-            <tr>
-              <th className="border px-4 py-2 bg-gray-100 text-gray-700 font-semibold">Category</th>
-              <th className="border px-4 py-2 bg-gray-100 text-gray-700 font-semibold">Subcategory</th>
-              <th className="border px-4 py-2 bg-gray-100 text-gray-700 font-semibold">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((row, idx) => (
-              <tr key={row.subcategoryId} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                <td className="border px-4 py-2">{row.categoryName}</td>
-                <td className="border px-4 py-2">{row.subcategoryName}</td>
-                <td className="border px-4 py-2 text-center">
-                  <button
-                    className="px-3 py-1 bg-blue-500 text-white rounded mr-2"
-                    onClick={() => openEditModal(row)}
-                  >
-                    Edit
-                  </button>
-                  {/* TODO: Add delete button if needed */}
-                </td>
+        {data.length > 0 ? (
+          <table className="w-full border text-sm rounded-lg overflow-hidden">
+            <thead>
+              <tr>
+                <th className="border px-4 py-2 bg-gray-100 text-gray-700 font-semibold">Category</th>
+                <th className="border px-4 py-2 bg-gray-100 text-gray-700 font-semibold">Subcategory</th>
+                <th className="border px-4 py-2 bg-gray-100 text-gray-700 font-semibold">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {data.map((row, idx) => (
+                <tr key={row.subcategoryId} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                  <td className="border px-4 py-2">{row.categoryName}</td>
+                  <td className="border px-4 py-2">{row.subcategoryName}</td>
+                  <td className="border px-4 py-2 text-center">
+                    <button
+                      className="px-3 py-1 bg-blue-500 text-white rounded mr-2"
+                      onClick={() => openEditModal(row)}
+                    >
+                      Edit
+                    </button>
+                    {/* TODO: Add delete button if needed */}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <div className="text-center text-gray-500 py-8">No subcategories available.</div>
+        )}
       </div>
       {modalOpen && (
         <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50" onClick={() => setModalOpen(false)}>

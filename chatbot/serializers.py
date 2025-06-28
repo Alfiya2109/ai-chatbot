@@ -229,8 +229,9 @@ class QADataSerializer(serializers.ModelSerializer):
     updated_by = serializers.SlugRelatedField(slug_field='username', queryset=User.objects.all(), required=False, allow_null=True)
     description = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     knowledge_bases = serializers.SlugRelatedField(many=True, slug_field='name', queryset=KnowledgeBase.objects.all())
-    category = serializers.SlugRelatedField(many=True, slug_field='name', read_only=True)
-    subcategory = serializers.SlugRelatedField(many=True, slug_field='name', read_only=True)
+    category = serializers.PrimaryKeyRelatedField(many=True, queryset=ChatbotCategory.objects.all(), required=False)
+    subcategory = serializers.PrimaryKeyRelatedField(many=True, queryset=ChatbotSubCategory.objects.all(), required=False)
+    
     class Meta:
         model = QAData
         fields = '__all__'
