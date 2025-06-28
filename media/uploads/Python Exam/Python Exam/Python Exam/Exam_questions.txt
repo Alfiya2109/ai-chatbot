@@ -1,0 +1,41 @@
+List of the questions:
+
+IQRA TECHNOLOGY PYTHON  PAPER 2025                                                  TIME : 3:00 HRS
+
+Write a Python program that takes a string as input and prints it in reverse order.
+Write a Python program that compares two numbers and prints whether the first is greater than, equal to, or less than the second.
+Write a Python program that finds the union, intersection, and difference of two sets.
+4. Create a tuple with five numbers. Write a program that finds the largest number in the tuple.
+5. Write a Python program that calculates the difference between two dates and prints the result.
+6. Create a Python class Car with attributes make, model, and year. Instantiate an object and print its attributes.
+7. Write a lambda function that takes two arguments, x and y, and returns their sum. Use this lambda function to calculate the sum of 5 and 7.
+8. Write a program to convert an Array to a List and give a specific output showing that it is converted.
+9. Write a Python program to find the second largest number in a list without using the max() function.
+10. Implement a class Student with encapsulated attributes for name and grades. Provide methods to set grades and calculate the average grade.
+11. Write a Python function named square_numbers that takes a list of numbers and returns a new list with the squares of those numbers.
+12. Create a program to determine if a given year is a leap year or not using if-else conditions.
+13. Write a Python program to print the sum of all even numbers from 1 to 20.
+14. Implement a class Shape with a method to calculate the area. Create derived classes Circle and Rectangle, overriding the area calculation method.
+15. Write a program that takes two numbers as input and performs division. Use exception handling to catch and handle:
+Division by zero
+Invalid input (non-numeric values)
+16. Write a Python program to use the defaultdict from the collections module to group a list of words by their starting letter.
+Example input: ["apple", "ant", "banana", "ball", "cat", "car", "dog"]
+
+17. Write a Python program to count the occurrences of each word in a given sentence and store the result in a dictionary.
+Example input: "the quick brown fox jumps over the lazy dog the dog was quick"
+Expected output: {'the': 3, 'quick': 2, 'brown': 1, 'fox': 1, 'jumps': 1, 'over': 1, 'lazy': 1, 'dog': 2, 'was': 1}
+
+18. Create your own Python module named calculator.py. Define the following four functions within it:
+addition(a, b) – Adds two numbers and returns the result.
+subtraction(a, b) – Subtracts the second number from the first and returns the result.
+multiplication(a, b) – Multiplies two numbers and returns the result.
+division(a, b) – Divides the first number by the second and returns the result.
+19. Write a Python program that prints the factorial of a given number using a for loop.
+The factorial of a number n is the product of all positive integers less than or equal to n.
+Example Input: 5
+Example Output: Factorial of 5 is 120
+
+End of Paper
+
+
