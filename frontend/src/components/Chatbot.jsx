@@ -11,6 +11,7 @@ import { FiEdit } from "react-icons/fi";
 import { BsLayoutSidebar } from "react-icons/bs";
 import { IoSearchOutline } from "react-icons/io5";
 import axios from 'axios';
+import { FaTrash, FaEllipsisV } from "react-icons/fa"; // Add FaEllipsisV
 
   const API_BASE_URL = BASE_URL;
 
@@ -99,6 +100,7 @@ export default function Chatbot() {
 
   // Profile dropdown state
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [menuOpenId, setMenuOpenId] = useState(null); // Add this state
 
     // Scroll to bottom when messages change
     useEffect(() => {
@@ -370,6 +372,36 @@ function formatBotAnswer(text) {
   return formatted;
 }
 
+    // Add this function inside your Chatbot component
+const handleDeleteSession = async (sessionId) => {
+  if (!window.confirm("Delete this chat? This cannot be undone.")) return;
+  try {
+    let token = currentUser?.token || localStorage.getItem('access_token');
+    const response = await fetch(`${API_BASE_URL}/api/chatsessions/${sessionId}/`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!response.ok) throw new Error('Failed to delete chat session');
+    setChatSessions(prev => prev.filter(s => s.id !== sessionId));
+    if (activeSession === sessionId) {
+      setActiveSession(null);
+      setMessages([
+        { 
+          id: 1, 
+          text: 'Hi there! I\'m your Web Assistant. How can I help you today?', 
+          sender: 'bot', 
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+        }
+      ]);
+    }
+  } catch (err) {
+    alert('Failed to delete chat.');
+  }
+};
+
     return (
       <div className="flex overflow-auto bg-gray-100">
         {/* Sidebar */}
@@ -404,13 +436,44 @@ function formatBotAnswer(text) {
                     <div className="text-xs text-gray-400 pl-2">No chats found</div>
                   )}
                   {chatSessions.map(session => (
-                    <button
-                      key={session.id}
-                      className={`w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-50 hover:bg-gray-100 text-gray-700 ${activeSession === session.id ? 'bg-gray-200' : ''}`}
-                      onClick={() => handleSessionClick(session.id)}
-                    >
-                      <span className="truncate">{session.title || `Chat #${session.id}`}</span>
-                    </button>
+                    <div key={session.id} className="flex items-center group relative">
+                      <button
+                        className={`flex-1 text-left flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-50 hover:bg-gray-100 text-gray-700 ${activeSession === session.id ? 'bg-gray-200' : ''}`}
+                        style={{ minWidth: 0 }}
+                        onClick={() => handleSessionClick(session.id)}
+                        type="button"
+                      >
+                        <span className="truncate">{session.title || `Chat #${session.id}`}</span>
+                      </button>
+                      <button
+                        className="ml-1 p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700"
+                        title="More"
+                        onClick={e => {
+                          e.stopPropagation();
+                          setMenuOpenId(menuOpenId === session.id ? null : session.id);
+                        }}
+                        tabIndex={-1}
+                        type="button"
+                        style={{ flex: "none" }}
+                      >
+                        <FaEllipsisV className="text-sm" />
+                      </button>
+                      {/* Dropdown menu */}
+                      {menuOpenId === session.id && (
+                        <div className="absolute right-0 top-8 z-50 bg-white border rounded shadow text-sm min-w-[100px]">
+                          <button
+                            className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 w-full text-left"
+                            onClick={e => {
+                              e.stopPropagation();
+                              setMenuOpenId(null);
+                              handleDeleteSession(session.id);
+                            }}
+                          >
+                            <FaTrash className="text-xs" /> Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
                 {/* Add more sidebar items as needed */}

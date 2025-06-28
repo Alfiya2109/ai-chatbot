@@ -344,7 +344,13 @@ class EmbedWebsiteAPIView(APIView):
         
         try:
             pages = scrape_entire_website(url)
-            store_in_vector_db(pages, knowledge_base=knowledge_base)
+            from chatbot.models import KnowledgeBase
+            if isinstance(knowledge_base, list):
+                kb_names = list(KnowledgeBase.objects.filter(id__in=knowledge_base).values_list('name', flat=True))
+            else:
+                kb_names = [knowledge_base]
+            
+            store_in_vector_db(pages, knowledge_base=kb_names)
             return Response({"message": "Website embedded successfully."})
         except Exception as e:
             return Response({"error": str(e)}, status=500)
@@ -484,6 +490,11 @@ class JogetFileUploadAPIView(APIView):
             with file_obj.file.open('rb') as f:
                 content = read_uploaded_file(f)
             pages = [(file_obj.file.name, content)]
+            from chatbot.models import KnowledgeBase
+            if isinstance(knowledge_bases, list):
+                knowledge_bases = list(KnowledgeBase.objects.filter(id__in=knowledge_bases).values_list('name', flat=True))
+            else:
+                knowledge_bases = [knowledge_bases]
             store_in_vector_db(pages,knowledge_base=knowledge_bases)
         except Exception as e:
             return Response({'error': f'File saved but failed to train vector DB: {str(e)}'}, status=500)
@@ -509,10 +520,12 @@ class UploadAndTrainAPIView(APIView):
         # Get the selected knowledge base (assume single selection for simplicity)
         knowledge_base = None
         kb_value = request.data.get("knowledge_base") or request.data.get("knowledge_bases")
-        if isinstance(kb_value, list):
-            knowledge_base = kb_value[0] if kb_value else None
-        else:
+        if isinstance(kb_value, list) and kb_value:
             knowledge_base = kb_value
+        elif kb_value:
+            knowledge_base = [kb_value]
+        else:
+            knowledge_base = [knowledge_base]
         if not knowledge_base:
             return Response({"error": "Knowledge base is required for training."}, status=400)
         try:
@@ -539,6 +552,11 @@ class UploadAndTrainAPIView(APIView):
             else:
                 return Response({"error": "Invalid type."}, status=400)
             # Store in vector DB with knowledge base metadata
+            from chatbot.models import KnowledgeBase
+            if isinstance(knowledge_base, list):
+                knowledge_base = list(KnowledgeBase.objects.filter(id__in=knowledge_base).values_list('name', flat=True))
+            else:
+                knowledge_base = [knowledge_base]
             store_in_vector_db(pages, knowledge_base=knowledge_base)
             return Response({"message": "Trained successfully ✅"})
         except Exception as e:
@@ -1509,7 +1527,12 @@ class GoogleDriveUploadAPIView(APIView):
                             extracted_text = read_uploaded_file(tmp_file)
                             pages = [(file_name, extracted_text)]
                             # print(f"Prepared pages for vector DB: {pages[0][0]}, length: {len(pages[0][1])}")
-                            store_in_vector_db(pages,knowledge_base=knowledge_bases)
+                            from chatbot.models import KnowledgeBase
+                            if isinstance(knowledge_bases, list):
+                                kb_names = list(KnowledgeBase.objects.filter(id__in=knowledge_bases).values_list('name',flat=True))
+                            else:
+                                kb_names=[knowledge_bases]
+                            store_in_vector_db(pages,knowledge_base=kb_names)
                             print(f"[VECTOR DB] Uploaded '{file_name}' to vector database.")
                     except Exception as e:
                         print(f"[VECTOR DB] Exception while uploading '{file_name}' to vector database: {e}")
@@ -1596,7 +1619,12 @@ class JogetFileUploadAPIView(APIView):
             with file_obj.file.open('rb') as f:
                 content = read_uploaded_file(f)
             pages = [(file_obj.file.name, content)]
-            store_in_vector_db(pages,knowledge_base=knowledge_bases)
+            from chatbot.models import KnowledgeBase
+            if isinstance(knowledge_bases, list):
+                knowledge_bases = list(KnowledgeBase.objects.filter(name__in=knowledge_bases).values_list('name', flat=True))
+            else:
+                knowledge_bases = [knowledge_bases]
+            store_in_vector_db(pages, knowledge_base=knowledge_bases)
         except Exception as e:
             return Response({'error': f'File saved but failed to train vector DB: {str(e)}'}, status=500)
 

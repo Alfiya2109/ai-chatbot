@@ -106,18 +106,21 @@ function ProtectedRoute({ children }) {
 function SalesProtectedRoute({ children }) {
   const token = localStorage.getItem("access_token")
   const role = localStorage.getItem("user_role")
- 
+  const profile = localStorage.getItem("profile")
+
   if (!token) {
     return <Navigate to="/login" replace />
   }
- 
-  if (role !== "sales") {
+
+  // Check for role and profile restrictions
+  if (
+    (profile && (profile.toLowerCase() === "non-sales" || profile.toLowerCase() === "nonsales"))
+  ) {
     return <Navigate to="/chatbot" replace />
   }
- 
+
   return children
 }
  
 export default App
- 
- 
+
