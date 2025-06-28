@@ -62,7 +62,7 @@ urlpatterns = [
     path('joget-sso-login/', JogetSSOLoginAPIView.as_view(), name='joget-sso-login'),
     # Bulk delete endpoints
     path('bulk-delete-files/', BulkDeleteFileUploadView.as_view(), name='bulk-delete-files'),
-    path('bulk-delete-text/', BulkDeleteTextContentView.as_view(), name='bulk-delete-text'),
+    path('bulk-delete-textcontents/', BulkDeleteTextContentView.as_view(), name='bulk-delete-text'),
     path('bulk-delete-excel/', BulkDeleteExcelFileView.as_view(), name='bulk-delete-excel'),
     path('bulk-delete-qa/', BulkDeleteQADataView.as_view(), name='bulk-delete-qa'),
     path('bulk-delete-urls/', BulkDeleteURLView.as_view(), name='bulk-delete-urls'),

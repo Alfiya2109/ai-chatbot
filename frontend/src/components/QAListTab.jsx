@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import Loader from './Loader';
 
-const QAListTab = ({ qaData, renderTable, qaModalOpen, setQaModalOpen, qaForm, setQaForm, categories, subCategories, knowledgeBases, qaFormError, handleQaModalSubmit, onBulkDelete, isLoading }) => {
+
+const QAListTab = ({ qaData, renderTable, qaModalOpen, setQaModalOpen, qaForm, setQaForm, categories, subCategories, knowledgeBases, qaFormError, handleQaModalSubmit, onBulkDelete, qaEditModalOpen, setQaEditModalOpen, editingQa, handleQaEditSubmit }) => {
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState([]);
 
@@ -202,6 +203,99 @@ const QAListTab = ({ qaData, renderTable, qaModalOpen, setQaModalOpen, qaForm, s
               <div className="flex justify-end space-x-2">
                 <button type="button" onClick={() => { setQaModalOpen(false); setQaForm({ question: '', answer: '', description: '', category: [], subcategory: [], knowledge_bases: [] }); }} className="px-4 py-2 rounded border border-gray-300 hover:bg-gray-100">Cancel</button>
                 <button type="submit" className="px-4 py-2 rounded bg-gray-500 text-white hover:bg-gray-700">Submit</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      
+      {/* Q&A Edit Modal */}
+      {qaEditModalOpen && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50" onClick={() => setQaEditModalOpen(false)}>
+          <div
+            className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md"
+            style={{ maxHeight: '90vh', overflowY: 'auto' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h2 className="text-xl font-semibold mb-4">Edit Q&A</h2>
+            <form onSubmit={handleQaEditSubmit} className="space-y-4 text-sm">
+              <div>
+                <label className="block mb-1 font-medium">Question <span className="text-red-500">*</span></label>
+                <textarea
+                  required
+                  value={qaForm.question}
+                  onChange={e => setQaForm({ ...qaForm, question: e.target.value })}
+                  className="w-full p-2 border rounded"
+                  rows="3"
+                />
+              </div>
+              <div>
+                <label className="block mb-1 font-medium">Answer <span className="text-red-500">*</span></label>
+                <textarea
+                  required
+                  value={qaForm.answer}
+                  onChange={e => setQaForm({ ...qaForm, answer: e.target.value })}
+                  className="w-full p-2 border rounded"
+                  rows="3"
+                />
+              </div>
+              <div>
+                <label className="block mb-1 font-medium">Description</label>
+                <textarea
+                  value={qaForm.description}
+                  onChange={e => setQaForm({ ...qaForm, description: e.target.value })}
+                  className="w-full p-2 border rounded"
+                  rows="2"
+                />
+              </div>
+              <div>
+                <label className="block mb-1 font-medium">Category</label>
+                <select
+                  value={qaForm.category}
+                  onChange={e => setQaForm({ ...qaForm, category: e.target.value })}
+                  className="w-full p-2 border rounded"
+                >
+                  <option value="">Select a category</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block mb-1 font-medium">Subcategory</label>
+                <select
+                  value={qaForm.subcategory}
+                  onChange={e => setQaForm({ ...qaForm, subcategory: e.target.value })}
+                  className="w-full p-2 border rounded"
+                >
+                  <option value="">Select a subcategory</option>
+                  {subCategories.map((subcat) => (
+                    <option key={subcat.id} value={subcat.id}>{subcat.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block mb-1 font-medium">Knowledge Base <span className="text-red-500">*</span></label>
+                <select
+                  multiple
+                  required
+                  value={qaForm.knowledge_bases}
+                  onChange={e => {
+                    const options = Array.from(e.target.selectedOptions, option => option.value);
+                    setQaForm({ ...qaForm, knowledge_bases: options });
+                  }}
+                  className="w-full p-2 border rounded"
+                >
+                  {knowledgeBases.map((kb) => (
+                    <option key={kb.id} value={String(kb.id)}>{kb.name}</option>
+                  ))}
+                </select>
+                <span className="text-xs text-gray-500">Hold Ctrl (Windows) or Cmd (Mac) to select multiple</span>
+              </div>
+              {qaFormError && <div className="text-red-500 text-xs">{qaFormError}</div>}
+              <div className="flex justify-end space-x-2">
+                <button type="button" onClick={() => { setQaEditModalOpen(false); setQaForm({ question: '', answer: '', description: '', category: [], subcategory: [], knowledge_bases: [] }); }} className="px-4 py-2 rounded border border-gray-300 hover:bg-gray-100">Cancel</button>
+                <button type="submit" className="px-4 py-2 rounded bg-blue-500 text-white hover:bg-blue-700">Update</button>
               </div>
             </form>
           </div>
