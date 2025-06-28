@@ -48,6 +48,7 @@ backend/.pytest_cache/
 
 # ---- Django ----
 */__pycache__/
+__pycache__/
 
 # ---- Build files ----
 build/

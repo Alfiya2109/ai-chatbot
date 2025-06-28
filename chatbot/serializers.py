@@ -324,6 +324,7 @@ class SitemapFetchSerializer(serializers.ModelSerializer):
 
 class GoogleDriveFileDataSerializer(serializers.ModelSerializer):
     knowledge_bases = serializers.SerializerMethodField()
+    added_by = serializers.SerializerMethodField()
 
     class Meta:
         model = GoogleDriveFileData
@@ -334,6 +335,8 @@ class GoogleDriveFileDataSerializer(serializers.ModelSerializer):
 
     def get_knowledge_bases(self, obj):
         return [kb.name for kb in obj.knowledge_bases.all()]
+    def get_added_by(self, obj):
+        return obj.added_by.username if obj.added_by else None
 
 class GoogleDriveDocumentFileDataSerializer(serializers.ModelSerializer):
     class Meta:

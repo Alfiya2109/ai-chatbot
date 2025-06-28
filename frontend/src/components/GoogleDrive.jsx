@@ -89,7 +89,7 @@ const GoogleDrive = () => {
   const fetchKnowledgeBases = async () => {
     try {
       const token = localStorage.getItem('access_token');
-      const res = await fetch('/api/knowledgebase/', {
+      const res = await fetch(`${BASE_URL}/api/knowledgebase/`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (res.ok) {
@@ -210,25 +210,27 @@ const GoogleDrive = () => {
       file_id: file.id,
       file_name: file.name,
       mime_type: file.mimeType,
-      relative_path: file.relativePath || file.name, // <-- Ensure this is set!
+      relative_path: file.relativePath || file.name,
       folder_name: folderName,
       description,
-      knowledge_bases: selectedKBs,
+      knowledge_bases: selectedKBs, // <-- use IDs
     }));
     // Make sure you have accessToken in your component state
     const payload = {
       files: filesMeta,
       folder_name: folderName,
       description,
-      knowledge_bases: selectedKBs,
+      knowledge_bases: selectedKBs, // <-- use IDs
       access_token: window.latestGoogleAccessToken || localStorage.getItem('google_access_token') || '', // <-- Add this line
     };
 
     try {
-      const res = await fetch('http://localhost:8000/api/chatbot/google-drive/upload-folder/', {
+      const token = localStorage.getItem('access_token');
+      const res = await fetch(`${BASE_URL}/api/chatbot/google-drive/upload-folder/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(payload),
       });
