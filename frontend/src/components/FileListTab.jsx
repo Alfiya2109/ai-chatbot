@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import Loader from './Loader';
 
-const FileListTab = ({ uploadedFiles, renderTable, fileModalOpen, setFileModalOpen, fileForm, setFileForm, knowledgeBases, fileFormError, handleFileModalSubmit, fetchKnowledgeBases, onBulkDelete }) => {
+const FileListTab = ({ uploadedFiles, renderTable, fileModalOpen, setFileModalOpen, fileForm, setFileForm, knowledgeBases, fileFormError, handleFileModalSubmit, fetchKnowledgeBases, onBulkDelete, isLoading }) => {
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState([]);
 
@@ -107,6 +108,11 @@ const FileListTab = ({ uploadedFiles, renderTable, fileModalOpen, setFileModalOp
       {/* File Upload Modal */}
       {fileModalOpen && (
         <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50" onClick={() => setFileModalOpen(false)}>
+          {isLoading && (
+            <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-60">
+              <Loader />
+            </div>
+          )}
           <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
             <h2 className="text-xl font-semibold mb-4">Upload File</h2>
             <form onSubmit={handleFileModalSubmit} className="space-y-4 text-sm">

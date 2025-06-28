@@ -15,6 +15,7 @@ import SubcategoriesTable from './SubcategoriesTable';
 import UserDetailsTab from './UserDetailsTab';
 import FolderListTab from './FolderListTab'; // Import FolderListTab
 import GoogleDrive from './GoogleDrive';
+import Loader from './Loader'; 
 
 // Define tab structure as per the provided image
 const tabSections = [

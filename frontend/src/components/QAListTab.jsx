@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import Loader from './Loader';
+
 
 const QAListTab = ({ qaData, renderTable, qaModalOpen, setQaModalOpen, qaForm, setQaForm, categories, subCategories, knowledgeBases, qaFormError, handleQaModalSubmit, onBulkDelete, qaEditModalOpen, setQaEditModalOpen, editingQa, handleQaEditSubmit }) => {
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
@@ -55,6 +57,12 @@ const QAListTab = ({ qaData, renderTable, qaModalOpen, setQaModalOpen, qaForm, s
 
   return (
     <div className="mt-6 w-11/12">
+      {/* Loader overlay */}
+      {isLoading && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-white bg-opacity-60">
+          <Loader />
+        </div>
+      )}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold mb-4">Q&A Data</h3>
         <div className="flex items-center space-x-2">
@@ -107,11 +115,7 @@ const QAListTab = ({ qaData, renderTable, qaModalOpen, setQaModalOpen, qaForm, s
       {/* Q&A Upload Modal */}
       {qaModalOpen && (
         <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50" onClick={() => setQaModalOpen(false)}>
-          <div
-            className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md"
-            style={{ maxHeight: '90vh', overflowY: 'auto' }}
-            onClick={e => e.stopPropagation()}
-          >
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md" style={{ maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
             <h2 className="text-xl font-semibold mb-4">Upload Q&A</h2>
             <form onSubmit={handleQaModalSubmit} className="space-y-4 text-sm">
               <div>
