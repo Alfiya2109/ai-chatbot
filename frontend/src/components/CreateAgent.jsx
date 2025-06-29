@@ -520,16 +520,14 @@ function CreateAgent() {
         .filter(kb => qaForm.knowledge_bases.includes(String(kb.id)))
         .map(kb => kb.name);
       
-      const formattedQA = {
-        question: qaForm.question,
-        answer: qaForm.answer,
-        description: qaForm.description,
-        category: qaForm.category ? [parseInt(qaForm.category)] : [],
-        subcategory: qaForm.subcategory ? [parseInt(qaForm.subcategory)] : [],
+      const payload = {
+        ...qaForm,
         knowledge_bases: selectedNames,
+        category: qaForm.category.map(id => parseInt(id)),
+        subcategory: qaForm.subcategory.map(id => parseInt(id)),
       };
       
-      await axios.patch(`${BASE_URL}/api/qa/${editingQa.id}/`, formattedQA, {
+      await axios.patch(`${BASE_URL}/api/qa/${editingQa.id}/`, payload, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -733,13 +731,17 @@ function CreateAgent() {
       trainFormData.append('type', 'qna');
       trainFormData.append('question', qa.question);
       trainFormData.append('answer', qa.answer);
-      trainFormData.append('category', qa.category || 'general');
-      trainFormData.append('subcategory', qa.subcategory || '');
-      // Add knowledge base names to the training payload
-      const selectedNames = knowledgeBases
-        .filter(kb => qa.knowledge_bases.includes(String(kb.id)))
-        .map(kb => kb.name);
-      selectedNames.forEach((name) => trainFormData.append('knowledge_bases', name));
+      trainFormData.append('category', qa.category && qa.category.length > 0 ? parseInt(qa.category[0]) : 'general');
+      trainFormData.append('subcategory', qa.subcategory && qa.subcategory.length > 0 ? parseInt(qa.subcategory[0]) : '');
+      // Map names to IDs if needed, and append only IDs
+      const kbIds = qa.knowledge_bases.map(nameOrId => {
+        if (!isNaN(Number(nameOrId))) return Number(nameOrId);
+        const kb = knowledgeBases.find(kb => kb.name === nameOrId);
+        return kb ? kb.id : null;
+      }).filter(id => id !== null);
+      
+      kbIds.forEach(id => trainFormData.append('knowledge_bases', id));
+      alert('Knowledge base IDs: ' + kbIds.join(', '));
 
       const trainResponse = await axios.post(`${BASE_URL}/api/upload-and-train/`, trainFormData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -766,11 +768,8 @@ function CreateAgent() {
         }
         requestData.append('type', 'file');
         requestData.append('file', uploadedFiles[0]?.file);
-        // Add knowledge base names to the training payload
-        const selectedNames = knowledgeBases
-          .filter(kb => fileForm.knowledge_bases.includes(String(kb.id)))
-          .map(kb => kb.name);
-        selectedNames.forEach((name) => requestData.append('knowledge_bases', name));
+        // Add knowledge base IDs to the training payload
+        fileForm.knowledge_bases.forEach((id) => requestData.append('knowledge_bases', id));
       } else if (activeTab === 'Text') {
         // Validate knowledge base selection
         if (!textForm.knowledge_bases || textForm.knowledge_bases.length === 0) {
@@ -779,11 +778,8 @@ function CreateAgent() {
         }
         requestData.append('type', 'text');
         requestData.append('text', textInput);
-        // Add knowledge base names to the training payload
-        const selectedNames = knowledgeBases
-          .filter(kb => textForm.knowledge_bases.includes(String(kb.id)))
-          .map(kb => kb.name);
-        selectedNames.forEach((name) => requestData.append('knowledge_bases', name));
+        // Add knowledge base IDs to the training payload
+        textForm.knowledge_bases.forEach((id) => requestData.append('knowledge_bases', id));
       } else if (activeTab === 'Q&A') {
         if (qaData.length > 0) {
           const qa = qaData[0];
@@ -797,11 +793,8 @@ function CreateAgent() {
           requestData.append('answer', qa.answer);
           requestData.append('category', qa.category || 'general');
           requestData.append('subcategory', qa.subcategory || '');
-          // Add knowledge base names to the training payload
-          const selectedNames = knowledgeBases
-            .filter(kb => qa.knowledge_bases.includes(String(kb.id)))
-            .map(kb => kb.name);
-          selectedNames.forEach((name) => requestData.append('knowledge_bases', name));
+          // Add knowledge base IDs to the training payload
+          qa.knowledge_bases.forEach((id) => requestData.append('knowledge_bases', id));
         }
       }
 
@@ -1019,11 +1012,10 @@ function CreateAgent() {
       const formData = new FormData();
       formData.append('file', fileForm.file);
       if (fileForm.description) formData.append('description', fileForm.description);
-      // Map selected IDs to names for the API
+      // Map selected KB IDs to names for upload endpoint
       const selectedNames = knowledgeBases
         .filter(kb => fileForm.knowledge_bases.includes(String(kb.id)))
         .map(kb => kb.name);
-      // Send each name as a separate field
       selectedNames.forEach((name) => formData.append('knowledge_bases', name));
       
       const token = localStorage.getItem('access_token');
@@ -1039,8 +1031,8 @@ function CreateAgent() {
       const trainFormData = new FormData();
       trainFormData.append('type', 'file');
       trainFormData.append('file', fileForm.file);
-      // Add knowledge base names to the training payload
-      selectedNames.forEach((name) => trainFormData.append('knowledge_bases', name));
+      // Add knowledge base IDs to the training payload
+      fileForm.knowledge_bases.forEach((id) => trainFormData.append('knowledge_bases', id));
 
       try {
         const trainResponse = await axios.post(`${BASE_URL}/api/upload-and-train/`, trainFormData, {
@@ -1075,7 +1067,7 @@ function CreateAgent() {
       const formData = new FormData();
       formData.append('file', excelForm.file);
       if (excelForm.description) formData.append('description', excelForm.description);
-      // Map selected IDs to names for the API
+      // Map selected KB IDs to names for upload endpoint
       const selectedNames = knowledgeBases
         .filter(kb => excelForm.knowledge_bases.includes(String(kb.id)))
         .map(kb => kb.name);
@@ -1094,8 +1086,8 @@ function CreateAgent() {
       const trainFormData = new FormData();
       trainFormData.append('type', 'file');
       trainFormData.append('file', excelForm.file);
-      // Add knowledge base names to the training payload
-      selectedNames.forEach((name) => trainFormData.append('knowledge_bases', name));
+      // Add knowledge base IDs to the training payload
+      excelForm.knowledge_bases.forEach((id) => trainFormData.append('knowledge_bases', id));
 
       try {
         const trainResponse = await axios.post(`${BASE_URL}/api/upload-and-train/`, trainFormData, {
@@ -1130,7 +1122,7 @@ function CreateAgent() {
       const formData = new FormData();
       formData.append('content', textForm.content);
       if (textForm.description) formData.append('description', textForm.description);
-      // Map selected IDs to names for the API
+      // Map selected KB IDs to names for upload endpoint
       const selectedNames = knowledgeBases
         .filter(kb => textForm.knowledge_bases.includes(String(kb.id)))
         .map(kb => kb.name);
@@ -1149,8 +1141,8 @@ function CreateAgent() {
       const trainFormData = new FormData();
       trainFormData.append('type', 'text');
       trainFormData.append('text', textForm.content);
-      // Add knowledge base names to the training payload
-      selectedNames.forEach((name) => trainFormData.append('knowledge_bases', name));
+      // Add knowledge base IDs to the training payload
+      textForm.knowledge_bases.forEach((id) => trainFormData.append('knowledge_bases', id));
 
       try {
         const trainResponse = await axios.post(`${BASE_URL}/api/upload-and-train/`, trainFormData, {
@@ -1257,7 +1249,7 @@ function CreateAgent() {
             </thead>
             <tbody>
               {data.map((row, idx) => (
-                <tr key={row.file || row.content || row.url || row.question || row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                <tr key={row.id || row.file || row.content || row.url || row.question} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                   {isMultiSelectMode && (
                     <td className="border px-4 py-2 text-center">
                       <input
@@ -1404,7 +1396,7 @@ function CreateAgent() {
             handleTextModalSubmit={handleTextModalSubmit}
             fetchKnowledgeBases={fetchKnowledgeBases}
             onBulkDelete={handleBulkTextDelete}
-            handleTextEdit={handleTextEdit}
+            handleTextEdit={handleTextEdit} // <-- Fix: pass the missing prop
             textEditModalOpen={textEditModalOpen}
             setTextEditModalOpen={setTextEditModalOpen}
             editingText={editingText}
@@ -1671,10 +1663,10 @@ function CreateAgent() {
       trainFormData.append('type', 'qna');
       trainFormData.append('question', qaForm.question);
       trainFormData.append('answer', qaForm.answer);
-      trainFormData.append('category', qaForm.category && qaForm.category.length > 0 ? qaForm.category[0] : 'general');
-      trainFormData.append('subcategory', qaForm.subcategory && qaForm.subcategory.length > 0 ? qaForm.subcategory[0] : '');
-      // Add knowledge base names to the training payload
-      selectedKbNames.forEach((name) => trainFormData.append('knowledge_bases', name));
+      trainFormData.append('category', qaForm.category && qaForm.category.length > 0 ? parseInt(qaForm.category[0]) : 'general');
+      trainFormData.append('subcategory', qaForm.subcategory && qaForm.subcategory.length > 0 ? parseInt(qaForm.subcategory[0]) : '');
+      // Add knowledge base IDs to the training payload
+      qaForm.knowledge_bases.forEach((id) => trainFormData.append('knowledge_bases', id));
 
       try {
         const trainResponse = await axios.post(`${BASE_URL}/api/upload-and-train/`, trainFormData, {
