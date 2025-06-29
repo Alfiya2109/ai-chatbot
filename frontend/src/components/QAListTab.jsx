@@ -2,7 +2,25 @@ import React, { useState } from 'react';
 import Loader from './Loader';
 
 
-const QAListTab = ({ qaData, renderTable, qaModalOpen, setQaModalOpen, qaForm, setQaForm, categories, subCategories, knowledgeBases, qaFormError, handleQaModalSubmit, onBulkDelete, qaEditModalOpen, setQaEditModalOpen, editingQa, handleQaEditSubmit }) => {
+const QAListTab = ({
+  qaData,
+  renderTable,
+  qaModalOpen,
+  setQaModalOpen,
+  qaForm,
+  setQaForm,
+  categories,
+  subCategories,
+  knowledgeBases,
+  qaFormError,
+  handleQaModalSubmit,
+  onBulkDelete,
+  qaEditModalOpen,
+  setQaEditModalOpen,
+  editingQa,
+  handleQaEditSubmit,
+  isLoading // <-- add this
+}) => {
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState([]);
 

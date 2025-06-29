@@ -331,25 +331,40 @@ class EmbedWebsiteAPIView(APIView):
         if not url:
             return Response({"error": "URL is required."}, status=400)
         
-        # Get the selected knowledge base
-        knowledge_base = None
-        kb_value = request.data.get("knowledge_base") or request.data.get("knowledge_bases")
-        if isinstance(kb_value, list):
-            knowledge_base = kb_value[0] if kb_value else None
+        # Get the selected knowledge base(s)
+        kb_value = request.data.getlist("knowledge_bases") if hasattr(request.data, 'getlist') else None
+        if not kb_value or not isinstance(kb_value, list) or not kb_value:
+            # fallback to single knowledge_base or knowledge_bases as string
+            kb_value = request.data.get("knowledge_base") or request.data.get("knowledge_bases")
+            if kb_value:
+                if isinstance(kb_value, list):
+                    knowledge_bases = kb_value
+                else:
+                    knowledge_bases = [kb_value]
+            else:
+                knowledge_bases = []
         else:
-            knowledge_base = kb_value
-            
-        if not knowledge_base:
+            knowledge_bases = kb_value
+        
+        if not knowledge_bases:
             return Response({"error": "Knowledge base is required for training."}, status=400)
         
         try:
             pages = scrape_entire_website(url)
             from chatbot.models import KnowledgeBase
-            if isinstance(knowledge_base, list):
-                kb_names = list(KnowledgeBase.objects.filter(id__in=knowledge_base).values_list('name', flat=True))
-            else:
-                kb_names = [knowledge_base]
-            
+            # Try to convert all to int, if fail, treat as name
+            kb_ids = []
+            kb_names = []
+            for kb in knowledge_bases:
+                try:
+                    kb_ids.append(int(kb))
+                except Exception:
+                    kb_names.append(str(kb))
+            # Get all names from IDs
+            if kb_ids:
+                kb_names += list(KnowledgeBase.objects.filter(id__in=kb_ids).values_list('name', flat=True))
+            if not kb_names:
+                return Response({"error": "No valid knowledge base found."}, status=400)
             store_in_vector_db(pages, knowledge_base=kb_names)
             return Response({"message": "Website embedded successfully."})
         except Exception as e:
@@ -495,7 +510,7 @@ class JogetFileUploadAPIView(APIView):
                 knowledge_bases = list(KnowledgeBase.objects.filter(id__in=knowledge_bases).values_list('name', flat=True))
             else:
                 knowledge_bases = [knowledge_bases]
-            store_in_vector_db(pages,knowledge_base=knowledge_bases)
+            store_in_vector_db(pages, knowledge_base=knowledge_bases)
         except Exception as e:
             return Response({'error': f'File saved but failed to train vector DB: {str(e)}'}, status=500)
 
@@ -520,15 +535,15 @@ class UploadAndTrainAPIView(APIView):
         pages = []
         # Get the selected knowledge base (assume single selection for simplicity)
         knowledge_base = None
-        kb_value = request.data.get("knowledge_base") or request.data.get("knowledge_bases")
-        if isinstance(kb_value, list) and kb_value:
-            knowledge_base = kb_value
-        elif kb_value:
-            knowledge_base = [kb_value]
-        else:
-            knowledge_base = [knowledge_base]
-        if not knowledge_base:
+        kb_ids = request.data.getlist("knowledge_bases") or request.data.get("knowledge_bases") or []
+        if not kb_ids:
+            kb_id = request.data.get("knowledge_base")
+            if kb_id:
+                kb_ids = [kb_id]
+        if not kb_ids:
             return Response({"error": "Knowledge base is required for training."}, status=400)
+        from chatbot.models import KnowledgeBase
+        kb_names = list(KnowledgeBase.objects.filter(id__in=kb_ids).values_list('name', flat=True))
         try:
             if input_type == "file":
                 uploaded_file = request.FILES.get("file")
@@ -553,12 +568,8 @@ class UploadAndTrainAPIView(APIView):
             else:
                 return Response({"error": "Invalid type."}, status=400)
             # Store in vector DB with knowledge base metadata
-            from chatbot.models import KnowledgeBase
-            if isinstance(knowledge_base, list):
-                knowledge_base = list(KnowledgeBase.objects.filter(id__in=knowledge_base).values_list('name', flat=True))
-            else:
-                knowledge_base = [knowledge_base]
-            store_in_vector_db(pages, knowledge_base=knowledge_base)
+            print(f"[DEBUG] Calling store_in_vector_db with kb_names: {kb_names}")
+            store_in_vector_db(pages, knowledge_base=kb_names)
             return Response({"message": "Trained successfully ✅"})
         except Exception as e:
             return Response({"error": str(e)}, status=500)
@@ -1659,7 +1670,7 @@ class JogetFileUploadAPIView(APIView):
             pages = [(file_obj.file.name, content)]
             from chatbot.models import KnowledgeBase
             if isinstance(knowledge_bases, list):
-                knowledge_bases = list(KnowledgeBase.objects.filter(name__in=knowledge_bases).values_list('name', flat=True))
+                knowledge_bases = list(KnowledgeBase.objects.filter(id__in=knowledge_bases).values_list('name', flat=True))
             else:
                 knowledge_bases = [knowledge_bases]
             store_in_vector_db(pages, knowledge_base=knowledge_bases)

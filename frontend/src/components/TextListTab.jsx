@@ -1,7 +1,25 @@
 import React, { useState } from 'react';
 import Loader from './Loader';
 
-const TextListTab = ({ uploadedTexts, renderTable, textModalOpen, setTextModalOpen, textForm, setTextForm, knowledgeBases, textFormError, handleTextModalSubmit, fetchKnowledgeBases, onBulkDelete, isLoading }) => {
+const TextListTab = ({
+  uploadedTexts,
+  renderTable,
+  textModalOpen,
+  setTextModalOpen,
+  textForm,
+  setTextForm,
+  knowledgeBases,
+  textFormError,
+  handleTextModalSubmit,
+  fetchKnowledgeBases,
+  onBulkDelete,
+  isLoading,
+  handleTextEdit,
+  textEditModalOpen,
+  setTextEditModalOpen,
+  editingText,
+  handleTextEditSubmit
+}) => {
 
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState([]);
