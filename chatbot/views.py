@@ -12,7 +12,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 
 from rest_framework import generics, filters, status
 from django.db.models import Count
-from .models import Feedback, URLModel, SitemapFetch, FileData
+from .models import Feedback, URLModel, SitemapFetch, FileData, DocumentFileData, ExcelFileData
 from django.views import View
 from django.http import JsonResponse
 from django.db import models
@@ -706,7 +706,30 @@ class TextContentView(APIView):
         user = request.user if request.user and request.user.is_authenticated else None
         serializer = TextContentSerializer(data=data)
         if serializer.is_valid():
-            serializer.save(added_by=user)
+            text_item = serializer.save(added_by=user)
+            
+            # Add to vector database
+            try:
+                # Get knowledge base names
+                kb_names = list(text_item.knowledge_bases.values_list('name', flat=True))
+                
+                # Create content for vector DB
+                description_str = f"Description: {text_item.description}" if text_item.description else ""
+                
+                # Format content for vector DB
+                full_content = f"{description_str}\n{text_item.content}" if description_str else text_item.content
+                
+                # Store in vector DB
+                pages = [(f"text_{text_item.id}", full_content)]
+                if kb_names:
+                    store_in_vector_db(pages, knowledge_base=kb_names)
+                
+                print(f"✅ Added text content {text_item.id} to vector DB")
+                
+            except Exception as e:
+                print(f"❌ Error adding text content {text_item.id} to vector DB: {str(e)}")
+                # Continue even if vector DB update fails, as the database save was successful
+            
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -718,7 +741,34 @@ class TextContentView(APIView):
             user = request.user if request.user and request.user.is_authenticated else None
             serializer = TextContentSerializer(text, data=data, partial=True)
             if serializer.is_valid():
-                serializer.save(updated_by=user)
+                # Save the updated text
+                updated_text = serializer.save(updated_by=user)
+                
+                # Update vector database
+                try:
+                    # Remove old text content from vector DB
+                    remove_from_vector_db(f"text_{text.id}")
+                    
+                    # Get updated knowledge base names
+                    updated_kb_names = list(updated_text.knowledge_bases.values_list('name', flat=True))
+                    
+                    # Create new content for vector DB
+                    description_str = f"Description: {updated_text.description}" if updated_text.description else ""
+                    
+                    # Format content for vector DB
+                    full_content = f"{description_str}\n{updated_text.content}" if description_str else updated_text.content
+                    
+                    # Store updated content in vector DB
+                    pages = [(f"text_{updated_text.id}", full_content)]
+                    if updated_kb_names:
+                        store_in_vector_db(pages, knowledge_base=updated_kb_names)
+                    
+                    print(f"✅ Updated text content {text.id} in vector DB")
+                    
+                except Exception as e:
+                    print(f"❌ Error updating vector DB for text content {text.id}: {str(e)}")
+                    # Continue even if vector DB update fails, as the database update was successful
+                
                 return Response(serializer.data, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except TextContent.DoesNotExist:
@@ -727,7 +777,7 @@ class TextContentView(APIView):
     def delete(self, request, pk=None):
         try:
             text = TextContent.objects.get(pk=pk)
-            identifier = text.id  # Use a unique identifier for the text
+            identifier = f"text_{text.id}"  # Use the same identifier format used when storing
             text.delete()
             try:
                 remove_from_vector_db(identifier)  # Remove from vector DB
@@ -792,13 +842,49 @@ class QADataView(APIView):
         user = request.user if request.user and request.user.is_authenticated else None
         serializer = QADataSerializer(data=data)
         if serializer.is_valid():
-            serializer.save(added_by=user)
+            qa_item = serializer.save(added_by=user)
+            
+            # Add to vector database
+            try:
+                # Get knowledge base names
+                kb_names = list(qa_item.knowledge_bases.values_list('name', flat=True))
+                
+                # Create content for vector DB
+                categories = [cat.name for cat in qa_item.category.all()]
+                subcategories = [subcat.name for subcat in qa_item.subcategory.all()]
+                category_str = f"Category: {', '.join(categories)}" if categories else ""
+                subcategory_str = f"Subcategory: {', '.join(subcategories)}" if subcategories else ""
+                description_str = f"Description: {qa_item.description}" if qa_item.description else ""
+                
+                content_parts = [part for part in [category_str, subcategory_str, description_str] if part]
+                metadata_content = "\n".join(content_parts)
+                
+                full_content = f"{metadata_content}\nQ: {qa_item.question}\nA: {qa_item.answer}"
+                
+                # Store in vector DB
+                pages = [(f"qa_{qa_item.id}", full_content)]
+                if kb_names:
+                    store_in_vector_db(pages, knowledge_base=kb_names)
+                
+                print(f"✅ Added Q&A item {qa_item.id} to vector DB")
+                
+            except Exception as e:
+                print(f"❌ Error adding Q&A item {qa_item.id} to vector DB: {str(e)}")
+                # Continue even if vector DB update fails, as the database save was successful
+            
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     def patch(self, request, pk=None):
         try:
             item = QAData.objects.get(pk=pk)
+            old_item_data = {
+                'question': item.question,
+                'answer': item.answer,
+                'description': item.description,
+                'knowledge_bases': list(item.knowledge_bases.values_list('name', flat=True))
+            }
+            
             data = request.data.copy()
             data.pop('added_by', None)
             data.pop('updated_by', None)
@@ -806,7 +892,40 @@ class QADataView(APIView):
             
             serializer = QADataSerializer(item, data=data, partial=True)
             if serializer.is_valid():
-                serializer.save(updated_by=user)
+                # Save the updated item
+                updated_item = serializer.save(updated_by=user)
+                
+                # Update vector database
+                try:
+                    # Remove old Q&A content from vector DB
+                    remove_from_vector_db(f"qa_{item.id}")
+                    
+                    # Get updated knowledge base names
+                    updated_kb_names = list(updated_item.knowledge_bases.values_list('name', flat=True))
+                    
+                    # Create new content for vector DB
+                    categories = [cat.name for cat in updated_item.category.all()]
+                    subcategories = [subcat.name for subcat in updated_item.subcategory.all()]
+                    category_str = f"Category: {', '.join(categories)}" if categories else ""
+                    subcategory_str = f"Subcategory: {', '.join(subcategories)}" if subcategories else ""
+                    description_str = f"Description: {updated_item.description}" if updated_item.description else ""
+                    
+                    content_parts = [part for part in [category_str, subcategory_str, description_str] if part]
+                    metadata_content = "\n".join(content_parts)
+                    
+                    full_content = f"{metadata_content}\nQ: {updated_item.question}\nA: {updated_item.answer}"
+                    
+                    # Store updated content in vector DB
+                    pages = [(f"qa_{updated_item.id}", full_content)]
+                    if updated_kb_names:
+                        store_in_vector_db(pages, knowledge_base=updated_kb_names)
+                    
+                    print(f"✅ Updated Q&A item {item.id} in vector DB")
+                    
+                except Exception as e:
+                    print(f"❌ Error updating vector DB for Q&A item {item.id}: {str(e)}")
+                    # Continue even if vector DB update fails, as the database update was successful
+                
                 return Response(serializer.data, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except QAData.DoesNotExist:
@@ -815,7 +934,7 @@ class QADataView(APIView):
     def delete(self, request, pk=None):
         try:
             item = QAData.objects.get(pk=pk)
-            identifier = item.id  # Use a unique identifier for the Q&A item
+            identifier = f"qa_{item.id}"  # Use the same identifier format used when storing
             item.delete()
             try:
                 remove_from_vector_db(identifier)  # Remove from vector DB
@@ -1271,11 +1390,16 @@ class FileDataViewSet(viewsets.ModelViewSet):
         if knowledge_bases:
             file_data.knowledge_bases.set(knowledge_bases)
 
-        # Prepare for internal API call
-        api_url = request.build_absolute_uri('/api/upload-and-train/')
-        headers = {}
-        if request.auth:
-            headers['Authorization'] = f'Bearer {request.auth}'
+        # Get knowledge base names for vector DB storage
+        from chatbot.models import KnowledgeBase
+        kb_names = list(KnowledgeBase.objects.filter(id__in=knowledge_bases).values_list('name', flat=True))
+        
+        # Import required functions
+        from .file_reader import read_uploaded_file
+        from .utils.vector_store import store_in_vector_db
+        
+        vector_pages = []
+        vector_db_errors = []
 
         for idx, file in enumerate(files):
             rel_path = relative_paths[idx] if relative_paths else file.name
@@ -1284,36 +1408,69 @@ class FileDataViewSet(viewsets.ModelViewSet):
             with open(save_path, 'wb+') as destination:
                 for chunk in file.chunks():
                     destination.write(chunk)
+            
             ext = os.path.splitext(file.name)[1].lower()
             if ext in DOC_EXTENSIONS:
-                DocumentFileData.objects.create(
+                doc_file_data = DocumentFileData.objects.create(
                     file_data=file_data,
                     file=os.path.relpath(save_path, settings.MEDIA_ROOT)
                 )
-                # Call upload-and-train API
-                with open(save_path, 'rb') as f:
-                    files_data = {'file': (file.name, f, 'application/octet-stream')}
-                    data = {'type': 'file', 'knowledge_bases': knowledge_bases}
-                    try:
-                        requests.post(api_url, files=files_data, data=data, headers=headers, timeout=60)
-                    except Exception as e:
-                        pass  # Optionally log error
+                # Process file for vector DB
+                try:
+                    # Create a temporary Django file object for reading
+                    with open(save_path, 'rb') as f:
+                        from django.core.files.uploadedfile import SimpleUploadedFile
+                        temp_file = SimpleUploadedFile(file.name, f.read())
+                        content = read_uploaded_file(temp_file)
+                        if content.strip():  # Only add if content is not empty
+                            vector_pages.append((f"doc_{doc_file_data.id}", content))
+                except Exception as e:
+                    vector_db_errors.append(f"Error processing {file.name}: {str(e)}")
+                    print(f"❌ Error processing document {file.name} for vector DB: {str(e)}")
+                    
             elif ext in EXCEL_EXTENSIONS:
-                ExcelFileData.objects.create(
+                excel_file_data = ExcelFileData.objects.create(
                     file_data=file_data,
                     file=os.path.relpath(save_path, settings.MEDIA_ROOT)
                 )
-                # Call upload-and-train API
-                with open(save_path, 'rb') as f:
-                    files_data = {'file': (file.name, f, 'application/octet-stream')}
-                    data = {'type': 'file', 'knowledge_bases': knowledge_bases}
-                    try:
-                        requests.post(api_url, files=files_data, data=data, headers=headers, timeout=60)
-                    except Exception as e:
-                        pass  # Optionally log error
+                # Process file for vector DB
+                try:
+                    # Create a temporary Django file object for reading
+                    with open(save_path, 'rb') as f:
+                        from django.core.files.uploadedfile import SimpleUploadedFile
+                        temp_file = SimpleUploadedFile(file.name, f.read())
+                        content = read_uploaded_file(temp_file)
+                        if content.strip():  # Only add if content is not empty
+                            vector_pages.append((f"excel_{excel_file_data.id}", content))
+                except Exception as e:
+                    vector_db_errors.append(f"Error processing {file.name}: {str(e)}")
+                    print(f"❌ Error processing Excel file {file.name} for vector DB: {str(e)}")
+
+        # Store all processed files in vector DB at once
+        if vector_pages and kb_names:
+            try:
+                print(f"[DEBUG] Storing {len(vector_pages)} files in vector DB with knowledge bases: {kb_names}")
+                store_in_vector_db(vector_pages, knowledge_base=kb_names)
+                print(f"✅ Successfully stored folder '{folder_name}' files in vector DB")
+            except Exception as e:
+                vector_db_errors.append(f"Vector DB storage error: {str(e)}")
+                print(f"❌ Error storing folder files in vector DB: {str(e)}")
+        elif not vector_pages:
+            print(f"⚠️ No valid content found in uploaded files for folder '{folder_name}'")
+        elif not kb_names:
+            print(f"⚠️ No knowledge bases found for folder '{folder_name}'")
 
         serializer = self.get_serializer(file_data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        response_data = serializer.data
+        
+        # Add vector DB processing information to response
+        if vector_db_errors:
+            response_data['vector_db_errors'] = vector_db_errors
+            response_data['message'] = f"Folder uploaded successfully, but {len(vector_db_errors)} files had vector DB errors."
+        else:
+            response_data['message'] = f"Folder '{folder_name}' uploaded and processed successfully."
+        
+        return Response(response_data, status=status.HTTP_201_CREATED)
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
@@ -1327,12 +1484,14 @@ class FileDataViewSet(viewsets.ModelViewSet):
         errors = []
         for doc in instance.document_files.all():
             try:
-                remove_from_vector_db(doc.id)
+                # Use the same identifier format as in create method
+                remove_from_vector_db(f"doc_{doc.id}")
             except Exception as e:
                 errors.append(f"DocumentFileData {doc.id}: {str(e)}")
         for excel in instance.excel_files.all():
             try:
-                remove_from_vector_db(excel.id)
+                # Use the same identifier format as in create method
+                remove_from_vector_db(f"excel_{excel.id}")
             except Exception as e:
                 errors.append(f"ExcelFileData {excel.id}: {str(e)}")
         response = super().destroy(request, *args, **kwargs)

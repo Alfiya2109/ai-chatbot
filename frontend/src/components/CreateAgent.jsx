@@ -492,8 +492,8 @@ function CreateAgent() {
       question: qaItem.question || '',
       answer: qaItem.answer || '',
       description: qaItem.description || '',
-      category: qaItem.category && qaItem.category.length > 0 ? (typeof qaItem.category[0] === 'object' ? qaItem.category[0].id : qaItem.category[0]) : '',
-      subcategory: qaItem.subcategory && qaItem.subcategory.length > 0 ? (typeof qaItem.subcategory[0] === 'object' ? qaItem.subcategory[0].id : qaItem.subcategory[0]) : '',
+      category: qaItem.category && qaItem.category.length > 0 ? qaItem.category.map(cat => typeof cat === 'object' ? cat.id : cat) : [],
+      subcategory: qaItem.subcategory && qaItem.subcategory.length > 0 ? qaItem.subcategory.map(subcat => typeof subcat === 'object' ? subcat.id : subcat) : [],
       knowledge_bases: qaItem.knowledge_bases ? qaItem.knowledge_bases.map(kb => String(typeof kb === 'object' ? kb.id : kb)) : [],
     });
     // Fetch knowledge bases when edit modal opens

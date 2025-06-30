@@ -269,28 +269,36 @@ const QAListTab = ({
               <div>
                 <label className="block mb-1 font-medium">Category</label>
                 <select
+                  multiple
                   value={qaForm.category}
-                  onChange={e => setQaForm({ ...qaForm, category: e.target.value })}
+                  onChange={e => {
+                    const options = Array.from(e.target.selectedOptions, option => option.value);
+                    setQaForm({ ...qaForm, category: options });
+                  }}
                   className="w-full p-2 border rounded"
                 >
-                  <option value="">Select a category</option>
                   {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    <option key={cat.id} value={String(cat.id)}>{cat.name}</option>
                   ))}
                 </select>
+                <span className="text-xs text-gray-500">Hold Ctrl (Windows) or Cmd (Mac) to select multiple</span>
               </div>
               <div>
                 <label className="block mb-1 font-medium">Subcategory</label>
                 <select
+                  multiple
                   value={qaForm.subcategory}
-                  onChange={e => setQaForm({ ...qaForm, subcategory: e.target.value })}
+                  onChange={e => {
+                    const options = Array.from(e.target.selectedOptions, option => option.value);
+                    setQaForm({ ...qaForm, subcategory: options });
+                  }}
                   className="w-full p-2 border rounded"
                 >
-                  <option value="">Select a subcategory</option>
                   {subCategories.map((subcat) => (
-                    <option key={subcat.id} value={subcat.id}>{subcat.name}</option>
+                    <option key={subcat.id} value={String(subcat.id)}>{subcat.name}</option>
                   ))}
                 </select>
+                <span className="text-xs text-gray-500">Hold Ctrl (Windows) or Cmd (Mac) to select multiple</span>
               </div>
               <div>
                 <label className="block mb-1 font-medium">Knowledge Base <span className="text-red-500">*</span></label>
