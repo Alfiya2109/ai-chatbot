@@ -50,6 +50,10 @@ backend/.pytest_cache/
 */__pycache__/
 __pycache__/
 
+# ---- Media Files ----
+media/
+*/media/
+
 # ---- Build files ----
 build/
 dist/
