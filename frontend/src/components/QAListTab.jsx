@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Loader from './Loader';
 
 
@@ -23,10 +23,39 @@ const QAListTab = ({
 }) => {
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Filter Q&A data based on search term
+  const filteredQAData = useMemo(() => {
+    if (!searchTerm) return qaData;
+    
+    const term = searchTerm.toLowerCase();
+    return qaData.filter(qa => {
+      // Search in question, answer, description, categories, subcategories, knowledge bases, and added by
+      return (
+        (qa.question && qa.question.toLowerCase().includes(term)) ||
+        (qa.answer && qa.answer.toLowerCase().includes(term)) ||
+        (qa.description && qa.description.toLowerCase().includes(term)) ||
+        (qa.category && qa.category.some(cat => 
+          typeof cat === 'string' ? cat.toLowerCase().includes(term) : 
+          (cat.name && cat.name.toLowerCase().includes(term))
+        )) ||
+        (qa.subcategory && qa.subcategory.some(subcat => 
+          typeof subcat === 'string' ? subcat.toLowerCase().includes(term) : 
+          (subcat.name && subcat.name.toLowerCase().includes(term))
+        )) ||
+        (qa.knowledge_bases && qa.knowledge_bases.some(kb => 
+          typeof kb === 'string' ? kb.toLowerCase().includes(term) : 
+          (kb.name && kb.name.toLowerCase().includes(term))
+        )) ||
+        (qa.added_by && qa.added_by.toLowerCase().includes(term))
+      );
+    });
+  }, [qaData, searchTerm]);
 
   const handleSelectAll = (isChecked) => {
     if (isChecked) {
-      setSelectedItems(qaData.map(item => item.id));
+      setSelectedItems(filteredQAData.map(item => item.id));
     } else {
       setSelectedItems([]);
     }
@@ -124,7 +153,31 @@ const QAListTab = ({
           )}
         </div>
       </div>
-      {renderTable(qaData, 'qa', {
+      
+      {/* Search Filter */}
+      <div className="mb-4">
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Search Q&A by question, answer, description, category, subcategory, knowledge base, or author..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+        </div>
+        {searchTerm && (
+          <p className="mt-2 text-sm text-gray-600">
+            Showing {filteredQAData.length} of {qaData.length} Q&A items
+          </p>
+        )}
+      </div>
+
+      {renderTable(filteredQAData, 'qa', {
         isMultiSelectMode,
         selectedItems,
         onSelectAll: handleSelectAll,

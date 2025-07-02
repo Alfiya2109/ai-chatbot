@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { FaPlus, FaTrash } from 'react-icons/fa';
 import {BASE_URL} from '../base_url';
 
@@ -62,6 +62,27 @@ const GoogleDrive = () => {
   const [knowledgeBases, setKnowledgeBases] = useState([]);
   const [driveFiles, setDriveFiles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Filter drive files based on search term
+  const filteredDriveFiles = useMemo(() => {
+    if (!searchTerm) return driveFiles;
+    
+    const term = searchTerm.toLowerCase();
+    return driveFiles.filter(file => {
+      // Search in folder name, file name, path, description, knowledge bases, and added by
+      return (
+        (file.folder_name && file.folder_name.toLowerCase().includes(term)) ||
+        (file.file_name && file.file_name.toLowerCase().includes(term)) ||
+        (file.relative_path && file.relative_path.toLowerCase().includes(term)) ||
+        (file.description && file.description.toLowerCase().includes(term)) ||
+        (file.knowledge_bases && file.knowledge_bases.some(kb => 
+          typeof kb === 'string' ? kb.toLowerCase().includes(term) : false
+        )) ||
+        (file.added_by && file.added_by.toLowerCase().includes(term))
+      );
+    });
+  }, [driveFiles, searchTerm]);
 
   useEffect(() => {
     fetchDriveFiles();
@@ -259,6 +280,11 @@ const GoogleDrive = () => {
       const res = await fetch(`${BASE_URL}/api/google-drive-files/${fileId}/`, { method: 'DELETE' });
       if (res.ok) {
         setDriveFiles(driveFiles.filter(f => f.id !== fileId));
+        // Clear search if the last filtered item is deleted
+        const remainingFilteredFiles = filteredDriveFiles.filter(f => f.id !== fileId);
+        if (remainingFilteredFiles.length === 0 && searchTerm) {
+          setSearchTerm('');
+        }
       }
     } catch (err) {
       // handle error
@@ -278,6 +304,30 @@ const GoogleDrive = () => {
           <FaPlus />
         </button>
       </div>
+      
+      {/* Search Filter */}
+      <div className="mb-4">
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Search Google Drive files by name, path, description, knowledge base, or author..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+        </div>
+        {searchTerm && (
+          <p className="mt-2 text-sm text-gray-600">
+            Showing {filteredDriveFiles.length} of {driveFiles.length} files
+          </p>
+        )}
+      </div>
+
       <div className="bg-white rounded-lg shadow p-4">
         <table className="min-w-full text-sm">
           <thead>
@@ -294,23 +344,38 @@ const GoogleDrive = () => {
           <tbody>
             {loading ? (
               <tr><td colSpan={7} className="text-center py-4">Loading...</td></tr>
-            ) : driveFiles.length === 0 ? (
-              <tr><td colSpan={7} className="text-center py-4">No Google Drive files uploaded yet.</td></tr>
+            ) : filteredDriveFiles.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="text-center py-4 text-gray-500">
+                  {searchTerm ? 'No Google Drive files found matching your search.' : 'No Google Drive files uploaded yet.'}
+                </td>
+              </tr>
             ) : (
-              driveFiles.map((item, idx) => (
+              filteredDriveFiles.map((item, idx) => (
                 <tr key={item.id || idx} className="border-b">
-                  <td className="px-3 py-2">{item.folder_name || item.file_name}</td>
+                  <td className="px-3 py-2 font-medium">{item.folder_name || item.file_name}</td>
                   <td className="px-3 py-2">{item.relative_path || '-'}</td> {/* New column */}
                   <td className="px-3 py-2">{item.description || '-'}</td>
                   <td className="px-3 py-2">
-                    {item.knowledge_bases && item.knowledge_bases.length > 0
-                      ? item.knowledge_bases.join(', ')
-                      : '-'}
+                    {item.knowledge_bases && item.knowledge_bases.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {item.knowledge_bases.map((kb, kbIdx) => (
+                          <span
+                            key={kbIdx}
+                            className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full"
+                          >
+                            {kb}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      '-'
+                    )}
                   </td>
                   <td className="px-3 py-2">{item.added_by || '-'}</td>
                   <td className="px-3 py-2">{item.uploaded_at ? new Date(item.uploaded_at).toLocaleDateString() : '-'}</td>
                   <td className="px-3 py-2 flex gap-2">
-                    <a href={`https://drive.google.com/file/d/${item.file_id}/view`} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">View</a>
+                    <a href={`https://drive.google.com/file/d/${item.file_id}/view`} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">View</a>
                     <button
                       onClick={() => handleDelete(item.id)}
                       className="text-red-600 hover:text-red-800 ml-2"

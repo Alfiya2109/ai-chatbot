@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 
 const SubcategoriesTable = ({ subCategories, categories, onAddSubcategory, onEditSubcategory }) => {
   const [modalOpen, setModalOpen] = useState(false);
@@ -7,6 +7,7 @@ const SubcategoriesTable = ({ subCategories, categories, onAddSubcategory, onEdi
   const [formError, setFormError] = useState('');
   const [editMode, setEditMode] = useState(false);
   const [editId, setEditId] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Flatten subcategories for table: each row is a subcategory with its parent category
   const data = subCategories.map((sub) => {
@@ -18,6 +19,18 @@ const SubcategoriesTable = ({ subCategories, categories, onAddSubcategory, onEdi
       categoryName: parent ? parent.name : '',
     };
   });
+
+  // Filter subcategories based on search term
+  const filteredData = useMemo(() => {
+    if (!searchTerm) return data;
+    
+    const term = searchTerm.toLowerCase();
+    return data.filter(row => {
+      // Search in subcategory name or category name
+      return row.subcategoryName.toLowerCase().includes(term) || 
+             row.categoryName.toLowerCase().includes(term);
+    });
+  }, [data, searchTerm]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -59,8 +72,32 @@ const SubcategoriesTable = ({ subCategories, categories, onAddSubcategory, onEdi
           +
         </button>
       </div>
+      
+      {/* Search Filter */}
+      <div className="mb-4">
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Search subcategories by name or category..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+        </div>
+        {searchTerm && (
+          <p className="mt-2 text-sm text-gray-600">
+            Showing {filteredData.length} of {data.length} subcategories
+          </p>
+        )}
+      </div>
+
       <div className="overflow-x-auto">
-        {data.length > 0 ? (
+        {filteredData.length > 0 ? (
           <table className="w-full border text-sm rounded-lg overflow-hidden">
             <thead>
               <tr>
@@ -70,13 +107,13 @@ const SubcategoriesTable = ({ subCategories, categories, onAddSubcategory, onEdi
               </tr>
             </thead>
             <tbody>
-              {data.map((row, idx) => (
+              {filteredData.map((row, idx) => (
                 <tr key={row.subcategoryId} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                  <td className="border px-4 py-2">{row.categoryName}</td>
+                  <td className="border px-4 py-2 font-medium">{row.categoryName}</td>
                   <td className="border px-4 py-2">{row.subcategoryName}</td>
                   <td className="border px-4 py-2 text-center">
                     <button
-                      className="px-3 py-1 bg-blue-500 text-white rounded mr-2"
+                      className="px-3 py-1 bg-blue-500 text-white rounded mr-2 hover:bg-blue-600"
                       onClick={() => openEditModal(row)}
                     >
                       Edit
@@ -88,7 +125,9 @@ const SubcategoriesTable = ({ subCategories, categories, onAddSubcategory, onEdi
             </tbody>
           </table>
         ) : (
-          <div className="text-center text-gray-500 py-8">No subcategories available.</div>
+          <div className="text-center text-gray-500 py-8">
+            {searchTerm ? 'No subcategories found matching your search.' : 'No subcategories available.'}
+          </div>
         )}
       </div>
       {modalOpen && (

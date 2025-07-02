@@ -1,13 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Loader from './Loader';
 
 const ExcelListTab = ({ uploadedFiles, renderTable, excelModalOpen, setExcelModalOpen, excelForm, setExcelForm, knowledgeBases, excelFormError, handleExcelModalSubmit, fetchKnowledgeBases, onBulkDelete, isLoading }) => {
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Filter Excel files based on search term
+  const filteredFiles = useMemo(() => {
+    if (!searchTerm) return uploadedFiles;
+    
+    const term = searchTerm.toLowerCase();
+    return uploadedFiles.filter(file => {
+      // Search in file name, description, knowledge bases, and added by
+      return (
+        (file.file && file.file.toLowerCase().includes(term)) ||
+        (file.description && file.description.toLowerCase().includes(term)) ||
+        (file.knowledge_bases && file.knowledge_bases.some(kb => 
+          typeof kb === 'string' ? kb.toLowerCase().includes(term) : 
+          (kb.name && kb.name.toLowerCase().includes(term))
+        )) ||
+        (file.added_by && file.added_by.toLowerCase().includes(term))
+      );
+    });
+  }, [uploadedFiles, searchTerm]);
 
   const handleSelectAll = (isChecked) => {
     if (isChecked) {
-      setSelectedItems(uploadedFiles.map(item => item.id));
+      setSelectedItems(filteredFiles.map(item => item.id));
     } else {
       setSelectedItems([]);
     }
@@ -105,7 +125,31 @@ const ExcelListTab = ({ uploadedFiles, renderTable, excelModalOpen, setExcelModa
           )}
         </div>
       </div>
-      {renderTable(uploadedFiles, 'excel', {
+      
+      {/* Search Filter */}
+      <div className="mb-4">
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Search Excel/CSV files by name, description, knowledge base, or author..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+        </div>
+        {searchTerm && (
+          <p className="mt-2 text-sm text-gray-600">
+            Showing {filteredFiles.length} of {uploadedFiles.length} Excel/CSV files
+          </p>
+        )}
+      </div>
+
+      {renderTable(filteredFiles, 'excel', {
         isMultiSelectMode,
         selectedItems,
         onSelectAll: handleSelectAll,
