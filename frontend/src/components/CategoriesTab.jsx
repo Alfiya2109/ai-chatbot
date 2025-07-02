@@ -1,6 +1,20 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 
-const CategoriesTab = ({ categoriesList, handleEditCategory, handleDeleteCategory, handleCreateCategory, categoryModalOpen, setCategoryModalOpen, editingCategory, categoryForm, setCategoryForm, categoryFormError, handleCategoryFormSubmit }) => (
+const CategoriesTab = ({ categoriesList, handleEditCategory, handleDeleteCategory, handleCreateCategory, categoryModalOpen, setCategoryModalOpen, editingCategory, categoryForm, setCategoryForm, categoryFormError, handleCategoryFormSubmit }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Filter categories based on search term
+  const filteredCategories = useMemo(() => {
+    if (!searchTerm) return categoriesList;
+    
+    const term = searchTerm.toLowerCase();
+    return categoriesList.filter(category => {
+      // Search in category name
+      return category.name.toLowerCase().includes(term);
+    });
+  }, [categoriesList, searchTerm]);
+
+  return (
   <div className="bg-white rounded-xl shadow-lg p-6 mt-4 w-full mx-auto">
     <div className="flex items-center justify-between mb-4">
       <h3 className="text-lg font-semibold">Categories List</h3>
@@ -13,6 +27,30 @@ const CategoriesTab = ({ categoriesList, handleEditCategory, handleDeleteCategor
         +
       </button>
     </div>
+    
+    {/* Search Filter */}
+    <div className="mb-4">
+      <div className="relative">
+        <input
+          type="text"
+          placeholder="Search categories by name..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        />
+        <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+      </div>
+      {searchTerm && (
+        <p className="mt-2 text-sm text-gray-600">
+          Showing {filteredCategories.length} of {categoriesList.length} categories
+        </p>
+      )}
+    </div>
+
     <table className="min-w-full border text-sm">
       <thead>
         <tr>
@@ -21,15 +59,33 @@ const CategoriesTab = ({ categoriesList, handleEditCategory, handleDeleteCategor
         </tr>
       </thead>
       <tbody>
-        {categoriesList.map((cat) => (
-          <tr key={cat.id}>
-            <td className="border px-4 py-2">{cat.name}</td>
-            <td className="border px-4 py-2">
-              <button className="px-3 py-1 bg-blue-500 text-white rounded mr-2" onClick={() => handleEditCategory(cat)}>Edit</button>
-              <button className="px-3 py-1 bg-red-500 text-white rounded" onClick={() => handleDeleteCategory(cat)}>Delete</button>
+        {filteredCategories.length > 0 ? (
+          filteredCategories.map((cat) => (
+            <tr key={cat.id}>
+              <td className="border px-4 py-2 font-medium">{cat.name}</td>
+              <td className="border px-4 py-2">
+                <button 
+                  className="px-3 py-1 bg-blue-500 text-white rounded mr-2 hover:bg-blue-600" 
+                  onClick={() => handleEditCategory(cat)}
+                >
+                  Edit
+                </button>
+                <button 
+                  className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600" 
+                  onClick={() => handleDeleteCategory(cat)}
+                >
+                  Delete
+                </button>
+              </td>
+            </tr>
+          ))
+        ) : (
+          <tr>
+            <td colSpan="2" className="border px-4 py-8 text-center text-gray-500">
+              {searchTerm ? 'No categories found matching your search.' : 'No categories available.'}
             </td>
           </tr>
-        ))}
+        )}
       </tbody>
     </table>
     {/* Category Modal */}
@@ -59,5 +115,6 @@ const CategoriesTab = ({ categoriesList, handleEditCategory, handleDeleteCategor
     )}
   </div>
 );
+};
 
 export default CategoriesTab;

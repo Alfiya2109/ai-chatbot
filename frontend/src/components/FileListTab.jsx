@@ -1,13 +1,116 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Loader from './Loader';
 
 const FileListTab = ({ uploadedFiles, renderTable, fileModalOpen, setFileModalOpen, fileForm, setFileForm, knowledgeBases, fileFormError, handleFileModalSubmit, fetchKnowledgeBases, onBulkDelete, isLoading }) => {
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortField, setSortField] = useState('');
+  const [sortDirection, setSortDirection] = useState('asc');
+
+  // Filter and sort files based on search term and sort settings
+  const filteredAndSortedFiles = useMemo(() => {
+    let filtered = uploadedFiles;
+    
+    // Apply search filter
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = uploadedFiles.filter(file => {
+        // Search in file name, description, knowledge bases, and added by
+        return (
+          (file.file && file.file.toLowerCase().includes(term)) ||
+          (file.description && file.description.toLowerCase().includes(term)) ||
+          (file.knowledge_bases && file.knowledge_bases.some(kb => 
+            typeof kb === 'string' ? kb.toLowerCase().includes(term) : 
+            (kb.name && kb.name.toLowerCase().includes(term))
+          )) ||
+          (file.added_by && file.added_by.toLowerCase().includes(term))
+        );
+      });
+    }
+    
+    // Apply sorting
+    if (sortField) {
+      filtered = [...filtered].sort((a, b) => {
+        let aValue = '';
+        let bValue = '';
+        
+        switch (sortField) {
+          case 'file':
+            aValue = (a.file || '').toLowerCase();
+            bValue = (b.file || '').toLowerCase();
+            break;
+          case 'description':
+            aValue = (a.description || '').toLowerCase();
+            bValue = (b.description || '').toLowerCase();
+            break;
+          case 'knowledge_bases':
+            aValue = a.knowledge_bases ? a.knowledge_bases.map(kb => 
+              typeof kb === 'string' ? kb : (kb.name || '')
+            ).join(', ').toLowerCase() : '';
+            bValue = b.knowledge_bases ? b.knowledge_bases.map(kb => 
+              typeof kb === 'string' ? kb : (kb.name || '')
+            ).join(', ').toLowerCase() : '';
+            break;
+          case 'added_by':
+            aValue = (a.added_by || '').toLowerCase();
+            bValue = (b.added_by || '').toLowerCase();
+            break;
+          case 'uploaded_at':
+            aValue = a.uploaded_at ? new Date(a.uploaded_at).getTime() : 0;
+            bValue = b.uploaded_at ? new Date(b.uploaded_at).getTime() : 0;
+            break;
+          default:
+            return 0;
+        }
+        
+        if (sortDirection === 'asc') {
+          return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+        } else {
+          return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+        }
+      });
+    }
+    
+    return filtered;
+  }, [uploadedFiles, searchTerm, sortField, sortDirection]);
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortIcon = (field) => {
+    if (sortField !== field) {
+      return (
+        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+        </svg>
+      );
+    }
+    
+    if (sortDirection === 'asc') {
+      return (
+        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+        </svg>
+      );
+    } else {
+      return (
+        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      );
+    }
+  };
 
   const handleSelectAll = (isChecked) => {
     if (isChecked) {
-      setSelectedItems(uploadedFiles.map(item => item.id));
+      setSelectedItems(filteredAndSortedFiles.map(item => item.id));
     } else {
       setSelectedItems([]);
     }
@@ -99,12 +202,184 @@ const FileListTab = ({ uploadedFiles, renderTable, fileModalOpen, setFileModalOp
           )}
         </div>
       </div>
-      {renderTable(uploadedFiles, 'files', {
-        isMultiSelectMode,
-        selectedItems,
-        onSelectAll: handleSelectAll,
-        onItemSelect: handleItemSelect
-      })}
+      
+      {/* Search Filter */}
+      <div className="mb-4">
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Search files by name, description, knowledge base, or author..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+        </div>
+        {searchTerm && (
+          <p className="mt-2 text-sm text-gray-600">
+            Showing {filteredAndSortedFiles.length} of {uploadedFiles.length} files
+          </p>
+        )}
+      </div>
+
+      {/* Files Table */}
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <table className="min-w-full text-sm">
+          <thead className="bg-gray-50">
+            <tr>
+              {isMultiSelectMode && (
+                <th className="px-4 py-3 text-left">
+                  <input
+                    type="checkbox"
+                    onChange={(e) => handleSelectAll(e.target.checked)}
+                    checked={selectedItems.length === filteredAndSortedFiles.length && filteredAndSortedFiles.length > 0}
+                    className="rounded border-gray-300"
+                  />
+                </th>
+              )}
+              <th 
+                className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                onClick={() => handleSort('file')}
+              >
+                <div className="flex items-center space-x-1">
+                  <span>File Name</span>
+                  {getSortIcon('file')}
+                </div>
+              </th>
+              <th 
+                className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                onClick={() => handleSort('description')}
+              >
+                <div className="flex items-center space-x-1">
+                  <span>Description</span>
+                  {getSortIcon('description')}
+                </div>
+              </th>
+              <th 
+                className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                onClick={() => handleSort('knowledge_bases')}
+              >
+                <div className="flex items-center space-x-1">
+                  <span>Knowledge Bases</span>
+                  {getSortIcon('knowledge_bases')}
+                </div>
+              </th>
+              <th 
+                className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                onClick={() => handleSort('added_by')}
+              >
+                <div className="flex items-center space-x-1">
+                  <span>Added By</span>
+                  {getSortIcon('added_by')}
+                </div>
+              </th>
+              <th 
+                className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                onClick={() => handleSort('uploaded_at')}
+              >
+                <div className="flex items-center space-x-1">
+                  <span>Upload Date</span>
+                  {getSortIcon('uploaded_at')}
+                </div>
+              </th>
+              <th className="px-4 py-3 text-left font-semibold text-gray-700">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {isLoading ? (
+              <tr>
+                <td colSpan={isMultiSelectMode ? 7 : 6} className="px-4 py-8 text-center text-gray-500">
+                  <div className="flex items-center justify-center">
+                    <Loader />
+                  </div>
+                </td>
+              </tr>
+            ) : filteredAndSortedFiles.length === 0 ? (
+              <tr>
+                <td colSpan={isMultiSelectMode ? 7 : 6} className="px-4 py-8 text-center text-gray-500">
+                  {searchTerm ? 'No files found matching your search.' : 'No files uploaded yet.'}
+                </td>
+              </tr>
+            ) : (
+              filteredAndSortedFiles.map((file) => (
+                <tr key={file.id} className="hover:bg-gray-50 transition-colors">
+                  {isMultiSelectMode && (
+                    <td className="px-4 py-3">
+                      <input
+                        type="checkbox"
+                        checked={selectedItems.includes(file.id)}
+                        onChange={(e) => handleItemSelect(file.id, e.target.checked)}
+                        className="rounded border-gray-300"
+                      />
+                    </td>
+                  )}
+                  <td className="px-4 py-3">
+                    <div className="font-medium text-gray-900">
+                      {file.file ? file.file.split('/').pop() : 'Unknown File'}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="text-gray-700">
+                      {file.description || '-'}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    {file.knowledge_bases && file.knowledge_bases.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {file.knowledge_bases.map((kb, index) => (
+                          <span
+                            key={index}
+                            className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full"
+                          >
+                            {typeof kb === 'string' ? kb : kb.name}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-gray-500">-</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="text-gray-700">
+                      {file.added_by || '-'}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="text-gray-700">
+                      {file.uploaded_at ? new Date(file.uploaded_at).toLocaleDateString() : '-'}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center space-x-2">
+                      {file.file && (
+                        <a
+                          href={file.file}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                        >
+                          View
+                        </a>
+                      )}
+                      <button
+                        onClick={() => onBulkDelete([file.id])}
+                        className="text-red-600 hover:text-red-800 text-sm font-medium"
+                        title="Delete file"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
       {/* File Upload Modal */}
       {fileModalOpen && (
         <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50" onClick={() => setFileModalOpen(false)}>
