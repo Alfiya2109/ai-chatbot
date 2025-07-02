@@ -158,34 +158,34 @@ const SubcategoriesTable = ({ subCategories, categories, onAddSubcategory, onEdi
         )}
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="bg-white rounded-lg shadow p-4">
         {filteredData.length > 0 ? (
-          <table className="w-full border text-sm rounded-lg overflow-hidden">
+          <table className="min-w-full text-sm">
             <thead>
-              <tr>
-                <th className="border px-4 py-2 bg-gray-100 text-gray-700 font-semibold cursor-pointer hover:bg-gray-200" onClick={() => handleSort('categoryName')}>
+              <tr className="bg-gray-100">
+                <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('categoryName')}>
                   <div className="flex items-center space-x-1">
                     <span>Category</span>
                     {getSortIcon('categoryName')}
                   </div>
                 </th>
-                <th className="border px-4 py-2 bg-gray-100 text-gray-700 font-semibold cursor-pointer hover:bg-gray-200" onClick={() => handleSort('subcategoryName')}>
+                <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('subcategoryName')}>
                   <div className="flex items-center space-x-1">
                     <span>Subcategory</span>
                     {getSortIcon('subcategoryName')}
                   </div>
                 </th>
-                <th className="border px-4 py-2 bg-gray-100 text-gray-700 font-semibold">Actions</th>
+                <th className="px-3 py-2 text-left">Actions</th>
               </tr>
             </thead>
             <tbody>
               {sortedData.map((row, idx) => (
-                <tr key={row.subcategoryId} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                  <td className="border px-4 py-2 font-medium">{row.categoryName}</td>
-                  <td className="border px-4 py-2">{row.subcategoryName}</td>
-                  <td className="border px-4 py-2 text-center">
+                <tr key={row.subcategoryId} className="border-b">
+                  <td className="px-3 py-2 font-medium">{row.categoryName}</td>
+                  <td className="px-3 py-2">{row.subcategoryName}</td>
+                  <td className="px-3 py-2 flex gap-2">
                     <button
-                      className="px-3 py-1 bg-blue-500 text-white rounded mr-2 hover:bg-blue-600"
+                      className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-xs"
                       onClick={() => openEditModal(row)}
                     >
                       Edit

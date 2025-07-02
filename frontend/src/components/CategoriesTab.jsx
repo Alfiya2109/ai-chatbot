@@ -109,48 +109,51 @@ const CategoriesTab = ({ categoriesList, handleEditCategory, handleDeleteCategor
       )}
     </div>
 
-    <table className="min-w-full border text-sm">
-      <thead>
-        <tr>
-          <th className="border px-4 py-2 bg-gray-100 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('name')}>
-            <div className="flex items-center space-x-1">
-              <span>Name</span>
-              {getSortIcon('name')}
-            </div>
-          </th>
-          <th className="border px-4 py-2 bg-gray-100 text-left">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {sortedCategories.length > 0 ? (
-          sortedCategories.map((cat) => (
-            <tr key={cat.id}>
-              <td className="border px-4 py-2 font-medium">{cat.name}</td>
-              <td className="border px-4 py-2">
-                <button 
-                  className="px-3 py-1 bg-blue-500 text-white rounded mr-2 hover:bg-blue-600" 
-                  onClick={() => handleEditCategory(cat)}
-                >
-                  Edit
-                </button>
-                <button 
-                  className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600" 
-                  onClick={() => handleDeleteCategory(cat)}
-                >
-                  Delete
-                </button>
+    <div className="bg-white rounded-lg shadow p-4">
+      <table className="min-w-full text-sm">
+        <thead>
+          <tr className="bg-gray-100">
+            <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('name')}>
+              <div className="flex items-center space-x-1">
+                <span>Name</span>
+                {getSortIcon('name')}
+              </div>
+            </th>
+            <th className="px-3 py-2 text-left">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sortedCategories.length > 0 ? (
+            sortedCategories.map((cat, idx) => (
+              <tr key={cat.id} className="border-b">
+                <td className="px-3 py-2 font-medium">{cat.name}</td>
+                <td className="px-3 py-2 flex gap-2">
+                  <button 
+                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-xs"
+                    onClick={() => handleEditCategory(cat)}
+                  >
+                    Edit
+                  </button>
+                  <button 
+                    className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded text-xs"
+                    onClick={() => handleDeleteCategory(cat)}
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan="2" className="text-center py-4 text-gray-500">
+                {searchTerm ? 'No categories found matching your search.' : 'No categories available.'}
               </td>
             </tr>
-          ))
-        ) : (
-          <tr>
-            <td colSpan="2" className="border px-4 py-8 text-center text-gray-500">
-              {searchTerm ? 'No categories found matching your search.' : 'No categories available.'}
-            </td>
-          </tr>
-        )}
-      </tbody>
-    </table>
+          )}
+        </tbody>
+      </table>
+    </div>
+    
     {/* Category Modal */}
     {categoryModalOpen && (
       <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50" onClick={() => setCategoryModalOpen(false)}>

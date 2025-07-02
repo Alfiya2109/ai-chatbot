@@ -136,83 +136,85 @@ const ProfileTab = ({ profiles, handleEditProfile, handleDeleteProfile, handleCr
       )}
     </div>
 
-    <table className="min-w-full border text-sm">
-      <thead>
-        <tr>
-          <th className="border px-4 py-2 bg-gray-100 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('name')}>
-            <div className="flex items-center space-x-1">
-              <span>Profile</span>
-              {getSortIcon('name')}
-            </div>
-          </th>
-          <th className="border px-4 py-2 bg-gray-100 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('permissions')}>
-            <div className="flex items-center space-x-1">
-              <span>Access Permissions</span>
-              {getSortIcon('permissions')}
-            </div>
-          </th>
-          <th className="border px-4 py-2 bg-gray-100 text-left">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {sortedProfiles.length > 0 ? (
-          sortedProfiles.map((profile) => {
-            const permissions = [
-              { key: 'files_access', label: 'Files' },
-              { key: 'text_access', label: 'Text' },
-              { key: 'excel_access', label: 'Excel' },
-              { key: 'qna_access', label: 'Q&A' },
-              { key: 'url_access', label: 'URL' },
-              { key: 'chat_history_access', label: 'Chat History' },
-              { key: 'user_profile_access', label: 'Profile' },
-              { key: 'user_details_access', label: 'User Details' },
-            ].filter(perm => profile[perm.key]).map(perm => perm.label);
-
-            return (
-              <tr key={profile.id}>
-                <td className="border px-4 py-2 font-medium">{profile.name}</td>
-                <td className="border px-4 py-2">
-                  <div className="flex flex-wrap gap-1">
-                    {permissions.length > 0 ? (
-                      permissions.map((perm, index) => (
-                        <span
-                          key={index}
-                          className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full"
-                        >
-                          {perm}
-                        </span>
-                      ))
-                    ) : (
-                      <span className="text-gray-500 text-sm">No permissions</span>
-                    )}
-                  </div>
-                </td>
-                <td className="border px-4 py-2 space-x-2">
-                  <button
-                    className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-                    onClick={() => handleEditProfile(profile)}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-                    onClick={() => handleDeleteProfile(profile.id)}
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            );
-          })
-        ) : (
-          <tr>
-            <td colSpan="3" className="border px-4 py-8 text-center text-gray-500">
-              {searchTerm ? 'No profiles found matching your search.' : 'No profiles available.'}
-            </td>
+    <div className="bg-white rounded-lg shadow p-4">
+      <table className="min-w-full text-sm">
+        <thead>
+          <tr className="bg-gray-100">
+            <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('name')}>
+              <div className="flex items-center space-x-1">
+                <span>Profile</span>
+                {getSortIcon('name')}
+              </div>
+            </th>
+            <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('permissions')}>
+              <div className="flex items-center space-x-1">
+                <span>Access Permissions</span>
+                {getSortIcon('permissions')}
+              </div>
+            </th>
+            <th className="px-3 py-2 text-left">Actions</th>
           </tr>
-        )}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {sortedProfiles.length > 0 ? (
+            sortedProfiles.map((profile, idx) => {
+              const permissions = [
+                { key: 'files_access', label: 'Files' },
+                { key: 'text_access', label: 'Text' },
+                { key: 'excel_access', label: 'Excel' },
+                { key: 'qna_access', label: 'Q&A' },
+                { key: 'url_access', label: 'URL' },
+                { key: 'chat_history_access', label: 'Chat History' },
+                { key: 'user_profile_access', label: 'Profile' },
+                { key: 'user_details_access', label: 'User Details' },
+              ].filter(perm => profile[perm.key]).map(perm => perm.label);
+
+              return (
+                <tr key={profile.id} className="border-b">
+                  <td className="px-3 py-2 font-medium">{profile.name}</td>
+                  <td className="px-3 py-2">
+                    {permissions.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {permissions.map((perm, index) => (
+                          <span
+                            key={index}
+                            className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full"
+                          >
+                            {perm}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      '-'
+                    )}
+                  </td>
+                  <td className="px-3 py-2 flex gap-2">
+                    <button
+                      className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-xs"
+                      onClick={() => handleEditProfile(profile)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded text-xs"
+                      onClick={() => handleDeleteProfile(profile.id)}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              );
+            })
+          ) : (
+            <tr>
+              <td colSpan="3" className="text-center py-4 text-gray-500">
+                {searchTerm ? 'No profiles found matching your search.' : 'No profiles available.'}
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
     {/* Profile Modal */}
     {profileModalOpen && (
       <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50" onClick={() => setProfileModalOpen(false)}>

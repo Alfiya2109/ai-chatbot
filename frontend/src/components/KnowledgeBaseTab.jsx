@@ -109,48 +109,51 @@ const KnowledgeBaseTab = ({ knowledgeBases, handleEditKb, handleDeleteKb, handle
       )}
     </div>
 
-    <table className="min-w-full border text-sm">
-      <thead>
-        <tr>
-          <th className="border px-4 py-2 bg-gray-100 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('name')}>
-            <div className="flex items-center space-x-1">
-              <span>Name</span>
-              {getSortIcon('name')}
-            </div>
-          </th>
-          <th className="border px-4 py-2 bg-gray-100 text-left">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {sortedKnowledgeBases.length > 0 ? (
-          sortedKnowledgeBases.map((kb) => (
-            <tr key={kb.id}>
-              <td className="border px-4 py-2 font-medium">{kb.name}</td>
-              <td className="border px-4 py-2 space-x-2">
-                <button 
-                  className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600" 
-                  onClick={() => handleEditKb(kb)}
-                >
-                  Edit
-                </button>
-                <button 
-                  className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600" 
-                  onClick={() => handleDeleteKb(kb.id)}
-                >
-                  Delete
-                </button>
+    <div className="bg-white rounded-lg shadow p-4">
+      <table className="min-w-full text-sm">
+        <thead>
+          <tr className="bg-gray-100">
+            <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('name')}>
+              <div className="flex items-center space-x-1">
+                <span>Name</span>
+                {getSortIcon('name')}
+              </div>
+            </th>
+            <th className="px-3 py-2 text-left">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sortedKnowledgeBases.length > 0 ? (
+            sortedKnowledgeBases.map((kb, idx) => (
+              <tr key={kb.id} className="border-b">
+                <td className="px-3 py-2 font-medium">{kb.name}</td>
+                <td className="px-3 py-2 flex gap-2">
+                  <button 
+                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-xs"
+                    onClick={() => handleEditKb(kb)}
+                  >
+                    Edit
+                  </button>
+                  <button 
+                    className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded text-xs"
+                    onClick={() => handleDeleteKb(kb.id)}
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan="2" className="text-center py-4 text-gray-500">
+                {searchTerm ? 'No knowledge bases found matching your search.' : 'No knowledge bases available.'}
               </td>
             </tr>
-          ))
-        ) : (
-          <tr>
-            <td colSpan="2" className="border px-4 py-8 text-center text-gray-500">
-              {searchTerm ? 'No knowledge bases found matching your search.' : 'No knowledge bases available.'}
-            </td>
-          </tr>
-        )}
-      </tbody>
-    </table>
+          )}
+        </tbody>
+      </table>
+    </div>
+    
     {/* Knowledge Base Modal */}
     {kbModalOpen && (
       <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50" onClick={() => setKbModalOpen(false)}>

@@ -13,12 +13,19 @@ const isValidUser = (user) => {
   );
 };
 
-const UserDetailsTab = ({ users, userSearch, setUserSearch, onAddUser, modalOpen, setModalOpen, handleRegisterSalesUser, registerForm, setRegisterForm, registerFormError, knowledgeBases, profiles, onRefreshUsers }) => {
+const UserDetailsTab = ({
+  users, userSearch, setUserSearch, onAddUser, modalOpen, setModalOpen,
+  handleRegisterSalesUser, registerForm, setRegisterForm, registerFormError,
+  knowledgeBases, profiles, onRefreshUsers
+}) => {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editUser, setEditUser] = useState(null);
   const [editProfile, setEditProfile] = useState('');
   const [editKnowledgeBases, setEditKnowledgeBases] = useState([]);
   const [editError, setEditError] = useState('');
+  // Sorting state
+  const [sortColumn, setSortColumn] = useState('created_at');
+  const [sortDirection, setSortDirection] = useState('desc');
 
   if (!Array.isArray(users) || users.length === 0) {
     return <p className="text-gray-500">No users found.</p>;
@@ -26,7 +33,7 @@ const UserDetailsTab = ({ users, userSearch, setUserSearch, onAddUser, modalOpen
 
   // Ensure userSearch is always a string
   const searchLower = (userSearch || '').toLowerCase();
-  const filteredUsers = users.filter((user) => {
+  let filteredUsers = users.filter((user) => {
     if (!isValidUser(user)) return false;
     return (
       user.first_name.toLowerCase().includes(searchLower) ||
@@ -35,6 +42,55 @@ const UserDetailsTab = ({ users, userSearch, setUserSearch, onAddUser, modalOpen
       user.email.toLowerCase().includes(searchLower) ||
       new Date(user.created_at).toLocaleDateString().includes(searchLower)
     );
+  });
+
+  // Sorting logic
+  const handleSort = (column) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortIcon = (field) => {
+    if (sortColumn !== field) {
+      return (
+        <svg className="w-4 h-4 text-gray-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+        </svg>
+      );
+    }
+    if (sortDirection === 'asc') {
+      return (
+        <svg className="w-4 h-4 text-blue-600 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+        </svg>
+      );
+    } else {
+      return (
+        <svg className="w-4 h-4 text-blue-600 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      );
+    }
+  };
+
+  filteredUsers = [...filteredUsers].sort((a, b) => {
+    let valA = a[sortColumn];
+    let valB = b[sortColumn];
+    // For created_at, sort by date
+    if (sortColumn === 'created_at') {
+      valA = new Date(valA);
+      valB = new Date(valB);
+    } else {
+      valA = valA ? valA.toString().toLowerCase() : '';
+      valB = valB ? valB.toString().toLowerCase() : '';
+    }
+    if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+    if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+    return 0;
   });
 
   const openEditModal = (user) => {
@@ -78,7 +134,8 @@ const UserDetailsTab = ({ users, userSearch, setUserSearch, onAddUser, modalOpen
         const userId = user.userprofile_id || user.id;
         const res = await fetch(`${BASE_URL}/api/userprofiles/${userId}/update/`, {
           method: 'DELETE',
-          headers: {
+          headers:
+          {
             'Authorization': `Bearer ${localStorage.getItem('access_token')}`
           }
         });
@@ -113,58 +170,106 @@ const UserDetailsTab = ({ users, userSearch, setUserSearch, onAddUser, modalOpen
           className="p-2 border border-gray-300 rounded-md w-full max-w-xs"
         />
       </div>
-      <table className="min-w-full border text-sm">
-        <thead>
-          <tr>
-            <th className="border px-2 py-1 bg-gray-100 text-left">First Name</th>
-            <th className="border px-2 py-1 bg-gray-100 text-left">Last Name</th>
-            <th className="border px-2 py-1 bg-gray-100 text-left">Phone</th>
-            <th className="border px-2 py-1 bg-gray-100 text-left">Email</th>
-            <th className="border px-2 py-1 bg-gray-100 text-left">Created Date</th>
-            <th className="border px-2 py-1 bg-gray-100 text-left">Profile</th>
-            <th className="border px-2 py-1 bg-gray-100 text-left">Knowledge Base</th>
-            <th className="border px-2 py-1 bg-gray-100 text-left">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredUsers.length === 0 ? (
-            <tr>
-              <td colSpan="8" className="border px-3 py-2 text-center text-gray-500">
-                No matching users found.
-              </td>
+      
+      <div className="bg-white rounded-lg shadow p-4">
+        <table className="min-w-full text-sm">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('first_name')}>
+                <div className="flex items-center space-x-1">
+                  <span>First Name</span>
+                  {getSortIcon('first_name')}
+                </div>
+              </th>
+              <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('last_name')}>
+                <div className="flex items-center space-x-1">
+                  <span>Last Name</span>
+                  {getSortIcon('last_name')}
+                </div>
+              </th>
+              <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('phone_number')}>
+                <div className="flex items-center space-x-1">
+                  <span>Phone</span>
+                  {getSortIcon('phone_number')}
+                </div>
+              </th>
+              <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('email')}>
+                <div className="flex items-center space-x-1">
+                  <span>Email</span>
+                  {getSortIcon('email')}
+                </div>
+              </th>
+              <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('created_at')}>
+                <div className="flex items-center space-x-1">
+                  <span>Created Date</span>
+                  {getSortIcon('created_at')}
+                </div>
+              </th>
+              <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('profile_name')}>
+                <div className="flex items-center space-x-1">
+                  <span>Profile</span>
+                  {getSortIcon('profile_name')}
+                </div>
+              </th>
+              <th className="px-3 py-2 text-left">Knowledge Bases</th>
+              <th className="px-3 py-2 text-left">Actions</th>
             </tr>
-          ) : (
-            filteredUsers.map((user, idx) => {
-              // All property accesses are now safe due to isValidUser
-              return (
-                <tr key={user.id || idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                  <td className="border px-3 py-2">{user.first_name}</td>
-                  <td className="border px-3 py-2">{user.last_name}</td>
-                  <td className="border px-3 py-2">{user.phone_number}</td>
-                  <td className="border px-3 py-2">{user.email}</td>
-                  <td className="border px-3 py-2">{new Date(user.created_at).toLocaleDateString()}</td>
-                  <td className="border px-3 py-2">{user.profile_name || ''}</td>
-                  <td className="border px-3 py-2">{Array.isArray(user.knowledge_bases) ? user.knowledge_bases.map(kb => typeof kb === 'string' ? kb : kb.name).join(', ') : ''}</td>
-                  <td className="border px-3 py-2 space-x-2">
-                    <button
-                      className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded"
-                      onClick={() => openEditModal(user)}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded"
-                      onClick={() => handleDeleteUser(user)}
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              );
-            })
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {filteredUsers.length === 0 ? (
+              <tr>
+                <td colSpan="8" className="text-center py-4 text-gray-500">
+                  {userSearch ? 'No users found matching your search.' : 'No users found.'}
+                </td>
+              </tr>
+            ) : (
+              filteredUsers.map((user, idx) => {
+                return (
+                  <tr key={user.id || idx} className="border-b">
+                    <td className="px-3 py-2">{user.first_name}</td>
+                    <td className="px-3 py-2">{user.last_name}</td>
+                    <td className="px-3 py-2">{user.phone_number}</td>
+                    <td className="px-3 py-2">{user.email}</td>
+                    <td className="px-3 py-2">{new Date(user.created_at).toLocaleDateString()}</td>
+                    <td className="px-3 py-2">{user.profile_name || ''}</td>
+                    <td className="px-3 py-2">
+                      {Array.isArray(user.knowledge_bases) && user.knowledge_bases.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {user.knowledge_bases.map((kb, kbIdx) => (
+                            <span
+                              key={kbIdx}
+                              className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full"
+                            >
+                              {typeof kb === 'string' ? kb : kb.name}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        '-'
+                      )}
+                    </td>
+                    <td className="px-3 py-2 flex gap-2">
+                      <button
+                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-xs"
+                        onClick={() => openEditModal(user)}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded text-xs"
+                        onClick={() => handleDeleteUser(user)}
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+      
       {/* User Registration Modal */}
       {modalOpen && (
         <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50" onClick={() => setModalOpen(false)}>
