@@ -12,7 +12,7 @@ const FileListTab = ({ uploadedFiles, renderTable, fileModalOpen, setFileModalOp
   const filteredAndSortedFiles = useMemo(() => {
     let filtered = uploadedFiles;
     
-    // Apply search filter
+    // Apply search filterKnowledge Base
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = uploadedFiles.filter(file => {

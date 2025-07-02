@@ -5,25 +5,100 @@ const URLListTab = ({ urlList, renderTable, urlModalOpen, setUrlModalOpen, urlFo
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortField, setSortField] = useState('');
+  const [sortDirection, setSortDirection] = useState('asc');
 
-  // Filter URLs based on search term
+  // Filter and sort URLs based on search term and sort settings
   const filteredURLs = useMemo(() => {
-    if (!searchTerm) return urlList;
-    
-    const term = searchTerm.toLowerCase();
-    return urlList.filter(url => {
-      // Search in URL, description, knowledge bases, and added by
+    let filtered = urlList;
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = urlList.filter(url => {
+        return (
+          (url.url && url.url.toLowerCase().includes(term)) ||
+          (url.description && url.description.toLowerCase().includes(term)) ||
+          (url.knowledge_bases && url.knowledge_bases.some(kb =>
+            typeof kb === 'string' ? kb.toLowerCase().includes(term) :
+            (kb.name && kb.name.toLowerCase().includes(term))
+          )) ||
+          (url.added_by && url.added_by.toLowerCase().includes(term))
+        );
+      });
+    }
+    // Sorting logic
+    if (sortField) {
+      filtered = [...filtered].sort((a, b) => {
+        let aValue = '';
+        let bValue = '';
+        switch (sortField) {
+          case 'url':
+            aValue = (a.url || '').toLowerCase();
+            bValue = (b.url || '').toLowerCase();
+            break;
+          case 'description':
+            aValue = (a.description || '').toLowerCase();
+            bValue = (b.description || '').toLowerCase();
+            break;
+          case 'knowledge_bases':
+            aValue = a.knowledge_bases ? a.knowledge_bases.map(kb =>
+              typeof kb === 'string' ? kb : (kb.name || '')
+            ).join(', ').toLowerCase() : '';
+            bValue = b.knowledge_bases ? b.knowledge_bases.map(kb =>
+              typeof kb === 'string' ? kb : (kb.name || '')
+            ).join(', ').toLowerCase() : '';
+            break;
+          case 'added_by':
+            aValue = (a.added_by || '').toLowerCase();
+            bValue = (b.added_by || '').toLowerCase();
+            break;
+          case 'uploaded_at':
+            aValue = a.uploaded_at ? new Date(a.uploaded_at).getTime() : 0;
+            bValue = b.uploaded_at ? new Date(b.uploaded_at).getTime() : 0;
+            break;
+          default:
+            return 0;
+        }
+        if (sortDirection === 'asc') {
+          return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+        } else {
+          return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+        }
+      });
+    }
+    return filtered;
+  }, [urlList, searchTerm, sortField, sortDirection]);
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortIcon = (field) => {
+    if (sortField !== field) {
       return (
-        (url.url && url.url.toLowerCase().includes(term)) ||
-        (url.description && url.description.toLowerCase().includes(term)) ||
-        (url.knowledge_bases && url.knowledge_bases.some(kb => 
-          typeof kb === 'string' ? kb.toLowerCase().includes(term) : 
-          (kb.name && kb.name.toLowerCase().includes(term))
-        )) ||
-        (url.added_by && url.added_by.toLowerCase().includes(term))
+        <svg className="w-4 h-4 text-gray-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+        </svg>
       );
-    });
-  }, [urlList, searchTerm]);
+    }
+    if (sortDirection === 'asc') {
+      return (
+        <svg className="w-4 h-4 text-blue-600 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+        </svg>
+      );
+    } else {
+      return (
+        <svg className="w-4 h-4 text-blue-600 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      );
+    }
+  };
 
   const handleSelectAll = (isChecked) => {
     if (isChecked) {
@@ -125,7 +200,6 @@ const URLListTab = ({ urlList, renderTable, urlModalOpen, setUrlModalOpen, urlFo
           )}
         </div>
       </div>
-      
       {/* Search Filter */}
       <div className="mb-4">
         <div className="relative">
@@ -148,13 +222,146 @@ const URLListTab = ({ urlList, renderTable, urlModalOpen, setUrlModalOpen, urlFo
           </p>
         )}
       </div>
-
-      {renderTable(filteredURLs, 'url', {
-        isMultiSelectMode,
-        selectedItems,
-        onSelectAll: handleSelectAll,
-        onItemSelect: handleItemSelect
-      })}
+      {/* Table with sortable headers */}
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <table className="min-w-full text-sm">
+          <thead className="bg-gray-50">
+            <tr>
+              {isMultiSelectMode && (
+                <th className="px-4 py-3 text-left">
+                  <input
+                    type="checkbox"
+                    onChange={(e) => handleSelectAll(e.target.checked)}
+                    checked={selectedItems.length === filteredURLs.length && filteredURLs.length > 0}
+                    className="rounded border-gray-300"
+                  />
+                </th>
+              )}
+              <th className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('url')}>
+                <div className="flex items-center space-x-1">
+                  <span>URL</span>
+                  {getSortIcon('url')}
+                </div>
+              </th>
+              <th className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('description')}>
+                <div className="flex items-center space-x-1">
+                  <span>Description</span>
+                  {getSortIcon('description')}
+                </div>
+              </th>
+              <th className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('knowledge_bases')}>
+                <div className="flex items-center space-x-1">
+                  <span>Knowledge Bases</span>
+                  {getSortIcon('knowledge_bases')}
+                </div>
+              </th>
+              <th className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('added_by')}>
+                <div className="flex items-center space-x-1">
+                  <span>Added By</span>
+                  {getSortIcon('added_by')}
+                </div>
+              </th>
+              <th className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('uploaded_at')}>
+                <div className="flex items-center space-x-1">
+                  <span>Uploaded Date</span>
+                  {getSortIcon('uploaded_at')}
+                </div>
+              </th>
+              <th className="px-4 py-3 text-left font-semibold text-gray-700">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {/* Render table rows using filteredURLs */}
+            {isLoading ? (
+              <tr>
+                <td colSpan={isMultiSelectMode ? 7 : 6} className="px-4 py-8 text-center text-gray-500">
+                  <div className="flex items-center justify-center">
+                    <Loader />
+                  </div>
+                </td>
+              </tr>
+            ) : filteredURLs.length === 0 ? (
+              <tr>
+                <td colSpan={isMultiSelectMode ? 7 : 6} className="px-4 py-8 text-center text-gray-500">
+                  {searchTerm ? 'No URLs found matching your search.' : 'No URLs uploaded yet.'}
+                </td>
+              </tr>
+            ) : (
+              filteredURLs.map((url) => (
+                <tr key={url.id} className="hover:bg-gray-50 transition-colors">
+                  {isMultiSelectMode && (
+                    <td className="px-4 py-3">
+                      <input
+                        type="checkbox"
+                        checked={selectedItems.includes(url.id)}
+                        onChange={(e) => handleItemSelect(url.id, e.target.checked)}
+                        className="rounded border-gray-300"
+                      />
+                    </td>
+                  )}
+                  <td className="px-4 py-3">
+                    <div className="font-medium text-gray-900">
+                      {url.url || '-'}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="text-gray-700">
+                      {url.description || '-'}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    {url.knowledge_bases && url.knowledge_bases.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {url.knowledge_bases.map((kb, index) => (
+                          <span
+                            key={index}
+                            className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full"
+                          >
+                            {typeof kb === 'string' ? kb : kb.name}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-gray-500">-</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="text-gray-700">
+                      {url.added_by || '-'}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="text-gray-700">
+                      {url.uploaded_at ? new Date(url.uploaded_at).toLocaleDateString() : '-'}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center space-x-2">
+                      {url.url && (
+                        <a
+                          href={url.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                        >
+                          Visit
+                        </a>
+                      )}
+                      <button
+                        onClick={() => onBulkDelete([url.id])}
+                        className="text-red-600 hover:text-red-800 text-sm font-medium"
+                        title="Delete URL"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
       {/* URL Upload Modal */}
       {urlModalOpen && (
         <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50" onClick={() => setUrlModalOpen(false)}>
