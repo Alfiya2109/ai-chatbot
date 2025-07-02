@@ -8,6 +8,8 @@ const SubcategoriesTable = ({ subCategories, categories, onAddSubcategory, onEdi
   const [editMode, setEditMode] = useState(false);
   const [editId, setEditId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortField, setSortField] = useState('');
+  const [sortDirection, setSortDirection] = useState('asc');
 
   // Flatten subcategories for table: each row is a subcategory with its parent category
   const data = subCategories.map((sub) => {
@@ -31,6 +33,34 @@ const SubcategoriesTable = ({ subCategories, categories, onAddSubcategory, onEdi
              row.categoryName.toLowerCase().includes(term);
     });
   }, [data, searchTerm]);
+
+  const sortedData = useMemo(() => {
+    let filtered = filteredData;
+    if (sortField) {
+      filtered = [...filtered].sort((a, b) => {
+        let aValue = '';
+        let bValue = '';
+        switch (sortField) {
+          case 'categoryName':
+            aValue = (a.categoryName || '').toLowerCase();
+            bValue = (b.categoryName || '').toLowerCase();
+            break;
+          case 'subcategoryName':
+            aValue = (a.subcategoryName || '').toLowerCase();
+            bValue = (b.subcategoryName || '').toLowerCase();
+            break;
+          default:
+            return 0;
+        }
+        if (sortDirection === 'asc') {
+          return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+        } else {
+          return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+        }
+      });
+    }
+    return filtered;
+  }, [filteredData, sortField, sortDirection]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -57,6 +87,38 @@ const SubcategoriesTable = ({ subCategories, categories, onAddSubcategory, onEdi
     setSelectedCategory(row.categoryId);
     setSubcategoryName(row.subcategoryName);
     setModalOpen(true);
+  };
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortIcon = (field) => {
+    if (sortField !== field) {
+      return (
+        <svg className="w-4 h-4 text-gray-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+        </svg>
+      );
+    }
+    if (sortDirection === 'asc') {
+      return (
+        <svg className="w-4 h-4 text-blue-600 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+        </svg>
+      );
+    } else {
+      return (
+        <svg className="w-4 h-4 text-blue-600 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      );
+    }
   };
 
   return (
@@ -101,13 +163,23 @@ const SubcategoriesTable = ({ subCategories, categories, onAddSubcategory, onEdi
           <table className="w-full border text-sm rounded-lg overflow-hidden">
             <thead>
               <tr>
-                <th className="border px-4 py-2 bg-gray-100 text-gray-700 font-semibold">Category</th>
-                <th className="border px-4 py-2 bg-gray-100 text-gray-700 font-semibold">Subcategory</th>
+                <th className="border px-4 py-2 bg-gray-100 text-gray-700 font-semibold cursor-pointer hover:bg-gray-200" onClick={() => handleSort('categoryName')}>
+                  <div className="flex items-center space-x-1">
+                    <span>Category</span>
+                    {getSortIcon('categoryName')}
+                  </div>
+                </th>
+                <th className="border px-4 py-2 bg-gray-100 text-gray-700 font-semibold cursor-pointer hover:bg-gray-200" onClick={() => handleSort('subcategoryName')}>
+                  <div className="flex items-center space-x-1">
+                    <span>Subcategory</span>
+                    {getSortIcon('subcategoryName')}
+                  </div>
+                </th>
                 <th className="border px-4 py-2 bg-gray-100 text-gray-700 font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filteredData.map((row, idx) => (
+              {sortedData.map((row, idx) => (
                 <tr key={row.subcategoryId} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                   <td className="border px-4 py-2 font-medium">{row.categoryName}</td>
                   <td className="border px-4 py-2">{row.subcategoryName}</td>

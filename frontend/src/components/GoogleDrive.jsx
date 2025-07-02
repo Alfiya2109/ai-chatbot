@@ -63,6 +63,8 @@ const GoogleDrive = () => {
   const [driveFiles, setDriveFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortField, setSortField] = useState('');
+  const [sortDirection, setSortDirection] = useState('asc');
 
   // Filter drive files based on search term
   const filteredDriveFiles = useMemo(() => {
@@ -83,6 +85,50 @@ const GoogleDrive = () => {
       );
     });
   }, [driveFiles, searchTerm]);
+
+  const sortedDriveFiles = useMemo(() => {
+    let filtered = filteredDriveFiles;
+    if (sortField) {
+      filtered = [...filtered].sort((a, b) => {
+        let aValue = '';
+        let bValue = '';
+        switch (sortField) {
+          case 'folder_name':
+            aValue = (a.folder_name || a.file_name || '').toLowerCase();
+            bValue = (b.folder_name || b.file_name || '').toLowerCase();
+            break;
+          case 'relative_path':
+            aValue = (a.relative_path || '').toLowerCase();
+            bValue = (b.relative_path || '').toLowerCase();
+            break;
+          case 'description':
+            aValue = (a.description || '').toLowerCase();
+            bValue = (b.description || '').toLowerCase();
+            break;
+          case 'knowledge_bases':
+            aValue = a.knowledge_bases ? a.knowledge_bases.map(kb => typeof kb === 'string' ? kb : '').join(', ').toLowerCase() : '';
+            bValue = b.knowledge_bases ? b.knowledge_bases.map(kb => typeof kb === 'string' ? kb : '').join(', ').toLowerCase() : '';
+            break;
+          case 'added_by':
+            aValue = (a.added_by || '').toLowerCase();
+            bValue = (b.added_by || '').toLowerCase();
+            break;
+          case 'uploaded_at':
+            aValue = a.uploaded_at ? new Date(a.uploaded_at).getTime() : 0;
+            bValue = b.uploaded_at ? new Date(b.uploaded_at).getTime() : 0;
+            break;
+          default:
+            return 0;
+        }
+        if (sortDirection === 'asc') {
+          return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+        } else {
+          return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+        }
+      });
+    }
+    return filtered;
+  }, [filteredDriveFiles, sortField, sortDirection]);
 
   useEffect(() => {
     fetchDriveFiles();
@@ -291,6 +337,38 @@ const GoogleDrive = () => {
     }
   };
 
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortIcon = (field) => {
+    if (sortField !== field) {
+      return (
+        <svg className="w-4 h-4 text-gray-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+        </svg>
+      );
+    }
+    if (sortDirection === 'asc') {
+      return (
+        <svg className="w-4 h-4 text-blue-600 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+        </svg>
+      );
+    } else {
+      return (
+        <svg className="w-4 h-4 text-blue-600 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      );
+    }
+  };
+
   return (
     <div className="w-full">
       <div className="flex justify-between items-center mb-4">
@@ -332,26 +410,56 @@ const GoogleDrive = () => {
         <table className="min-w-full text-sm">
           <thead>
             <tr className="bg-gray-100">
-              <th className="px-3 py-2 text-left">Folder Name</th>
-              <th className="px-3 py-2 text-left">Path</th> {/* New column */}
-              <th className="px-3 py-2 text-left">Description</th>
-              <th className="px-3 py-2 text-left">Knowledge Bases</th>
-              <th className="px-3 py-2 text-left">Added By</th>
-              <th className="px-3 py-2 text-left">Uploaded Date</th>
+              <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('folder_name')}>
+                <div className="flex items-center space-x-1">
+                  <span>Folder Name</span>
+                  {getSortIcon('folder_name')}
+                </div>
+              </th>
+              <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('relative_path')}>
+                <div className="flex items-center space-x-1">
+                  <span>Path</span>
+                  {getSortIcon('relative_path')}
+                </div>
+              </th>
+              <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('description')}>
+                <div className="flex items-center space-x-1">
+                  <span>Description</span>
+                  {getSortIcon('description')}
+                </div>
+              </th>
+              <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('knowledge_bases')}>
+                <div className="flex items-center space-x-1">
+                  <span>Knowledge Bases</span>
+                  {getSortIcon('knowledge_bases')}
+                </div>
+              </th>
+              <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('added_by')}>
+                <div className="flex items-center space-x-1">
+                  <span>Added By</span>
+                  {getSortIcon('added_by')}
+                </div>
+              </th>
+              <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('uploaded_at')}>
+                <div className="flex items-center space-x-1">
+                  <span>Uploaded Date</span>
+                  {getSortIcon('uploaded_at')}
+                </div>
+              </th>
               <th className="px-3 py-2 text-left">Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr><td colSpan={7} className="text-center py-4">Loading...</td></tr>
-            ) : filteredDriveFiles.length === 0 ? (
+            ) : sortedDriveFiles.length === 0 ? (
               <tr>
                 <td colSpan={7} className="text-center py-4 text-gray-500">
                   {searchTerm ? 'No Google Drive files found matching your search.' : 'No Google Drive files uploaded yet.'}
                 </td>
               </tr>
             ) : (
-              filteredDriveFiles.map((item, idx) => (
+              sortedDriveFiles.map((item, idx) => (
                 <tr key={item.id || idx} className="border-b">
                   <td className="px-3 py-2 font-medium">{item.folder_name || item.file_name}</td>
                   <td className="px-3 py-2">{item.relative_path || '-'}</td> {/* New column */}

@@ -4,7 +4,6 @@ import Loader from './Loader';
 
 const QAListTab = ({
   qaData,
-  renderTable,
   qaModalOpen,
   setQaModalOpen,
   qaForm,
@@ -24,38 +23,80 @@ const QAListTab = ({
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortField, setSortField] = useState('');
+  const [sortDirection, setSortDirection] = useState('asc');
 
-  // Filter Q&A data based on search term
-  const filteredQAData = useMemo(() => {
-    if (!searchTerm) return qaData;
-    
-    const term = searchTerm.toLowerCase();
-    return qaData.filter(qa => {
-      // Search in question, answer, description, categories, subcategories, knowledge bases, and added by
-      return (
-        (qa.question && qa.question.toLowerCase().includes(term)) ||
-        (qa.answer && qa.answer.toLowerCase().includes(term)) ||
-        (qa.description && qa.description.toLowerCase().includes(term)) ||
-        (qa.category && qa.category.some(cat => 
-          typeof cat === 'string' ? cat.toLowerCase().includes(term) : 
-          (cat.name && cat.name.toLowerCase().includes(term))
-        )) ||
-        (qa.subcategory && qa.subcategory.some(subcat => 
-          typeof subcat === 'string' ? subcat.toLowerCase().includes(term) : 
-          (subcat.name && subcat.name.toLowerCase().includes(term))
-        )) ||
-        (qa.knowledge_bases && qa.knowledge_bases.some(kb => 
-          typeof kb === 'string' ? kb.toLowerCase().includes(term) : 
-          (kb.name && kb.name.toLowerCase().includes(term))
-        )) ||
-        (qa.added_by && qa.added_by.toLowerCase().includes(term))
-      );
-    });
-  }, [qaData, searchTerm]);
+  // Filter and sort Q&A data based on search term and sort settings
+  const filteredAndSortedQAData = useMemo(() => {
+    let filtered = qaData;
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = qaData.filter(qa => {
+        return (
+          (qa.question && qa.question.toLowerCase().includes(term)) ||
+          (qa.answer && qa.answer.toLowerCase().includes(term)) ||
+          (qa.description && qa.description.toLowerCase().includes(term)) ||
+          (qa.category && qa.category.some(cat => typeof cat === 'string' ? cat.toLowerCase().includes(term) : (cat.name && cat.name.toLowerCase().includes(term)))) ||
+          (qa.subcategory && qa.subcategory.some(subcat => typeof subcat === 'string' ? subcat.toLowerCase().includes(term) : (subcat.name && subcat.name.toLowerCase().includes(term)))) ||
+          (qa.knowledge_bases && qa.knowledge_bases.some(kb => typeof kb === 'string' ? kb.toLowerCase().includes(term) : (kb.name && kb.name.toLowerCase().includes(term)))) ||
+          (qa.added_by && qa.added_by.toLowerCase().includes(term))
+        );
+      });
+    }
+    // Sorting logic
+    if (sortField) {
+      filtered = [...filtered].sort((a, b) => {
+        let aValue = '';
+        let bValue = '';
+        switch (sortField) {
+          case 'question':
+            aValue = (a.question || '').toLowerCase();
+            bValue = (b.question || '').toLowerCase();
+            break;
+          case 'answer':
+            aValue = (a.answer || '').toLowerCase();
+            bValue = (b.answer || '').toLowerCase();
+            break;
+          case 'description':
+            aValue = (a.description || '').toLowerCase();
+            bValue = (b.description || '').toLowerCase();
+            break;
+          case 'category':
+            aValue = a.category ? a.category.map(cat => typeof cat === 'string' ? cat : (cat.name || '')).join(', ').toLowerCase() : '';
+            bValue = b.category ? b.category.map(cat => typeof cat === 'string' ? cat : (cat.name || '')).join(', ').toLowerCase() : '';
+            break;
+          case 'subcategory':
+            aValue = a.subcategory ? a.subcategory.map(subcat => typeof subcat === 'string' ? subcat : (subcat.name || '')).join(', ').toLowerCase() : '';
+            bValue = b.subcategory ? b.subcategory.map(subcat => typeof subcat === 'string' ? subcat : (subcat.name || '')).join(', ').toLowerCase() : '';
+            break;
+          case 'knowledge_bases':
+            aValue = a.knowledge_bases ? a.knowledge_bases.map(kb => typeof kb === 'string' ? kb : (kb.name || '')).join(', ').toLowerCase() : '';
+            bValue = b.knowledge_bases ? b.knowledge_bases.map(kb => typeof kb === 'string' ? kb : (kb.name || '')).join(', ').toLowerCase() : '';
+            break;
+          case 'added_by':
+            aValue = (a.added_by || '').toLowerCase();
+            bValue = (b.added_by || '').toLowerCase();
+            break;
+          case 'uploaded_at':
+            aValue = a.uploaded_at ? new Date(a.uploaded_at).getTime() : 0;
+            bValue = b.uploaded_at ? new Date(b.uploaded_at).getTime() : 0;
+            break;
+          default:
+            return 0;
+        }
+        if (sortDirection === 'asc') {
+          return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+        } else {
+          return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+        }
+      });
+    }
+    return filtered;
+  }, [qaData, searchTerm, sortField, sortDirection]);
 
   const handleSelectAll = (isChecked) => {
     if (isChecked) {
-      setSelectedItems(filteredQAData.map(item => item.id));
+      setSelectedItems(filteredAndSortedQAData.map(item => item.id));
     } else {
       setSelectedItems([]);
     }
@@ -100,6 +141,38 @@ const QAListTab = ({
   const handleCancelMultiSelect = () => {
     setIsMultiSelectMode(false);
     setSelectedItems([]);
+  };
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortIcon = (field) => {
+    if (sortField !== field) {
+      return (
+        <svg className="w-4 h-4 text-gray-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+        </svg>
+      );
+    }
+    if (sortDirection === 'asc') {
+      return (
+        <svg className="w-4 h-4 text-blue-600 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+        </svg>
+      );
+    } else {
+      return (
+        <svg className="w-4 h-4 text-blue-600 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      );
+    }
   };
 
   return (
@@ -172,17 +245,172 @@ const QAListTab = ({
         </div>
         {searchTerm && (
           <p className="mt-2 text-sm text-gray-600">
-            Showing {filteredQAData.length} of {qaData.length} Q&A items
+            Showing {filteredAndSortedQAData.length} of {qaData.length} Q&A items
           </p>
         )}
       </div>
 
-      {renderTable(filteredQAData, 'qa', {
-        isMultiSelectMode,
-        selectedItems,
-        onSelectAll: handleSelectAll,
-        onItemSelect: handleItemSelect
-      })}
+      {/* Replace renderTable with a custom table for Q&A */}
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <table className="min-w-full text-sm">
+          <thead className="bg-gray-50">
+            <tr>
+              {isMultiSelectMode && (
+                <th className="px-4 py-3 text-left">
+                  <input
+                    type="checkbox"
+                    onChange={e => handleSelectAll(e.target.checked)}
+                    checked={selectedItems.length === filteredAndSortedQAData.length && filteredAndSortedQAData.length > 0}
+                    className="rounded border-gray-300"
+                  />
+                </th>
+              )}
+              <th className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('question')}>
+                <div className="flex items-center space-x-1">
+                  <span>Question</span>
+                  {getSortIcon('question')}
+                </div>
+              </th>
+              <th className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('answer')}>
+                <div className="flex items-center space-x-1">
+                  <span>Answer</span>
+                  {getSortIcon('answer')}
+                </div>
+              </th>
+              <th className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('description')}>
+                <div className="flex items-center space-x-1">
+                  <span>Description</span>
+                  {getSortIcon('description')}
+                </div>
+              </th>
+              <th className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('category')}>
+                <div className="flex items-center space-x-1">
+                  <span>Category</span>
+                  {getSortIcon('category')}
+                </div>
+              </th>
+              <th className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('subcategory')}>
+                <div className="flex items-center space-x-1">
+                  <span>Subcategory</span>
+                  {getSortIcon('subcategory')}
+                </div>
+              </th>
+              <th className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('knowledge_bases')}>
+                <div className="flex items-center space-x-1">
+                  <span>Knowledge Bases</span>
+                  {getSortIcon('knowledge_bases')}
+                </div>
+              </th>
+              <th className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('added_by')}>
+                <div className="flex items-center space-x-1">
+                  <span>Added By</span>
+                  {getSortIcon('added_by')}
+                </div>
+              </th>
+              <th className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('uploaded_at')}>
+                <div className="flex items-center space-x-1">
+                  <span>Upload Date</span>
+                  {getSortIcon('uploaded_at')}
+                </div>
+              </th>
+              <th className="px-4 py-3 text-left font-semibold text-gray-700">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {isLoading ? (
+              <tr>
+                <td colSpan={isMultiSelectMode ? 10 : 9} className="px-4 py-8 text-center text-gray-500">
+                  <div className="flex items-center justify-center">
+                    <Loader />
+                  </div>
+                </td>
+              </tr>
+            ) : filteredAndSortedQAData.length === 0 ? (
+              <tr>
+                <td colSpan={isMultiSelectMode ? 10 : 9} className="px-4 py-8 text-center text-gray-500">
+                  {searchTerm ? 'No Q&A found matching your search.' : 'No Q&A uploaded yet.'}
+                </td>
+              </tr>
+            ) : (
+              filteredAndSortedQAData.map((qa) => (
+                <tr key={qa.id} className="hover:bg-gray-50 transition-colors">
+                  {isMultiSelectMode && (
+                    <td className="px-4 py-3">
+                      <input
+                        type="checkbox"
+                        checked={selectedItems.includes(qa.id)}
+                        onChange={e => handleItemSelect(qa.id, e.target.checked)}
+                        className="rounded border-gray-300"
+                      />
+                    </td>
+                  )}
+                  <td className="px-4 py-3 max-w-xs truncate" title={qa.question}>{qa.question || '-'}</td>
+                  <td className="px-4 py-3 max-w-xs truncate" title={qa.answer}>{qa.answer || '-'}</td>
+                  <td className="px-4 py-3">{qa.description || '-'}</td>
+                  <td className="px-4 py-3">
+                    {qa.category && qa.category.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {qa.category.map((cat, idx) => (
+                          <span key={idx} className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                            {typeof cat === 'string' ? cat : cat.name}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-gray-500">-</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    {qa.subcategory && qa.subcategory.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {qa.subcategory.map((subcat, idx) => (
+                          <span key={idx} className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                            {typeof subcat === 'string' ? subcat : subcat.name}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-gray-500">-</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    {qa.knowledge_bases && qa.knowledge_bases.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {qa.knowledge_bases.map((kb, idx) => (
+                          <span key={idx} className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                            {typeof kb === 'string' ? kb : kb.name}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-gray-500">-</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">{qa.added_by || '-'}</td>
+                  <td className="px-4 py-3">{qa.uploaded_at ? new Date(qa.uploaded_at).toLocaleDateString() : '-'}</td>
+                  <td className="px-4 py-3">
+                    {/* You can add Edit/Delete buttons here if needed */}
+                    <button
+                      onClick={() => editingQa && editingQa(qa)}
+                      className="text-blue-600 hover:text-blue-800 text-sm font-medium mr-2"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => onBulkDelete && onBulkDelete([qa.id])}
+                      className="text-red-600 hover:text-red-800 text-sm font-medium"
+                      title="Delete Q&A"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+      
       {/* Q&A Upload Modal */}
       {qaModalOpen && (
         <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50" onClick={() => setQaModalOpen(false)}>
