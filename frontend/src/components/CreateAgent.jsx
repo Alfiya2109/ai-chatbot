@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { FaTrash, FaUserCircle, FaSignOutAlt } from 'react-icons/fa';
+import { FaTrash, FaEdit, FaUserCircle, FaSignOutAlt } from 'react-icons/fa';
 import { BASE_URL } from '../base_url';
 import FileListTab from './FileListTab';
 import TextListTab from './TextListTab';
@@ -15,6 +15,7 @@ import SubcategoriesTable from './SubcategoriesTable';
 import UserDetailsTab from './UserDetailsTab';
 import FolderListTab from './FolderListTab'; // Import FolderListTab
 import GoogleDrive from './GoogleDrive';
+import Loader from './Loader'; 
 
 // Define tab structure as per the provided image
 const tabSections = [
@@ -62,6 +63,8 @@ function CreateAgent() {
     knowledge_bases: [],
   });
   const [textFormError, setTextFormError] = useState('');
+  const [editingText, setEditingText] = useState(null);
+  const [textEditModalOpen, setTextEditModalOpen] = useState(false);
   const [qaModalOpen, setQaModalOpen] = useState(false);
   const [qaForm, setQaForm] = useState({
     question: '',
@@ -72,6 +75,8 @@ function CreateAgent() {
     knowledge_bases: [],
   });
   const [qaFormError, setQaFormError] = useState('');
+  const [editingQa, setEditingQa] = useState(null);
+  const [qaEditModalOpen, setQaEditModalOpen] = useState(false);
   const [urlModalOpen, setUrlModalOpen] = useState(false);
   const [urlForm, setUrlForm] = useState({ url: '', description: '', knowledge_bases: [] });
   const [urlFormError, setUrlFormError] = useState('');
@@ -429,6 +434,124 @@ function CreateAgent() {
     }
   };
 
+  const handleTextEdit = (textItem) => {
+    setEditingText(textItem);
+    setTextForm({
+      content: textItem.content || '',
+      description: textItem.description || '',
+      knowledge_bases: textItem.knowledge_bases ? textItem.knowledge_bases.map(kb => String(typeof kb === 'object' ? kb.id : kb)) : [],
+    });
+    // Fetch knowledge bases when edit modal opens
+    fetchKnowledgeBases();
+    setTextEditModalOpen(true);
+  };
+
+  const handleTextEditSubmit = async (e) => {
+    e.preventDefault();
+    setTextFormError('');
+    if (!textForm.content) {
+      setTextFormError('Please enter some text.');
+      return;
+    }
+    if (!textForm.knowledge_bases || textForm.knowledge_bases.length === 0) {
+      setTextFormError('Please select at least one knowledge base.');
+      return;
+    }
+    try {
+      const formData = new FormData();
+      formData.append('content', textForm.content);
+      if (textForm.description) formData.append('description', textForm.description);
+      const selectedNames = knowledgeBases
+        .filter(kb => textForm.knowledge_bases.includes(String(kb.id)))
+        .map(kb => kb.name);
+      selectedNames.forEach((name) => formData.append('knowledge_bases', name));
+      
+      const token = localStorage.getItem('access_token');
+      await axios.patch(`${BASE_URL}/api/textupload/${editingText.id}/`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      alert('Text updated successfully!');
+      setTextEditModalOpen(false);
+      setEditingText(null);
+      setTextForm({ content: '', description: '', knowledge_bases: [] });
+      fetchText();
+    } catch (error) {
+      setTextFormError('Failed to update text. Please try again.');
+      console.error('Error updating text:', error);
+    }
+  };
+
+  // Q&A edit handlers
+  const handleQaEdit = (qaItem) => {
+    setEditingQa(qaItem);
+    setQaForm({
+      question: qaItem.question || '',
+      answer: qaItem.answer || '',
+      description: qaItem.description || '',
+      category: qaItem.category && qaItem.category.length > 0 ? qaItem.category.map(cat => typeof cat === 'object' ? cat.id : cat) : [],
+      subcategory: qaItem.subcategory && qaItem.subcategory.length > 0 ? qaItem.subcategory.map(subcat => typeof subcat === 'object' ? subcat.id : subcat) : [],
+      knowledge_bases: qaItem.knowledge_bases ? qaItem.knowledge_bases.map(kb => String(typeof kb === 'object' ? kb.id : kb)) : [],
+    });
+    // Fetch knowledge bases when edit modal opens
+    fetchKnowledgeBases();
+    setQaEditModalOpen(true);
+  };
+
+  const handleQaEditSubmit = async (e) => {
+    e.preventDefault();
+    setQaFormError('');
+    if (!qaForm.question || !qaForm.answer) {
+      setQaFormError('Question and Answer are required.');
+      return;
+    }
+    if (!qaForm.knowledge_bases || qaForm.knowledge_bases.length === 0) {
+      setQaFormError('Please select at least one knowledge base.');
+      return;
+    }
+    try {
+      const token = localStorage.getItem('access_token');
+      
+      // Convert knowledge base IDs to names
+      const selectedNames = knowledgeBases
+        .filter(kb => qaForm.knowledge_bases.includes(String(kb.id)))
+        .map(kb => kb.name);
+      
+      const payload = {
+        ...qaForm,
+        knowledge_bases: selectedNames,
+        category: qaForm.category.map(id => parseInt(id)),
+        subcategory: qaForm.subcategory.map(id => parseInt(id)),
+      };
+      
+      await axios.patch(`${BASE_URL}/api/qa/${editingQa.id}/`, payload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      alert('Q&A updated successfully!');
+      setQaEditModalOpen(false);
+      setEditingQa(null);
+      setQaForm({
+        question: '',
+        answer: '',
+        description: '',
+        category: [],
+        subcategory: [],
+        knowledge_bases: [],
+      });
+      fetchQA();
+    } catch (error) {
+      setQaFormError('Failed to update Q&A. Please try again.');
+      console.error('Error updating Q&A:', error);
+    }
+  };
+
   // Bulk delete handlers
   const handleBulkFileDelete = async (fileIds) => {
     try {
@@ -608,13 +731,17 @@ function CreateAgent() {
       trainFormData.append('type', 'qna');
       trainFormData.append('question', qa.question);
       trainFormData.append('answer', qa.answer);
-      trainFormData.append('category', qa.category || 'general');
-      trainFormData.append('subcategory', qa.subcategory || '');
-      // Add knowledge base names to the training payload
-      const selectedNames = knowledgeBases
-        .filter(kb => qa.knowledge_bases.includes(String(kb.id)))
-        .map(kb => kb.name);
-      selectedNames.forEach((name) => trainFormData.append('knowledge_bases', name));
+      trainFormData.append('category', qa.category && qa.category.length > 0 ? parseInt(qa.category[0]) : 'general');
+      trainFormData.append('subcategory', qa.subcategory && qa.subcategory.length > 0 ? parseInt(qa.subcategory[0]) : '');
+      // Map names to IDs if needed, and append only IDs
+      const kbIds = qa.knowledge_bases.map(nameOrId => {
+        if (!isNaN(Number(nameOrId))) return Number(nameOrId);
+        const kb = knowledgeBases.find(kb => kb.name === nameOrId);
+        return kb ? kb.id : null;
+      }).filter(id => id !== null);
+      
+      kbIds.forEach(id => trainFormData.append('knowledge_bases', id));
+      alert('Knowledge base IDs: ' + kbIds.join(', '));
 
       const trainResponse = await axios.post(`${BASE_URL}/api/upload-and-train/`, trainFormData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -641,11 +768,8 @@ function CreateAgent() {
         }
         requestData.append('type', 'file');
         requestData.append('file', uploadedFiles[0]?.file);
-        // Add knowledge base names to the training payload
-        const selectedNames = knowledgeBases
-          .filter(kb => fileForm.knowledge_bases.includes(String(kb.id)))
-          .map(kb => kb.name);
-        selectedNames.forEach((name) => requestData.append('knowledge_bases', name));
+        // Add knowledge base IDs to the training payload
+        fileForm.knowledge_bases.forEach((id) => requestData.append('knowledge_bases', id));
       } else if (activeTab === 'Text') {
         // Validate knowledge base selection
         if (!textForm.knowledge_bases || textForm.knowledge_bases.length === 0) {
@@ -654,11 +778,8 @@ function CreateAgent() {
         }
         requestData.append('type', 'text');
         requestData.append('text', textInput);
-        // Add knowledge base names to the training payload
-        const selectedNames = knowledgeBases
-          .filter(kb => textForm.knowledge_bases.includes(String(kb.id)))
-          .map(kb => kb.name);
-        selectedNames.forEach((name) => requestData.append('knowledge_bases', name));
+        // Add knowledge base IDs to the training payload
+        textForm.knowledge_bases.forEach((id) => requestData.append('knowledge_bases', id));
       } else if (activeTab === 'Q&A') {
         if (qaData.length > 0) {
           const qa = qaData[0];
@@ -672,11 +793,8 @@ function CreateAgent() {
           requestData.append('answer', qa.answer);
           requestData.append('category', qa.category || 'general');
           requestData.append('subcategory', qa.subcategory || '');
-          // Add knowledge base names to the training payload
-          const selectedNames = knowledgeBases
-            .filter(kb => qa.knowledge_bases.includes(String(kb.id)))
-            .map(kb => kb.name);
-          selectedNames.forEach((name) => requestData.append('knowledge_bases', name));
+          // Add knowledge base IDs to the training payload
+          qa.knowledge_bases.forEach((id) => requestData.append('knowledge_bases', id));
         }
       }
 
@@ -894,11 +1012,10 @@ function CreateAgent() {
       const formData = new FormData();
       formData.append('file', fileForm.file);
       if (fileForm.description) formData.append('description', fileForm.description);
-      // Map selected IDs to names for the API
+      // Map selected KB IDs to names for upload endpoint
       const selectedNames = knowledgeBases
         .filter(kb => fileForm.knowledge_bases.includes(String(kb.id)))
         .map(kb => kb.name);
-      // Send each name as a separate field
       selectedNames.forEach((name) => formData.append('knowledge_bases', name));
       
       const token = localStorage.getItem('access_token');
@@ -914,8 +1031,8 @@ function CreateAgent() {
       const trainFormData = new FormData();
       trainFormData.append('type', 'file');
       trainFormData.append('file', fileForm.file);
-      // Add knowledge base names to the training payload
-      selectedNames.forEach((name) => trainFormData.append('knowledge_bases', name));
+      // Add knowledge base IDs to the training payload
+      fileForm.knowledge_bases.forEach((id) => trainFormData.append('knowledge_bases', id));
 
       try {
         const trainResponse = await axios.post(`${BASE_URL}/api/upload-and-train/`, trainFormData, {
@@ -950,7 +1067,7 @@ function CreateAgent() {
       const formData = new FormData();
       formData.append('file', excelForm.file);
       if (excelForm.description) formData.append('description', excelForm.description);
-      // Map selected IDs to names for the API
+      // Map selected KB IDs to names for upload endpoint
       const selectedNames = knowledgeBases
         .filter(kb => excelForm.knowledge_bases.includes(String(kb.id)))
         .map(kb => kb.name);
@@ -969,8 +1086,8 @@ function CreateAgent() {
       const trainFormData = new FormData();
       trainFormData.append('type', 'file');
       trainFormData.append('file', excelForm.file);
-      // Add knowledge base names to the training payload
-      selectedNames.forEach((name) => trainFormData.append('knowledge_bases', name));
+      // Add knowledge base IDs to the training payload
+      excelForm.knowledge_bases.forEach((id) => trainFormData.append('knowledge_bases', id));
 
       try {
         const trainResponse = await axios.post(`${BASE_URL}/api/upload-and-train/`, trainFormData, {
@@ -1005,7 +1122,7 @@ function CreateAgent() {
       const formData = new FormData();
       formData.append('content', textForm.content);
       if (textForm.description) formData.append('description', textForm.description);
-      // Map selected IDs to names for the API
+      // Map selected KB IDs to names for upload endpoint
       const selectedNames = knowledgeBases
         .filter(kb => textForm.knowledge_bases.includes(String(kb.id)))
         .map(kb => kb.name);
@@ -1024,8 +1141,8 @@ function CreateAgent() {
       const trainFormData = new FormData();
       trainFormData.append('type', 'text');
       trainFormData.append('text', textForm.content);
-      // Add knowledge base names to the training payload
-      selectedNames.forEach((name) => trainFormData.append('knowledge_bases', name));
+      // Add knowledge base IDs to the training payload
+      textForm.knowledge_bases.forEach((id) => trainFormData.append('knowledge_bases', id));
 
       try {
         const trainResponse = await axios.post(`${BASE_URL}/api/upload-and-train/`, trainFormData, {
@@ -1057,7 +1174,7 @@ function CreateAgent() {
 
   // Render table helper for various data types
 
-  const renderTable = (data, type, multiSelectOptions = null) => {
+  const renderTable = (data, type, multiSelectOptions = null, editHandler = null) => {
     if (!data || data.length === 0) return <div>No data available.</div>;
 
     const { isMultiSelectMode, selectedItems, onSelectAll, onItemSelect } = multiSelectOptions || {};
@@ -1132,7 +1249,7 @@ function CreateAgent() {
             </thead>
             <tbody>
               {data.map((row, idx) => (
-                <tr key={row.file || row.content || row.url || row.question || row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                <tr key={row.id || row.file || row.content || row.url || row.question} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                   {isMultiSelectMode && (
                     <td className="border px-4 py-2 text-center">
                       <input
@@ -1149,7 +1266,7 @@ function CreateAgent() {
                     if (col === 'updated_date') return <td key="updated_date" className="border px-4 py-2">{formatDate(row.updated_at)}</td>;
                     if (col === 'updated_time') return <td key="updated_time" className="border px-4 py-2">{formatTime(row.updated_at)}</td>;
                     if (type === 'qa' && (col === 'category' || col === 'subcategory')) {
-                      return <td key={col} className="border px-4 py-2">{Array.isArray(row[col]) ? row[col].join(', ') : ''}</td>;
+                      return <td key={col} className="border px-4 py-2">{Array.isArray(row[col]) ? row[col].map(item => typeof item === 'object' ? item.name : item).join(', ') : ''}</td>;
                     }
                     if (col === 'knowledge_bases') {
                       return <td key={col} className="border px-4 py-2">{row[col] && row[col].length > 0 ? row[col].map((kb) => (typeof kb === 'string' ? kb : kb.name)).join(', ') : '-'}</td>;
@@ -1194,19 +1311,36 @@ function CreateAgent() {
                   })}
                   {!isMultiSelectMode && (
                     <td className="border px-4 py-2 text-center">
-                      <FaTrash
-                        className="text-red-500 cursor-pointer hover:text-red-700"
-                        onClick={() => {
-                          if (type === 'files') handleFileDelete(row.id);
-                          else if (type === 'excel') handleExcelDelete(row.id);
-                          else if (type === 'text') handleTextDelete(row.id);
-                          else if (type === 'qa') {
-                            axios.delete(`${BASE_URL}/api/qa/${row.id}/`).then(fetchQA);
-                          } else if (type === 'url') {
-                            axios.delete(`${BASE_URL}/api/urls/${row.id}/`).then(fetchURLs);
-                          }
-                        }}
-                      />
+                      <div className="flex items-center justify-center space-x-2">
+                        {editHandler && type === 'text' && (
+                          <FaEdit
+                            className="text-blue-500 cursor-pointer hover:text-blue-700"
+                            onClick={() => editHandler(row)}
+                            title="Edit"
+                          />
+                        )}
+                        {type === 'qa' && (
+                          <FaEdit
+                            className="text-blue-500 cursor-pointer hover:text-blue-700"
+                            onClick={() => handleQaEdit(row)}
+                            title="Edit"
+                          />
+                        )}
+                        <FaTrash
+                          className="text-red-500 cursor-pointer hover:text-red-700"
+                          onClick={() => {
+                            if (type === 'files') handleFileDelete(row.id);
+                            else if (type === 'excel') handleExcelDelete(row.id);
+                            else if (type === 'text') handleTextDelete(row.id);
+                            else if (type === 'qa') {
+                              axios.delete(`${BASE_URL}/api/qa/${row.id}/`).then(fetchQA);
+                            } else if (type === 'url') {
+                              axios.delete(`${BASE_URL}/api/urls/${row.id}/`).then(fetchURLs);
+                            }
+                          }}
+                          title="Delete"
+                        />
+                      </div>
                     </td>
                   )}
                 </tr>
@@ -1262,6 +1396,11 @@ function CreateAgent() {
             handleTextModalSubmit={handleTextModalSubmit}
             fetchKnowledgeBases={fetchKnowledgeBases}
             onBulkDelete={handleBulkTextDelete}
+            handleTextEdit={handleTextEdit} // <-- Fix: pass the missing prop
+            textEditModalOpen={textEditModalOpen}
+            setTextEditModalOpen={setTextEditModalOpen}
+            editingText={editingText}
+            handleTextEditSubmit={handleTextEditSubmit}
           />
         );
       case 'Excel/CSV':
@@ -1295,6 +1434,10 @@ function CreateAgent() {
             qaFormError={qaFormError}
             handleQaModalSubmit={handleQaModalSubmit}
             onBulkDelete={handleBulkQADelete}
+            qaEditModalOpen={qaEditModalOpen}
+            setQaEditModalOpen={setQaEditModalOpen}
+            editingQa={editingQa}
+            handleQaEditSubmit={handleQaEditSubmit}
           />
         );
       case 'URL':
@@ -1412,12 +1555,12 @@ function CreateAgent() {
 
   // Fetch knowledge bases, categories, and subcategories when Q&A modal opens
   useEffect(() => {
-    if (qaModalOpen) {
+    if (qaModalOpen || qaEditModalOpen) {
       fetchKnowledgeBases();
       fetchCategories();
       fetchSubCategories();
     }
-  }, [qaModalOpen]);
+  }, [qaModalOpen, qaEditModalOpen]);
 
   // Fetch knowledge bases when URL modal opens
   useEffect(() => {
@@ -1520,10 +1663,10 @@ function CreateAgent() {
       trainFormData.append('type', 'qna');
       trainFormData.append('question', qaForm.question);
       trainFormData.append('answer', qaForm.answer);
-      trainFormData.append('category', qaForm.category && qaForm.category.length > 0 ? qaForm.category[0] : 'general');
-      trainFormData.append('subcategory', qaForm.subcategory && qaForm.subcategory.length > 0 ? qaForm.subcategory[0] : '');
-      // Add knowledge base names to the training payload
-      selectedKbNames.forEach((name) => trainFormData.append('knowledge_bases', name));
+      trainFormData.append('category', qaForm.category && qaForm.category.length > 0 ? parseInt(qaForm.category[0]) : 'general');
+      trainFormData.append('subcategory', qaForm.subcategory && qaForm.subcategory.length > 0 ? parseInt(qaForm.subcategory[0]) : '');
+      // Add knowledge base IDs to the training payload
+      qaForm.knowledge_bases.forEach((id) => trainFormData.append('knowledge_bases', id));
 
       try {
         const trainResponse = await axios.post(`${BASE_URL}/api/upload-and-train/`, trainFormData, {

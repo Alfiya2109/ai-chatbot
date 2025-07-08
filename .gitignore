@@ -48,6 +48,11 @@ backend/.pytest_cache/
 
 # ---- Django ----
 */__pycache__/
+__pycache__/
+
+# ---- Media Files ----
+media/
+*/media/
 
 # ---- Build files ----
 build/

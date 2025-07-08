@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 
 const SubcategoriesTable = ({ subCategories, categories, onAddSubcategory, onEditSubcategory }) => {
   const [modalOpen, setModalOpen] = useState(false);
@@ -7,6 +7,9 @@ const SubcategoriesTable = ({ subCategories, categories, onAddSubcategory, onEdi
   const [formError, setFormError] = useState('');
   const [editMode, setEditMode] = useState(false);
   const [editId, setEditId] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortField, setSortField] = useState('');
+  const [sortDirection, setSortDirection] = useState('asc');
 
   // Flatten subcategories for table: each row is a subcategory with its parent category
   const data = subCategories.map((sub) => {
@@ -18,6 +21,46 @@ const SubcategoriesTable = ({ subCategories, categories, onAddSubcategory, onEdi
       categoryName: parent ? parent.name : '',
     };
   });
+
+  // Filter subcategories based on search term
+  const filteredData = useMemo(() => {
+    if (!searchTerm) return data;
+    
+    const term = searchTerm.toLowerCase();
+    return data.filter(row => {
+      // Search in subcategory name or category name
+      return row.subcategoryName.toLowerCase().includes(term) || 
+             row.categoryName.toLowerCase().includes(term);
+    });
+  }, [data, searchTerm]);
+
+  const sortedData = useMemo(() => {
+    let filtered = filteredData;
+    if (sortField) {
+      filtered = [...filtered].sort((a, b) => {
+        let aValue = '';
+        let bValue = '';
+        switch (sortField) {
+          case 'categoryName':
+            aValue = (a.categoryName || '').toLowerCase();
+            bValue = (b.categoryName || '').toLowerCase();
+            break;
+          case 'subcategoryName':
+            aValue = (a.subcategoryName || '').toLowerCase();
+            bValue = (b.subcategoryName || '').toLowerCase();
+            break;
+          default:
+            return 0;
+        }
+        if (sortDirection === 'asc') {
+          return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+        } else {
+          return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+        }
+      });
+    }
+    return filtered;
+  }, [filteredData, sortField, sortDirection]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -46,7 +89,38 @@ const SubcategoriesTable = ({ subCategories, categories, onAddSubcategory, onEdi
     setModalOpen(true);
   };
 
-  if (!data.length) return <div>No subcategories available.</div>;
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortIcon = (field) => {
+    if (sortField !== field) {
+      return (
+        <svg className="w-4 h-4 text-gray-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+        </svg>
+      );
+    }
+    if (sortDirection === 'asc') {
+      return (
+        <svg className="w-4 h-4 text-blue-600 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+        </svg>
+      );
+    } else {
+      return (
+        <svg className="w-4 h-4 text-blue-600 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      );
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-lg p-6 mt-4 w-full mx-auto">
       <div className="flex items-center justify-between mb-4">
@@ -60,33 +134,73 @@ const SubcategoriesTable = ({ subCategories, categories, onAddSubcategory, onEdi
           +
         </button>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full border text-sm rounded-lg overflow-hidden">
-          <thead>
-            <tr>
-              <th className="border px-4 py-2 bg-gray-100 text-gray-700 font-semibold">Category</th>
-              <th className="border px-4 py-2 bg-gray-100 text-gray-700 font-semibold">Subcategory</th>
-              <th className="border px-4 py-2 bg-gray-100 text-gray-700 font-semibold">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((row, idx) => (
-              <tr key={row.subcategoryId} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                <td className="border px-4 py-2">{row.categoryName}</td>
-                <td className="border px-4 py-2">{row.subcategoryName}</td>
-                <td className="border px-4 py-2 text-center">
-                  <button
-                    className="px-3 py-1 bg-blue-500 text-white rounded mr-2"
-                    onClick={() => openEditModal(row)}
-                  >
-                    Edit
-                  </button>
-                  {/* TODO: Add delete button if needed */}
-                </td>
+      
+      {/* Search Filter */}
+      <div className="mb-4">
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Search subcategories by name or category..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+        </div>
+        {searchTerm && (
+          <p className="mt-2 text-sm text-gray-600">
+            Showing {filteredData.length} of {data.length} subcategories
+          </p>
+        )}
+      </div>
+
+      <div className="bg-white rounded-lg shadow p-4">
+        {filteredData.length > 0 ? (
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('categoryName')}>
+                  <div className="flex items-center space-x-1">
+                    <span>Category</span>
+                    {getSortIcon('categoryName')}
+                  </div>
+                </th>
+                <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('subcategoryName')}>
+                  <div className="flex items-center space-x-1">
+                    <span>Subcategory</span>
+                    {getSortIcon('subcategoryName')}
+                  </div>
+                </th>
+                <th className="px-3 py-2 text-left">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {sortedData.map((row, idx) => (
+                <tr key={row.subcategoryId} className="border-b">
+                  <td className="px-3 py-2 font-medium">{row.categoryName}</td>
+                  <td className="px-3 py-2">{row.subcategoryName}</td>
+                  <td className="px-3 py-2 flex gap-2">
+                    <button
+                      className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-xs"
+                      onClick={() => openEditModal(row)}
+                    >
+                      Edit
+                    </button>
+                    {/* TODO: Add delete button if needed */}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <div className="text-center text-gray-500 py-8">
+            {searchTerm ? 'No subcategories found matching your search.' : 'No subcategories available.'}
+          </div>
+        )}
       </div>
       {modalOpen && (
         <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50" onClick={() => setModalOpen(false)}>

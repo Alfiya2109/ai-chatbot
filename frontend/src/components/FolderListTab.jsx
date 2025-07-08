@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { FaTrash, FaPlus } from 'react-icons/fa';
 import { BASE_URL } from '../base_url';
 
@@ -13,10 +13,109 @@ const FolderListTab = ({ onBulkDelete }) => {
   const [uploading, setUploading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [knowledgeBases, setKnowledgeBases] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortField, setSortField] = useState('');
+  const [sortDirection, setSortDirection] = useState('asc');
   
   // Multi-select state
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState([]);
+
+  // Filter and sort folders based on search term and sort settings
+  const filteredAndSortedFolders = useMemo(() => {
+    let filtered = folders;
+    
+    // Apply search filter
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = folders.filter(folder => {
+        // Search in folder name, description, knowledge bases, and added by
+        return (
+          (folder.folder_name && folder.folder_name.toLowerCase().includes(term)) ||
+          (folder.title && folder.title.toLowerCase().includes(term)) ||
+          (folder.description && folder.description.toLowerCase().includes(term)) ||
+          (folder.knowledge_bases_info && folder.knowledge_bases_info.some(kb => 
+            kb.name && kb.name.toLowerCase().includes(term)
+          )) ||
+          (folder.added_by && folder.added_by.toLowerCase().includes(term))
+        );
+      });
+    }
+    
+    // Apply sorting
+    if (sortField) {
+      filtered = [...filtered].sort((a, b) => {
+        let aValue = '';
+        let bValue = '';
+        
+        switch (sortField) {
+          case 'folder_name':
+            aValue = (a.title || a.folder_name || '').toLowerCase();
+            bValue = (b.title || b.folder_name || '').toLowerCase();
+            break;
+          case 'description':
+            aValue = (a.description || '').toLowerCase();
+            bValue = (b.description || '').toLowerCase();
+            break;
+          case 'knowledge_bases':
+            aValue = a.knowledge_bases_info ? a.knowledge_bases_info.map(kb => kb.name || '').join(', ').toLowerCase() : '';
+            bValue = b.knowledge_bases_info ? b.knowledge_bases_info.map(kb => kb.name || '').join(', ').toLowerCase() : '';
+            break;
+          case 'added_by':
+            aValue = (a.added_by || '').toLowerCase();
+            bValue = (b.added_by || '').toLowerCase();
+            break;
+          case 'created_at':
+            aValue = a.created_at ? new Date(a.created_at).getTime() : 0;
+            bValue = b.created_at ? new Date(b.created_at).getTime() : 0;
+            break;
+          default:
+            return 0;
+        }
+        
+        if (sortDirection === 'asc') {
+          return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+        } else {
+          return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+        }
+      });
+    }
+    
+    return filtered;
+  }, [folders, searchTerm, sortField, sortDirection]);
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortIcon = (field) => {
+    if (sortField !== field) {
+      return (
+        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+        </svg>
+      );
+    }
+    
+    if (sortDirection === 'asc') {
+      return (
+        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+        </svg>
+      );
+    } else {
+      return (
+        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      );
+    }
+  };
 
   // Fetch uploaded folders
   useEffect(() => {
@@ -126,7 +225,7 @@ const FolderListTab = ({ onBulkDelete }) => {
   // Multi-select handlers
   const handleSelectAll = (isChecked) => {
     if (isChecked) {
-      setSelectedItems(folders.map(item => item.id));
+      setSelectedItems(filteredAndSortedFolders.map(item => item.id));
     } else {
       setSelectedItems([]);
     }
@@ -220,6 +319,30 @@ const FolderListTab = ({ onBulkDelete }) => {
           )}
         </div>
       </div>
+      
+      {/* Search Filter */}
+      <div className="mb-4">
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Search folders by name, description, knowledge base, or author..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+        </div>
+        {searchTerm && (
+          <p className="mt-2 text-sm text-gray-600">
+            Showing {filteredAndSortedFolders.length} of {folders.length} folders
+          </p>
+        )}
+      </div>
+
       <div className="bg-white rounded-lg shadow p-4">
         <table className="min-w-full text-sm">
           <thead>
@@ -230,28 +353,72 @@ const FolderListTab = ({ onBulkDelete }) => {
                     type="checkbox"
                     onChange={e => handleSelectAll(e.target.checked)}
                     className="form-checkbox h-4 w-4 text-blue-600"
-                    checked={selectedItems.length === folders.length && folders.length > 0}
+                    checked={selectedItems.length === filteredAndSortedFolders.length && filteredAndSortedFolders.length > 0}
                   />
                 </th>
               )}
-              <th className="px-3 py-2 text-left">Folder Name</th>
-              <th className="px-3 py-2 text-left">Description</th>
-              <th className="px-3 py-2 text-left">Knowledge Bases</th>
-              <th className="px-3 py-2 text-left">Added By</th>
-              <th className="px-3 py-2 text-left">Uploaded Date</th>
+              <th 
+                className="px-3 py-2 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors"
+                onClick={() => handleSort('folder_name')}
+              >
+                <div className="flex items-center space-x-1">
+                  <span>Folder Name</span>
+                  {getSortIcon('folder_name')}
+                </div>
+              </th>
+              <th 
+                className="px-3 py-2 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors"
+                onClick={() => handleSort('description')}
+              >
+                <div className="flex items-center space-x-1">
+                  <span>Description</span>
+                  {getSortIcon('description')}
+                </div>
+              </th>
+              <th 
+                className="px-3 py-2 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors"
+                onClick={() => handleSort('knowledge_bases')}
+              >
+                <div className="flex items-center space-x-1">
+                  <span>Knowledge Bases</span>
+                  {getSortIcon('knowledge_bases')}
+                </div>
+              </th>
+              <th 
+                className="px-3 py-2 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors"
+                onClick={() => handleSort('added_by')}
+              >
+                <div className="flex items-center space-x-1">
+                  <span>Added By</span>
+                  {getSortIcon('added_by')}
+                </div>
+              </th>
+              <th 
+                className="px-3 py-2 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors"
+                onClick={() => handleSort('created_at')}
+              >
+                <div className="flex items-center space-x-1">
+                  <span>Uploaded Date</span>
+                  {getSortIcon('created_at')}
+                </div>
+              </th>
               {!isMultiSelectMode && (
-                <th className="px-3 py-2 text-left">Actions</th>
+                <th className="px-3 py-2 text-left font-semibold text-gray-700">Actions</th>
               )}
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={isMultiSelectMode ? 6 : 6} className="text-center py-4">Loading...</td></tr>
-            ) : folders.length === 0 ? (
-              <tr><td colSpan={isMultiSelectMode ? 6 : 6} className="text-center py-4">No folders uploaded.</td></tr>
+              <tr><td colSpan={isMultiSelectMode ? 7 : 6} className="text-center py-4">Loading...</td></tr>
+            ) : filteredAndSortedFolders.length === 0 ? (
+              <tr>
+                <td colSpan={isMultiSelectMode ? 7 : 6} className="text-center py-4 text-gray-500">
+                  {searchTerm ? 'No folders found matching your search.' : 'No folders uploaded yet.'}
+                </td>
+              </tr>
             ) : (
-              folders.map(folder => (
-                <tr key={folder.id} className="border-b">
+              filteredAndSortedFolders.map(folder => (
+                <tr key={folder.id} className="border-b hover:bg-gray-50 transition-colors">
                   {isMultiSelectMode && (
                     <td className="px-3 py-2">
                       <input
@@ -262,15 +429,26 @@ const FolderListTab = ({ onBulkDelete }) => {
                       />
                     </td>
                   )}
-                  <td className="px-3 py-2">{folder.title}</td>
-                  <td className="px-3 py-2">{folder.description || '-'}</td>
+                  <td className="px-3 py-2 font-medium text-gray-900">{folder.title || folder.folder_name || '-'}</td>
+                  <td className="px-3 py-2 text-gray-700">{folder.description || '-'}</td>
                   <td className="px-3 py-2">
-                    {folder.knowledge_bases_info && folder.knowledge_bases_info.length > 0
-                      ? folder.knowledge_bases_info.map(kb => kb.name).join(', ')
-                      : '-'}
+                    {folder.knowledge_bases_info && folder.knowledge_bases_info.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {folder.knowledge_bases_info.map((kb, index) => (
+                          <span
+                            key={index}
+                            className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full"
+                          >
+                            {kb.name}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-gray-500">-</span>
+                    )}
                   </td>
-                  <td className="px-3 py-2">{folder.added_by || '-'}</td>
-                  <td className="px-3 py-2">{folder.created_at ? new Date(folder.created_at).toLocaleDateString() : '-'}</td>
+                  <td className="px-3 py-2 text-gray-700">{folder.added_by || '-'}</td>
+                  <td className="px-3 py-2 text-gray-700">{folder.created_at ? new Date(folder.created_at).toLocaleDateString() : '-'}</td>
                   {!isMultiSelectMode && (
                     <td className="px-3 py-2">
                       <button

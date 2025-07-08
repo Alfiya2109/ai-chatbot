@@ -19,14 +19,14 @@ function App() {
   // ✅ Joget SSO auto-login logic
   useEffect(() => {
     const handleMessage = (event) => {
-      console.log("📨 Message received in iframe:", event)
+      // console.log("📨 Message received in iframe:", event)
  
       // Only accept messages from Joget origin
       // ...existing code...
-      console.log("🌍 Message origin:", event.origin)
+      // console.log("🌍 Message origin:", event.origin)
       // Only accept messages from Joget origin
       if (event.origin !== "https://jogetdx8dev.iqratechnology.com:8443") {
-        console.warn("⚠️ Message origin not allowed:", event.origin)
+        // console.warn("⚠️ Message origin not allowed:", event.origin)
         return
       }
       const { token, username } = event.data
@@ -106,18 +106,21 @@ function ProtectedRoute({ children }) {
 function SalesProtectedRoute({ children }) {
   const token = localStorage.getItem("access_token")
   const role = localStorage.getItem("user_role")
- 
+  const profile = localStorage.getItem("profile")
+
   if (!token) {
     return <Navigate to="/login" replace />
   }
- 
-  if (role !== "sales") {
+
+  // Check for role and profile restrictions
+  if (
+    (profile && (profile.toLowerCase() === "non-sales" || profile.toLowerCase() === "nonsales"))
+  ) {
     return <Navigate to="/chatbot" replace />
   }
- 
+
   return children
 }
  
 export default App
- 
- 
+

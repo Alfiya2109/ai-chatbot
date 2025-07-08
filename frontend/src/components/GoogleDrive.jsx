@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { FaPlus, FaTrash } from 'react-icons/fa';
 import {BASE_URL} from '../base_url';
 
@@ -62,6 +62,73 @@ const GoogleDrive = () => {
   const [knowledgeBases, setKnowledgeBases] = useState([]);
   const [driveFiles, setDriveFiles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortField, setSortField] = useState('');
+  const [sortDirection, setSortDirection] = useState('asc');
+
+  // Filter drive files based on search term
+  const filteredDriveFiles = useMemo(() => {
+    if (!searchTerm) return driveFiles;
+    
+    const term = searchTerm.toLowerCase();
+    return driveFiles.filter(file => {
+      // Search in folder name, file name, path, description, knowledge bases, and added by
+      return (
+        (file.folder_name && file.folder_name.toLowerCase().includes(term)) ||
+        (file.file_name && file.file_name.toLowerCase().includes(term)) ||
+        (file.relative_path && file.relative_path.toLowerCase().includes(term)) ||
+        (file.description && file.description.toLowerCase().includes(term)) ||
+        (file.knowledge_bases && file.knowledge_bases.some(kb => 
+          typeof kb === 'string' ? kb.toLowerCase().includes(term) : false
+        )) ||
+        (file.added_by && file.added_by.toLowerCase().includes(term))
+      );
+    });
+  }, [driveFiles, searchTerm]);
+
+  const sortedDriveFiles = useMemo(() => {
+    let filtered = filteredDriveFiles;
+    if (sortField) {
+      filtered = [...filtered].sort((a, b) => {
+        let aValue = '';
+        let bValue = '';
+        switch (sortField) {
+          case 'folder_name':
+            aValue = (a.folder_name || a.file_name || '').toLowerCase();
+            bValue = (b.folder_name || b.file_name || '').toLowerCase();
+            break;
+          case 'relative_path':
+            aValue = (a.relative_path || '').toLowerCase();
+            bValue = (b.relative_path || '').toLowerCase();
+            break;
+          case 'description':
+            aValue = (a.description || '').toLowerCase();
+            bValue = (b.description || '').toLowerCase();
+            break;
+          case 'knowledge_bases':
+            aValue = a.knowledge_bases ? a.knowledge_bases.map(kb => typeof kb === 'string' ? kb : '').join(', ').toLowerCase() : '';
+            bValue = b.knowledge_bases ? b.knowledge_bases.map(kb => typeof kb === 'string' ? kb : '').join(', ').toLowerCase() : '';
+            break;
+          case 'added_by':
+            aValue = (a.added_by || '').toLowerCase();
+            bValue = (b.added_by || '').toLowerCase();
+            break;
+          case 'uploaded_at':
+            aValue = a.uploaded_at ? new Date(a.uploaded_at).getTime() : 0;
+            bValue = b.uploaded_at ? new Date(b.uploaded_at).getTime() : 0;
+            break;
+          default:
+            return 0;
+        }
+        if (sortDirection === 'asc') {
+          return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+        } else {
+          return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+        }
+      });
+    }
+    return filtered;
+  }, [filteredDriveFiles, sortField, sortDirection]);
 
   useEffect(() => {
     fetchDriveFiles();
@@ -89,7 +156,7 @@ const GoogleDrive = () => {
   const fetchKnowledgeBases = async () => {
     try {
       const token = localStorage.getItem('access_token');
-      const res = await fetch('/api/knowledgebase/', {
+      const res = await fetch(`${BASE_URL}/api/knowledgebase/`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (res.ok) {
@@ -210,25 +277,27 @@ const GoogleDrive = () => {
       file_id: file.id,
       file_name: file.name,
       mime_type: file.mimeType,
-      relative_path: file.relativePath || file.name, // <-- Ensure this is set!
+      relative_path: file.relativePath || file.name,
       folder_name: folderName,
       description,
-      knowledge_bases: selectedKBs,
+      knowledge_bases: selectedKBs, // <-- use IDs
     }));
     // Make sure you have accessToken in your component state
     const payload = {
       files: filesMeta,
       folder_name: folderName,
       description,
-      knowledge_bases: selectedKBs,
+      knowledge_bases: selectedKBs, // <-- use IDs
       access_token: window.latestGoogleAccessToken || localStorage.getItem('google_access_token') || '', // <-- Add this line
     };
 
     try {
-      const res = await fetch('http://localhost:8000/api/chatbot/google-drive/upload-folder/', {
+      const token = localStorage.getItem('access_token');
+      const res = await fetch(`${BASE_URL}/api/chatbot/google-drive/upload-folder/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(payload),
       });
@@ -257,9 +326,46 @@ const GoogleDrive = () => {
       const res = await fetch(`${BASE_URL}/api/google-drive-files/${fileId}/`, { method: 'DELETE' });
       if (res.ok) {
         setDriveFiles(driveFiles.filter(f => f.id !== fileId));
+        // Clear search if the last filtered item is deleted
+        const remainingFilteredFiles = filteredDriveFiles.filter(f => f.id !== fileId);
+        if (remainingFilteredFiles.length === 0 && searchTerm) {
+          setSearchTerm('');
+        }
       }
     } catch (err) {
       // handle error
+    }
+  };
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortIcon = (field) => {
+    if (sortField !== field) {
+      return (
+        <svg className="w-4 h-4 text-gray-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+        </svg>
+      );
+    }
+    if (sortDirection === 'asc') {
+      return (
+        <svg className="w-4 h-4 text-blue-600 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+        </svg>
+      );
+    } else {
+      return (
+        <svg className="w-4 h-4 text-blue-600 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      );
     }
   };
 
@@ -276,39 +382,108 @@ const GoogleDrive = () => {
           <FaPlus />
         </button>
       </div>
+      
+      {/* Search Filter */}
+      <div className="mb-4">
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Search Google Drive files by name, path, description, knowledge base, or author..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+        </div>
+        {searchTerm && (
+          <p className="mt-2 text-sm text-gray-600">
+            Showing {filteredDriveFiles.length} of {driveFiles.length} files
+          </p>
+        )}
+      </div>
+
       <div className="bg-white rounded-lg shadow p-4">
         <table className="min-w-full text-sm">
           <thead>
             <tr className="bg-gray-100">
-              <th className="px-3 py-2 text-left">Folder Name</th>
-              <th className="px-3 py-2 text-left">Path</th> {/* New column */}
-              <th className="px-3 py-2 text-left">Description</th>
-              <th className="px-3 py-2 text-left">Knowledge Bases</th>
-              <th className="px-3 py-2 text-left">Added By</th>
-              <th className="px-3 py-2 text-left">Uploaded Date</th>
+              <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('folder_name')}>
+                <div className="flex items-center space-x-1">
+                  <span>Folder Name</span>
+                  {getSortIcon('folder_name')}
+                </div>
+              </th>
+              <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('relative_path')}>
+                <div className="flex items-center space-x-1">
+                  <span>Path</span>
+                  {getSortIcon('relative_path')}
+                </div>
+              </th>
+              <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('description')}>
+                <div className="flex items-center space-x-1">
+                  <span>Description</span>
+                  {getSortIcon('description')}
+                </div>
+              </th>
+              <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('knowledge_bases')}>
+                <div className="flex items-center space-x-1">
+                  <span>Knowledge Bases</span>
+                  {getSortIcon('knowledge_bases')}
+                </div>
+              </th>
+              <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('added_by')}>
+                <div className="flex items-center space-x-1">
+                  <span>Added By</span>
+                  {getSortIcon('added_by')}
+                </div>
+              </th>
+              <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('uploaded_at')}>
+                <div className="flex items-center space-x-1">
+                  <span>Uploaded Date</span>
+                  {getSortIcon('uploaded_at')}
+                </div>
+              </th>
               <th className="px-3 py-2 text-left">Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr><td colSpan={7} className="text-center py-4">Loading...</td></tr>
-            ) : driveFiles.length === 0 ? (
-              <tr><td colSpan={7} className="text-center py-4">No Google Drive files uploaded yet.</td></tr>
+            ) : sortedDriveFiles.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="text-center py-4 text-gray-500">
+                  {searchTerm ? 'No Google Drive files found matching your search.' : 'No Google Drive files uploaded yet.'}
+                </td>
+              </tr>
             ) : (
-              driveFiles.map((item, idx) => (
+              sortedDriveFiles.map((item, idx) => (
                 <tr key={item.id || idx} className="border-b">
-                  <td className="px-3 py-2">{item.folder_name || item.file_name}</td>
+                  <td className="px-3 py-2 font-medium">{item.folder_name || item.file_name}</td>
                   <td className="px-3 py-2">{item.relative_path || '-'}</td> {/* New column */}
                   <td className="px-3 py-2">{item.description || '-'}</td>
                   <td className="px-3 py-2">
-                    {item.knowledge_bases && item.knowledge_bases.length > 0
-                      ? item.knowledge_bases.join(', ')
-                      : '-'}
+                    {item.knowledge_bases && item.knowledge_bases.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {item.knowledge_bases.map((kb, kbIdx) => (
+                          <span
+                            key={kbIdx}
+                            className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full"
+                          >
+                            {kb}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      '-'
+                    )}
                   </td>
                   <td className="px-3 py-2">{item.added_by || '-'}</td>
                   <td className="px-3 py-2">{item.uploaded_at ? new Date(item.uploaded_at).toLocaleDateString() : '-'}</td>
                   <td className="px-3 py-2 flex gap-2">
-                    <a href={`https://drive.google.com/file/d/${item.file_id}/view`} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">View</a>
+                    <a href={`https://drive.google.com/file/d/${item.file_id}/view`} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">View</a>
                     <button
                       onClick={() => handleDelete(item.id)}
                       className="text-red-600 hover:text-red-800 ml-2"

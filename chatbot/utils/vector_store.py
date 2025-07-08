@@ -61,16 +61,15 @@ def prepare_pages(data):
 def store_in_vector_db(pages, knowledge_base=None, namespace="web_scraped"):
     print("\n📦 Starting vector DB storage process...")
     print(f"📄 Number of pages to embed: {len(pages)}")
+    # Always store knowledge_base as a list of strings
     if knowledge_base:
         print(f"🔒 Storing with knowledge base: {knowledge_base}")
-        # Ensure knowledge_base is always a string
-        if isinstance(knowledge_base, list):
-            if len(knowledge_base) == 1:
-                knowledge_base = str(knowledge_base[0])
-            else:
-                knowledge_base = ",".join(map(str, knowledge_base))
+        if isinstance(knowledge_base, str):
+            knowledge_base = [knowledge_base]
+        elif isinstance(knowledge_base, list):
+            knowledge_base = [str(kb) for kb in knowledge_base]
         else:
-            knowledge_base = str(knowledge_base)
+            knowledge_base = [str(knowledge_base)]
 
     try:
         # 🧠 Smart chunking
@@ -86,7 +85,7 @@ def store_in_vector_db(pages, knowledge_base=None, namespace="web_scraped"):
             # Attach knowledge_base as metadata to each chunk
             for chunk in chunks:
                 chunk.metadata = chunk.metadata or {}
-                chunk.metadata["knowledge_base"] = knowledge_base
+                chunk.metadata["knowledge_base"] = knowledge_base if knowledge_base else []
             documents.extend(chunks)
 
         print(f"✅ Total chunks created: {len(documents)}")
@@ -115,8 +114,9 @@ def query_vector_db(question, knowledge_bases=None, namespace="web_scraped"):
     print(f"🧠 Question: {question}")
     if knowledge_bases:
         print(f"🔒 Filtering by knowledge bases: {knowledge_bases}")
-        # Ensure all knowledge_bases are strings
-        if isinstance(knowledge_bases, list):
+        if isinstance(knowledge_bases, str):
+            knowledge_bases = [knowledge_bases]
+        elif isinstance(knowledge_bases, list):
             knowledge_bases = [str(kb[0]) if isinstance(kb, list) and len(kb) == 1 else str(kb) for kb in knowledge_bases]
         else:
             knowledge_bases = [str(knowledge_bases)]
@@ -131,16 +131,14 @@ def query_vector_db(question, knowledge_bases=None, namespace="web_scraped"):
             keyspace=None,
         )
 
-        # Filter by knowledge base metadata if provided
+        # Fetch more docs and filter in Python for KB match (OR logic)
+        all_docs = vector_store.similarity_search(question, k=10)  # Fetch more to allow filtering
         if knowledge_bases:
-            # This assumes your vector store supports metadata filtering by 'knowledge_base' field
-            relevant_docs = []
-            for kb in knowledge_bases:
-                docs = vector_store.similarity_search(question, k=3, filter={"knowledge_base": kb})
-                relevant_docs.extend(docs)
-            # Optionally, sort or deduplicate relevant_docs here
+            relevant_docs = [doc for doc in all_docs if any(
+                kb in (doc.metadata.get("knowledge_base") or []) for kb in knowledge_bases
+            )]
         else:
-            relevant_docs = vector_store.similarity_search(question, k=3)
+            relevant_docs = all_docs
         print(f"✅ Retrieved {len(relevant_docs)} relevant chunks.")
 
         # If no relevant docs, return a custom message
