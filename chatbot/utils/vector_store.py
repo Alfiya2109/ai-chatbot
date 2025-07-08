@@ -80,12 +80,14 @@ def store_in_vector_db(pages, knowledge_base=None, namespace="web_scraped"):
         )
 
         documents = []
-        for url, text in pages:
-            chunks = text_splitter.create_documents([text])
-            # Attach knowledge_base as metadata to each chunk
+        for file_name, text, description in pages:
+            content_with_meta = f"File Name: {file_name}\nDescription: {description}\n{text}"
+            chunks = text_splitter.create_documents([content_with_meta])
             for chunk in chunks:
                 chunk.metadata = chunk.metadata or {}
                 chunk.metadata["knowledge_base"] = knowledge_base if knowledge_base else []
+                chunk.metadata["file_name"] = file_name
+                chunk.metadata["description"] = description
             documents.extend(chunks)
 
         print(f"✅ Total chunks created: {len(documents)}")
