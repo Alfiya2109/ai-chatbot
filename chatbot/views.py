@@ -1,5 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from sympy import re
 from .utils.scraper import scrape_entire_website
 from urllib.parse import urlparse
 from .utils.vector_store import store_in_vector_db, query_vector_db, remove_from_vector_db, clear_vector_db
@@ -350,7 +351,8 @@ class EmbedWebsiteAPIView(APIView):
             return Response({"error": "Knowledge base is required for training."}, status=400)
         
         try:
-            pages = scrape_entire_website(url)
+            description = request.data.get("description", "")
+            pages = [(page_url, text, description) for page_url, text in scrape_entire_website(url)]
             from chatbot.models import KnowledgeBase
             # Try to convert all to int, if fail, treat as name
             kb_ids = []
@@ -504,7 +506,7 @@ class JogetFileUploadAPIView(APIView):
         try:
             with file_obj.file.open('rb') as f:
                 content = read_uploaded_file(f)
-            pages = [(file_obj.file.name, content)]
+            pages = [(file_obj.file.name, content, form_id)]
             from chatbot.models import KnowledgeBase
             if isinstance(knowledge_bases, list):
                 knowledge_bases = list(KnowledgeBase.objects.filter(id__in=knowledge_bases).values_list('name', flat=True))
@@ -550,12 +552,12 @@ class UploadAndTrainAPIView(APIView):
                 if not uploaded_file:
                     return Response({"error": "No file provided."}, status=400)
                 content = read_uploaded_file(uploaded_file)
-                pages = [(uploaded_file.name, content)]
+                pages = [(uploaded_file.name, content, request.data.get("description", ""))]
             elif input_type == "text":
                 raw_text = request.data.get("text", "")
                 if not raw_text:
                     return Response({"error": "Text not provided."}, status=400)
-                pages = [("manual_input", raw_text)]
+                pages = [("manual_input", raw_text, request.data.get("description", ""))]
             elif input_type == "qna":
                 question = request.data.get("question")
                 answer = request.data.get("answer")
@@ -564,7 +566,7 @@ class UploadAndTrainAPIView(APIView):
                 if not question or not answer:
                     return Response({"error": "Q&A not provided."}, status=400)
                 content = f"Category: {category}\nSubcategory: {subcategory}\nQ: {question}\nA: {answer}"
-                pages = [("qna_input", content)]
+                pages = [("qna_input", content , request.data.get("description", ""))]
             else:
                 return Response({"error": "Invalid type."}, status=400)
             # Store in vector DB with knowledge base metadata
@@ -720,7 +722,7 @@ class TextContentView(APIView):
                 full_content = f"{description_str}\n{text_item.content}" if description_str else text_item.content
                 
                 # Store in vector DB
-                pages = [(f"text_{text_item.id}", full_content)]
+                pages = [(f"text_{text_item.id}", full_content, text_item.description or "")]
                 if kb_names:
                     store_in_vector_db(pages, knowledge_base=kb_names)
                 
@@ -759,7 +761,7 @@ class TextContentView(APIView):
                     full_content = f"{description_str}\n{updated_text.content}" if description_str else updated_text.content
                     
                     # Store updated content in vector DB
-                    pages = [(f"text_{updated_text.id}", full_content)]
+                    pages = [(f"text_{updated_text.id}", full_content, updated_text.description or "")]
                     if updated_kb_names:
                         store_in_vector_db(pages, knowledge_base=updated_kb_names)
                     
@@ -862,7 +864,7 @@ class QADataView(APIView):
                 full_content = f"{metadata_content}\nQ: {qa_item.question}\nA: {qa_item.answer}"
                 
                 # Store in vector DB
-                pages = [(f"qa_{qa_item.id}", full_content)]
+                pages = [(f"qa_{qa_item.id}", full_content, qa_item.description or "")]
                 if kb_names:
                     store_in_vector_db(pages, knowledge_base=kb_names)
                 
@@ -916,7 +918,7 @@ class QADataView(APIView):
                     full_content = f"{metadata_content}\nQ: {updated_item.question}\nA: {updated_item.answer}"
                     
                     # Store updated content in vector DB
-                    pages = [(f"qa_{updated_item.id}", full_content)]
+                    pages = [(f"qa_{updated_item.id}", full_content, updated_item.description or "")]
                     if updated_kb_names:
                         store_in_vector_db(pages, knowledge_base=updated_kb_names)
                     
@@ -1423,7 +1425,7 @@ class FileDataViewSet(viewsets.ModelViewSet):
                         temp_file = SimpleUploadedFile(file.name, f.read())
                         content = read_uploaded_file(temp_file)
                         if content.strip():  # Only add if content is not empty
-                            vector_pages.append((f"doc_{doc_file_data.id}", content))
+                            vector_pages.append((f"doc_{doc_file_data.id}", content, description))
                 except Exception as e:
                     vector_db_errors.append(f"Error processing {file.name}: {str(e)}")
                     print(f"❌ Error processing document {file.name} for vector DB: {str(e)}")
@@ -1441,7 +1443,7 @@ class FileDataViewSet(viewsets.ModelViewSet):
                         temp_file = SimpleUploadedFile(file.name, f.read())
                         content = read_uploaded_file(temp_file)
                         if content.strip():  # Only add if content is not empty
-                            vector_pages.append((f"excel_{excel_file_data.id}", content))
+                            vector_pages.append((f"excel_{excel_file_data.id}", content, description))
                 except Exception as e:
                     vector_db_errors.append(f"Error processing {file.name}: {str(e)}")
                     print(f"❌ Error processing Excel file {file.name} for vector DB: {str(e)}")
@@ -1733,7 +1735,7 @@ class GoogleDriveUploadAPIView(APIView):
                             tmp_file.seek(0)
                             # Use read_uploaded_file to extract text
                             extracted_text = read_uploaded_file(tmp_file)
-                            pages = [(file_name, extracted_text)]
+                            pages = [(file_name, extracted_text, description)]
                             # print(f"Prepared pages for vector DB: {pages[0][0]}, length: {len(pages[0][1])}")
                             from chatbot.models import KnowledgeBase
                             if isinstance(knowledge_bases, list):
@@ -1826,7 +1828,7 @@ class JogetFileUploadAPIView(APIView):
             # Use the saved file from storage
             with file_obj.file.open('rb') as f:
                 content = read_uploaded_file(f)
-            pages = [(file_obj.file.name, content)]
+            pages = [(file_obj.file.name, content, form_id or "")]
             from chatbot.models import KnowledgeBase
             if isinstance(knowledge_bases, list):
                 knowledge_bases = list(KnowledgeBase.objects.filter(id__in=knowledge_bases).values_list('name', flat=True))
