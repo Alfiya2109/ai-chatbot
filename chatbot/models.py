@@ -3,6 +3,27 @@ from django.contrib.auth.models import User
 from django.db import models
 import os
 
+class ExcelMetadata(models.Model):
+    def save(self, *args, **kwargs):
+        print(f"[DEBUG] Saving ExcelMetadata: file_name={self.file_name}, uploaded_by={self.uploaded_by}")
+        super().save(*args, **kwargs)
+    file_name = models.CharField(max_length=255)
+    excel_file = models.ForeignKey('ExcelFile', on_delete=models.SET_NULL, null=True, blank=True, related_name='metadata')
+    sheet_names = models.JSONField()
+    columns = models.JSONField()
+    data_types = models.JSONField()
+    sample_rows = models.JSONField()
+    row_count = models.JSONField()
+    key_column_values = models.JSONField(blank=True, null=True)
+    gpt_summary = models.TextField(blank=True, null=True)
+    knowledge_base = models.CharField(max_length=255, blank=True, null=True)
+    uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='excel_metadata_uploaded')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"ExcelMetadata for {self.file_name} (uploaded at {self.created_at})"
+
+
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     phone_number = models.CharField(max_length=15)

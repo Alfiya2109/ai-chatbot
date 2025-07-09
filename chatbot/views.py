@@ -1,5 +1,12 @@
+from .utils.gpt_helpers import classify_question_type, generate_analysis_code, format_analysis_result
+from .utils.match_file import find_matching_excel_files
+from .utils.exec_sandbox import execute_pandas_code
+import pandas as pd
+import io
+import traceback
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from sympy import re
 from .utils.scraper import scrape_entire_website
 from urllib.parse import urlparse
 from .utils.vector_store import store_in_vector_db, query_vector_db, remove_from_vector_db, clear_vector_db
@@ -12,7 +19,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 
 from rest_framework import generics, filters, status
 from django.db.models import Count
-from .models import Feedback, URLModel, SitemapFetch, FileData, DocumentFileData, ExcelFileData
+from .models import *
 from django.views import View
 from django.http import JsonResponse
 from django.db import models
@@ -350,7 +357,8 @@ class EmbedWebsiteAPIView(APIView):
             return Response({"error": "Knowledge base is required for training."}, status=400)
         
         try:
-            pages = scrape_entire_website(url)
+            description = request.data.get("description", "")
+            pages = [(page_url, text, description) for page_url, text in scrape_entire_website(url)]
             from chatbot.models import KnowledgeBase
             # Try to convert all to int, if fail, treat as name
             kb_ids = []
@@ -375,34 +383,128 @@ class AskWebsiteAPIView(APIView):
     
     def post(self, request):
         question = request.data.get("question")
-        session_id = request.data.get("session")  # Get session from request
+        session_id = request.data.get("session")
         if not question:
             return Response({"error": "Question is required."}, status=400)
 
-        # Get the current user's assigned knowledge bases
-        try:
-            user_profile = UserProfile.objects.get(user=request.user)
-            user_kbs = list(user_profile.knowledge_bases.values_list('name', flat=True))
-        except UserProfile.DoesNotExist:
-            return Response({"error": "User profile not found."}, status=400)
-        if not user_kbs:
-            return Response({"error": "No knowledge base assigned to user."}, status=400)
-
-        # Get both answer and tokens from vector_store, filtered by knowledge base
-        answer, tokens = query_vector_db(question, knowledge_bases=user_kbs)
-
-        # Store the chat in ChatLog, including session if provided
-        chatlog_kwargs = {
-            'user': request.user,
-            'question': question,
-            'gpt_answer': answer,
-            'tokens': tokens,
-        }
-        if session_id:
-            chatlog_kwargs['session_id'] = session_id
-        ChatLog.objects.create(**chatlog_kwargs)
-
-        return Response({"answer": answer, "tokens": tokens})
+        # Classify question type
+        qtype = classify_question_type(question)
+        if qtype == "analytical":
+            # Analytical flow
+            try:
+                # 1. Find relevant Excel files
+                matches = find_matching_excel_files(question)
+                if not matches:
+                    return Response({"error": "No relevant Excel file found for analysis."}, status=404)
+                # For simplicity, use the first match
+                meta = matches[0]
+                # 2. Load the first sheet as DataFrame
+                file_field = getattr(meta, 'file', None)
+                if not file_field:
+                    # Try to find ExcelFile with matching file_name
+                    from .models import ExcelFile
+                    try:
+                        excel_file = ExcelFile.objects.filter(file__icontains=meta.file_name).first()
+                        if not excel_file:
+                            return Response({"error": "Excel file not found on disk."}, status=404)
+                        file_field = excel_file.file
+                    except Exception:
+                        return Response({"error": "Excel file not found on disk."}, status=404)
+                file_path = file_field.path if hasattr(file_field, 'path') else file_field.name
+                with open(file_path, 'rb') as f:
+                    excel_bytes = f.read()
+                excel_io = io.BytesIO(excel_bytes)
+                # Use the first sheet
+                sheet_name = meta.sheet_names[0] if meta.sheet_names else None
+                if not sheet_name:
+                    return Response({"error": "No sheet name found in metadata."}, status=404)
+                df = pd.read_excel(excel_io, sheet_name=sheet_name)
+                # 3. Generate analysis code
+                metadata_dict = {
+                    'columns': meta.columns,
+                    'data_types': meta.data_types,
+                    'sample_rows': meta.sample_rows
+                }
+                code = generate_analysis_code(question, metadata_dict)
+                # 4. Clean code of markdown formatting, import statements, Excel file loading, and sheet dict access before execution
+                import re
+                clean_code = re.sub(r'```(?:python)?|```', '', code)
+                clean_code = re.sub(r'^\s*import .*$', '', clean_code, flags=re.MULTILINE)
+                # Remove lines that load the Excel file
+                clean_code = re.sub(r'^.*pd\.read_excel\(.*$', '', clean_code, flags=re.MULTILINE)
+                # Replace DataFrame variable names assigned from read_excel with 'df'
+                clean_code = re.sub(r'\bsales_order_df\b', 'df', clean_code)
+                # Replace df['Sheet Name'] with df (if present)
+                sheet_name = sheet_name if 'sheet_name' in locals() else (meta.sheet_names[0] if meta.sheet_names else None)
+                if sheet_name:
+                    pattern = rf"df\s*\[\s*['\"]{re.escape(sheet_name)}['\"]\s*\]"
+                    clean_code = re.sub(pattern, 'df', clean_code)
+                clean_code = clean_code.strip()
+                result = execute_pandas_code(clean_code, df)
+                # 5. Post-process: If result is a DataFrame and question asks for total/sum/count, try to extract value
+                keywords = ['total', 'sum', 'count']
+                if isinstance(result, pd.DataFrame) and any(k in question.lower() for k in keywords):
+                    # Try to find the most likely numeric column
+                    numeric_cols = result.select_dtypes(include='number').columns
+                    if len(numeric_cols) == 1:
+                        value = result[numeric_cols[0]].sum()
+                        formatted = f"The total {numeric_cols[0]} is {value}."
+                        print(f"[DEBUG] Post-processed DataFrame to single value: {formatted}")
+                    elif len(numeric_cols) > 1:
+                        # Try to match column name in question
+                        match_col = None
+                        for col in numeric_cols:
+                            if col.lower() in question.lower():
+                                match_col = col
+                                break
+                        if match_col:
+                            value = result[match_col].sum()
+                            formatted = f"The total {match_col} is {value}."
+                            print(f"[DEBUG] Post-processed DataFrame to single value: {formatted}")
+                        else:
+                            formatted = format_analysis_result(result)
+                    else:
+                        formatted = format_analysis_result(result)
+                else:
+                    formatted = format_analysis_result(result)
+                # Store the chat in ChatLog
+                from .models import ChatLog
+                chatlog_kwargs = {
+                    'user': request.user,
+                    'question': question,
+                    'gpt_answer': formatted,
+                    'tokens': None,
+                }
+                if session_id:
+                    chatlog_kwargs['session_id'] = session_id
+                ChatLog.objects.create(**chatlog_kwargs)
+                return Response({"answer": formatted, "code": code})
+            except Exception as e:
+                tb = traceback.format_exc()
+                return Response({"error": f"Analytical flow failed: {e}", "trace": tb}, status=500)
+        else:
+            # General flow (vector DB + GPT)
+            from .models import UserProfile, ChatLog
+            try:
+                user_profile = UserProfile.objects.get(user=request.user)
+                user_kbs = list(user_profile.knowledge_bases.values_list('name', flat=True))
+            except UserProfile.DoesNotExist:
+                return Response({"error": "User profile not found."}, status=400)
+            if not user_kbs:
+                return Response({"error": "No knowledge base assigned to user."}, status=400)
+            # Get both answer and tokens from vector_store, filtered by knowledge base
+            answer, tokens = query_vector_db(question, knowledge_bases=user_kbs)
+            # Store the chat in ChatLog, including session if provided
+            chatlog_kwargs = {
+                'user': request.user,
+                'question': question,
+                'gpt_answer': answer,
+                'tokens': tokens,
+            }
+            if session_id:
+                chatlog_kwargs['session_id'] = session_id
+            ChatLog.objects.create(**chatlog_kwargs)
+            return Response({"answer": answer, "tokens": tokens})
     
 #categories view
 from rest_framework.views import APIView
@@ -504,7 +606,7 @@ class JogetFileUploadAPIView(APIView):
         try:
             with file_obj.file.open('rb') as f:
                 content = read_uploaded_file(f)
-            pages = [(file_obj.file.name, content)]
+            pages = [(file_obj.file.name, content, form_id)]
             from chatbot.models import KnowledgeBase
             if isinstance(knowledge_bases, list):
                 knowledge_bases = list(KnowledgeBase.objects.filter(id__in=knowledge_bases).values_list('name', flat=True))
@@ -550,12 +652,12 @@ class UploadAndTrainAPIView(APIView):
                 if not uploaded_file:
                     return Response({"error": "No file provided."}, status=400)
                 content = read_uploaded_file(uploaded_file)
-                pages = [(uploaded_file.name, content)]
+                pages = [(uploaded_file.name, content, request.data.get("description", ""))]
             elif input_type == "text":
                 raw_text = request.data.get("text", "")
                 if not raw_text:
                     return Response({"error": "Text not provided."}, status=400)
-                pages = [("manual_input", raw_text)]
+                pages = [("manual_input", raw_text, request.data.get("description", ""))]
             elif input_type == "qna":
                 question = request.data.get("question")
                 answer = request.data.get("answer")
@@ -564,7 +666,7 @@ class UploadAndTrainAPIView(APIView):
                 if not question or not answer:
                     return Response({"error": "Q&A not provided."}, status=400)
                 content = f"Category: {category}\nSubcategory: {subcategory}\nQ: {question}\nA: {answer}"
-                pages = [("qna_input", content)]
+                pages = [("qna_input", content , request.data.get("description", ""))]
             else:
                 return Response({"error": "Invalid type."}, status=400)
             # Store in vector DB with knowledge base metadata
@@ -720,7 +822,7 @@ class TextContentView(APIView):
                 full_content = f"{description_str}\n{text_item.content}" if description_str else text_item.content
                 
                 # Store in vector DB
-                pages = [(f"text_{text_item.id}", full_content)]
+                pages = [(f"text_{text_item.id}", full_content, text_item.description or "")]
                 if kb_names:
                     store_in_vector_db(pages, knowledge_base=kb_names)
                 
@@ -759,7 +861,7 @@ class TextContentView(APIView):
                     full_content = f"{description_str}\n{updated_text.content}" if description_str else updated_text.content
                     
                     # Store updated content in vector DB
-                    pages = [(f"text_{updated_text.id}", full_content)]
+                    pages = [(f"text_{updated_text.id}", full_content, updated_text.description or "")]
                     if updated_kb_names:
                         store_in_vector_db(pages, knowledge_base=updated_kb_names)
                     
@@ -799,24 +901,50 @@ class ExcelFileView(APIView):
         return Response(data)
 
     def post(self, request):
+        from .utils.excel_tools import extract_excel_metadata
+        from .models import ExcelMetadata
         data = request.data.copy()
         data.pop('added_by', None)
         user = request.user if request.user and request.user.is_authenticated else None
+        file = request.FILES.get('file')
+        if not file:
+            return Response({'error': 'No file provided.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Save ExcelFile as before
         serializer = ExcelFileSerializer(data=data)
         if serializer.is_valid():
-            serializer.save(added_by=user)
+            excel_file_instance = serializer.save(added_by=user)
+
+            # Extract metadata and save to ExcelMetadata
+            metadata = extract_excel_metadata(file)
+            ExcelMetadata.objects.create(
+                file_name=file.name,
+                sheet_names=metadata.get('sheet_names', []),
+                columns=metadata.get('columns', {}),
+                data_types=metadata.get('data_types', {}),
+                sample_rows=metadata.get('sample_rows', {}),
+                row_count=metadata.get('row_count', {}),
+                uploaded_by=user
+            )
+
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     def delete(self, request, pk=None):
         try:
             file = ExcelFile.objects.get(pk=pk)
             identifier = file.id  # Use a unique identifier for the Excel file
+            # Delete associated ExcelMetadata
+            from .models import ExcelMetadata
+            metadata_qs = ExcelMetadata.objects.filter(excel_file=file)
+            deleted_count = metadata_qs.count()
+            metadata_qs.delete()
+            print(f"[DEBUG] Deleted {deleted_count} ExcelMetadata records associated with ExcelFile id={file.id}")
             file.delete()
             try:
                 remove_from_vector_db(identifier)  # Remove from vector DB
             except Exception as e:
                 return Response({"error": f"Failed to remove from vector DB: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            return Response({"message": "File deleted"}, status=status.HTTP_204_NO_CONTENT)
+            return Response({"message": "File and associated metadata deleted"}, status=status.HTTP_204_NO_CONTENT)
         except ExcelFile.DoesNotExist:
             return Response({"error": "File not found"}, status=status.HTTP_404_NOT_FOUND)
      
@@ -862,7 +990,7 @@ class QADataView(APIView):
                 full_content = f"{metadata_content}\nQ: {qa_item.question}\nA: {qa_item.answer}"
                 
                 # Store in vector DB
-                pages = [(f"qa_{qa_item.id}", full_content)]
+                pages = [(f"qa_{qa_item.id}", full_content, qa_item.description or "")]
                 if kb_names:
                     store_in_vector_db(pages, knowledge_base=kb_names)
                 
@@ -916,7 +1044,7 @@ class QADataView(APIView):
                     full_content = f"{metadata_content}\nQ: {updated_item.question}\nA: {updated_item.answer}"
                     
                     # Store updated content in vector DB
-                    pages = [(f"qa_{updated_item.id}", full_content)]
+                    pages = [(f"qa_{updated_item.id}", full_content, updated_item.description or "")]
                     if updated_kb_names:
                         store_in_vector_db(pages, knowledge_base=updated_kb_names)
                     
@@ -1415,7 +1543,7 @@ class FileDataViewSet(viewsets.ModelViewSet):
                         temp_file = SimpleUploadedFile(file.name, f.read())
                         content = read_uploaded_file(temp_file)
                         if content.strip():  # Only add if content is not empty
-                            vector_pages.append((f"doc_{doc_file_data.id}", content))
+                            vector_pages.append((f"doc_{doc_file_data.id}", content, description))
                 except Exception as e:
                     vector_db_errors.append(f"Error processing {file.name}: {str(e)}")
                     print(f"❌ Error processing document {file.name} for vector DB: {str(e)}")
@@ -1433,7 +1561,7 @@ class FileDataViewSet(viewsets.ModelViewSet):
                         temp_file = SimpleUploadedFile(file.name, f.read())
                         content = read_uploaded_file(temp_file)
                         if content.strip():  # Only add if content is not empty
-                            vector_pages.append((f"excel_{excel_file_data.id}", content))
+                            vector_pages.append((f"excel_{excel_file_data.id}", content, description))
                 except Exception as e:
                     vector_db_errors.append(f"Error processing {file.name}: {str(e)}")
                     print(f"❌ Error processing Excel file {file.name} for vector DB: {str(e)}")
@@ -1725,7 +1853,7 @@ class GoogleDriveUploadAPIView(APIView):
                             tmp_file.seek(0)
                             # Use read_uploaded_file to extract text
                             extracted_text = read_uploaded_file(tmp_file)
-                            pages = [(file_name, extracted_text)]
+                            pages = [(file_name, extracted_text, description)]
                             # print(f"Prepared pages for vector DB: {pages[0][0]}, length: {len(pages[0][1])}")
                             from chatbot.models import KnowledgeBase
                             if isinstance(knowledge_bases, list):
@@ -1818,7 +1946,7 @@ class JogetFileUploadAPIView(APIView):
             # Use the saved file from storage
             with file_obj.file.open('rb') as f:
                 content = read_uploaded_file(f)
-            pages = [(file_obj.file.name, content)]
+            pages = [(file_obj.file.name, content, form_id or "")]
             from chatbot.models import KnowledgeBase
             if isinstance(knowledge_bases, list):
                 knowledge_bases = list(KnowledgeBase.objects.filter(id__in=knowledge_bases).values_list('name', flat=True))
