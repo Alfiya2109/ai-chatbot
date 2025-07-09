@@ -97,12 +97,13 @@ export function AuthProvider({ children }) {
       // Store tokens in localStorage
       localStorage.setItem('access_token', data.tokens.access)
       localStorage.setItem('refresh_token', data.tokens.refresh)
-      localStorage.setItem('profile', userData.profile || 'Non-Sales')
+      // Use profile from response data if available, otherwise default to 'Non-Sales'
+      localStorage.setItem('profile', data.profile || 'Non-Sales')
       
       setCurrentUser({
         username: userData.username,
         token: data.tokens.access,
-        profile: userData.profile || 'Non-Sales'
+        profile: data.profile || 'Non-Sales'
       })
       
       navigate('/chatbot')

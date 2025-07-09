@@ -8,6 +8,7 @@ import TextListTab from './TextListTab';
 import ExcelListTab from './ExcelListTab';
 import QAListTab from './QAListTab';
 import URLListTab from './URLListTab';
+import PPTListTab from './PPTListTab';
 import ProfileTab from './ProfileTab';
 import KnowledgeBaseTab from './KnowledgeBaseTab';
 import CategoriesTab from './CategoriesTab';
@@ -25,7 +26,7 @@ const tabSections = [
   },
   {
     label: 'source data',
-    tabs: ['Folder','Files', 'Text', 'Excel/CSV', 'URL', 'Q&A']
+    tabs: ['Folder','Files', 'Text', 'Excel/CSV', 'PPT', 'URL', 'Q&A']
   },
   {
     label: 'setup',
@@ -42,6 +43,9 @@ const tabSections = [
 ];
 
 function CreateAgent() {
+  // PPT Tab State
+  // (All duplicate PPT logic removed)
+  // ...existing code...
   const [fileModalOpen, setFileModalOpen] = useState(false);
   const [fileForm, setFileForm] = useState({
     file: null,
@@ -101,6 +105,96 @@ function CreateAgent() {
     password: '',
     profile: '', // Added profile field
   });
+  // PPT Tab State
+  const [pptModalOpen, setPptModalOpen] = useState(false);
+  const [pptForm, setPptForm] = useState({
+    file: null,
+    title: '',
+    description: '',
+    knowledge_bases: [],
+  });
+  const [pptFormError, setPptFormError] = useState('');
+  const [uploadedPPTs, setUploadedPPTs] = useState([]);
+
+  // Fetch PPT files
+  const fetchPPTs = async () => {
+    try {
+      const response = await axios.get(`${BASE_URL}/api/ppt/`);
+      setUploadedPPTs(response.data);
+    } catch (error) {
+      console.error('Error fetching PPT files:', error);
+    }
+  };
+
+  // PPT upload handler for modal
+  const handlePptModalSubmit = async (e) => {
+    e.preventDefault();
+    setPptFormError('');
+    if (!pptForm.file) {
+      setPptFormError('Please select a PPT file.');
+      return;
+    }
+    
+    
+    if (!pptForm.knowledge_bases || pptForm.knowledge_bases.length === 0) {
+      setPptFormError('Please select at least one knowledge base.');
+      return;
+    }
+    try {
+      const formData = new FormData();
+      formData.append('file', pptForm.file);
+      formData.append('title', pptForm.title);
+      if (pptForm.description) formData.append('description', pptForm.description);
+      const selectedNames = knowledgeBases
+        .filter(kb => pptForm.knowledge_bases.includes(String(kb.id)))
+        .map(kb => kb.name);
+      selectedNames.forEach((name) => formData.append('knowledge_bases', name));
+      const token = localStorage.getItem('access_token');
+      await axios.post(`${BASE_URL}/api/ppt/`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setPptModalOpen(false);
+      setPptForm({ file: null, title: '', description: '', knowledge_bases: [] });
+      fetchPPTs();
+    } catch (error) {
+      setPptFormError('Failed to upload PPT file. Please try again.');
+    }
+  };
+
+  // PPT single delete
+  const handlePptDelete = async (pptId) => {
+    try {
+      const token = localStorage.getItem('access_token');
+      await axios.delete(`${BASE_URL}/api/ppt/${pptId}/`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      fetchPPTs();
+    } catch (error) {
+      console.error('Error deleting PPT file:', error);
+    }
+  };
+
+  // PPT bulk delete
+  const handleBulkPptDelete = async (pptIds) => {
+    try {
+      const token = localStorage.getItem('access_token');
+      await axios.delete(`${BASE_URL}/api/ppt/bulk-delete/`, {
+        data: { ids: pptIds },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      fetchPPTs();
+      return { success: true };
+    } catch (error) {
+      console.error('Error bulk deleting PPT files:', error);
+      return { success: false, error: error.response?.data?.error || 'Failed to delete PPT files' };
+    }
+  };
   // Profile Tab State
   const [profiles, setProfiles] = useState([]);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
@@ -154,6 +248,8 @@ function CreateAgent() {
       fetchText();
     } else if (activeTab === 'Excel/CSV') {
       fetchExcel();
+    } else if (activeTab === 'PPT') {
+      fetchPPTs();
     } else if (activeTab === 'Q&A') {
       fetchQA();
       fetchCategories();
@@ -173,6 +269,8 @@ function CreateAgent() {
       fetchCategories();
     }
   }, [activeTab]);
+
+  // ...rest of the component logic...
 
   const fetchFiles = async () => {
     try {
@@ -1396,7 +1494,7 @@ function CreateAgent() {
             handleTextModalSubmit={handleTextModalSubmit}
             fetchKnowledgeBases={fetchKnowledgeBases}
             onBulkDelete={handleBulkTextDelete}
-            handleTextEdit={handleTextEdit} // <-- Fix: pass the missing prop
+            handleTextEdit={handleTextEdit}
             textEditModalOpen={textEditModalOpen}
             setTextEditModalOpen={setTextEditModalOpen}
             editingText={editingText}
@@ -1417,6 +1515,22 @@ function CreateAgent() {
             handleExcelModalSubmit={handleExcelModalSubmit}
             fetchKnowledgeBases={fetchKnowledgeBases}
             onBulkDelete={handleBulkExcelDelete}
+          />
+        );
+      case 'PPT':
+        return (
+          <PPTListTab
+            uploadedPPTs={uploadedPPTs}
+            renderTable={renderTable}
+            pptModalOpen={pptModalOpen}
+            setPptModalOpen={setPptModalOpen}
+            pptForm={pptForm}
+            setPptForm={setPptForm}
+            knowledgeBases={knowledgeBases}
+            pptFormError={pptFormError}
+            handlePptModalSubmit={handlePptModalSubmit}
+            fetchKnowledgeBases={fetchKnowledgeBases}
+            onBulkDelete={handleBulkPptDelete}
           />
         );
       case 'Q&A':

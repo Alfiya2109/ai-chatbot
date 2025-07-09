@@ -1,12 +1,27 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import axios from 'axios'
+import { BASE_URL } from '../base_url'
 
 function Login() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const { login, loading, error } = useAuth()
+  const [showRegisterModal, setShowRegisterModal] = useState(false)
+  const [registerForm, setRegisterForm] = useState({
+    username: '',
+    password: '',
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone_number: '',
+    profile: ''
+  })
+  const [profiles, setProfiles] = useState([])
+  const [registerLoading, setRegisterLoading] = useState(false)
+  const [registerError, setRegisterError] = useState(null)
+  const { login, register, loading, error } = useAuth()
   const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
@@ -19,6 +34,72 @@ function Login() {
     }
     // If login failed, the AuthContext will already show the error
     // If login succeeded with 'Non-Sales' profile, AuthContext navigates to '/chatbot'
+  }
+
+  // Fetch profiles when modal opens
+  const handleOpenRegisterModal = async () => {
+    setShowRegisterModal(true)
+    try {
+      const response = await axios.get(`${BASE_URL}/api/profiles/`)
+      console.log('Available profiles:', response.data)
+      setProfiles(response.data)
+      
+      // Auto-select Non-Sales profile
+      const nonSales = response.data.find((p) => p.name.toLowerCase() === 'non-sales' || p.name.toLowerCase() === 'nonsales')
+      console.log('Found Non-Sales profile:', nonSales)
+      if (nonSales) {
+        setRegisterForm(prev => ({ ...prev, profile: nonSales.id }))
+      }
+    } catch (error) {
+      console.error('Error fetching profiles:', error)
+      setProfiles([])
+    }
+  }
+
+  const handleRegisterFormChange = (e) => {
+    const { name, value } = e.target
+    setRegisterForm(prev => ({
+      ...prev,
+      [name]: value,
+      email: name === 'username' ? value : prev.email
+    }))
+  }
+
+  const handleRegisterSubmit = async (e) => {
+    e.preventDefault()
+    setRegisterLoading(true)
+    setRegisterError(null)
+
+    // Ensure only Non-Sales users can register
+    const selectedProfile = profiles.find((p) => p.id === registerForm.profile)
+    if (!selectedProfile || (selectedProfile.name.toLowerCase() !== 'non-sales' && selectedProfile.name.toLowerCase() !== 'nonsales')) {
+      setRegisterError('Only Non-Sales users can register through this form.')
+      setRegisterLoading(false)
+      return
+    }
+
+    console.log('Registering with profile:', selectedProfile)
+
+    try {
+      const success = await register(registerForm)
+      if (success) {
+        setShowRegisterModal(false)
+        // Reset form
+        setRegisterForm({
+          username: '',
+          password: '',
+          first_name: '',
+          last_name: '',
+          email: '',
+          phone_number: '',
+          profile: ''
+        })
+      }
+    } catch (error) {
+      setRegisterError('Registration failed. Please try again.')
+    } finally {
+      setRegisterLoading(false)
+    }
   }
 
   return (
@@ -104,13 +185,152 @@ function Login() {
           <div className="text-sm text-center">
             <p className="font-medium text-gray-700 hover:text-gray-500">
               Don't have an account?{' '}
-              <Link to="/register" className="underline">
+              <button 
+                type="button"
+                onClick={handleOpenRegisterModal}
+                className="underline hover:text-gray-500"
+              >
                 Register here
-              </Link>
+              </button>
             </p>
           </div>
         </form>
       </div>
+
+      {/* Registration Modal */}
+      {showRegisterModal && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold text-gray-800">Create Account</h2>
+                <button
+                  onClick={() => setShowRegisterModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              <form onSubmit={handleRegisterSubmit} className="space-y-4">
+                <div>
+                  <label htmlFor="reg-username" className="block text-sm font-medium text-gray-700">
+                    Email
+                  </label>
+                  <input
+                    id="reg-username"
+                    name="username"
+                    type="email"
+                    required
+                    value={registerForm.username}
+                    onChange={handleRegisterFormChange}
+                    className="mt-1 block w-full rounded-md border border-gray-300 py-1.5 px-3 text-gray-900 focus:border-purple-500 focus:ring-2 focus:ring-purple-500 sm:text-sm"
+                    placeholder="Email address"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="reg-password" className="block text-sm font-medium text-gray-700">
+                    Password
+                  </label>
+                  <input
+                    id="reg-password"
+                    name="password"
+                    type="password"
+                    required
+                    value={registerForm.password}
+                    onChange={handleRegisterFormChange}
+                    className="mt-1 block w-full rounded-md border border-gray-300 py-1.5 px-3 text-gray-900 focus:border-purple-500 focus:ring-2 focus:ring-purple-500 sm:text-sm"
+                    placeholder="Password"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label htmlFor="reg-first-name" className="block text-sm font-medium text-gray-700">
+                      First Name
+                    </label>
+                    <input
+                      id="reg-first-name"
+                      name="first_name"
+                      type="text"
+                      required
+                      value={registerForm.first_name}
+                      onChange={handleRegisterFormChange}
+                      className="mt-1 block w-full rounded-md border border-gray-300 py-1.5 px-3 text-gray-900 focus:border-purple-500 focus:ring-2 focus:ring-purple-500 sm:text-sm"
+                      placeholder="First name"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="reg-last-name" className="block text-sm font-medium text-gray-700">
+                      Last Name
+                    </label>
+                    <input
+                      id="reg-last-name"
+                      name="last_name"
+                      type="text"
+                      required
+                      value={registerForm.last_name}
+                      onChange={handleRegisterFormChange}
+                      className="mt-1 block w-full rounded-md border border-gray-300 py-1.5 px-3 text-gray-900 focus:border-purple-500 focus:ring-2 focus:ring-purple-500 sm:text-sm"
+                      placeholder="Last name"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="reg-phone" className="block text-sm font-medium text-gray-700">
+                    Phone Number
+                  </label>
+                  <input
+                    id="reg-phone"
+                    name="phone_number"
+                    type="text"
+                    required
+                    value={registerForm.phone_number}
+                    onChange={handleRegisterFormChange}
+                    className="mt-1 block w-full rounded-md border border-gray-300 py-1.5 px-3 text-gray-900 focus:border-purple-500 focus:ring-2 focus:ring-purple-500 sm:text-sm"
+                    placeholder="Phone number"
+                  />
+                </div>
+
+                {/* Show selected profile for debugging */}
+                {registerForm.profile && (
+                  <div className="text-xs text-gray-500">
+                    Profile: {profiles.find(p => p.id === registerForm.profile)?.name || 'Unknown'}
+                  </div>
+                )}
+
+                {registerError && (
+                  <div className="text-red-500 text-sm text-center">{registerError}</div>
+                )}
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowRegisterModal(false)}
+                    className="flex-1 py-2 px-4 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={registerLoading}
+                    className={`flex-1 py-2 px-4 border border-transparent rounded-md text-sm font-medium text-white bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                      registerLoading ? 'opacity-70 cursor-not-allowed' : ''
+                    }`}
+                  >
+                    {registerLoading ? 'Creating...' : 'Create Account'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

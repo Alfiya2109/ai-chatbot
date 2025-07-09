@@ -1,6 +1,7 @@
 import pandas as pd
 import PyPDF2
 import docx
+from pptx import Presentation
 
 def read_pdf(file):
     pdf_reader = PyPDF2.PdfReader(file)
@@ -25,9 +26,39 @@ def read_excel(file):
         rows.append(row_text)
     return "\n".join(rows)
 
-
 def read_text(file):
     return file.read().decode('utf-8')
+
+def extract_text_from_ppt(file):
+    """
+    Extract text content from PowerPoint files (.ppt/.pptx)
+    
+    Args:
+        file: File object of the PowerPoint presentation
+        
+    Returns:
+        str: Extracted text content from all slides
+    """
+    try:
+        presentation = Presentation(file)
+        text_content = []
+        
+        for slide_num, slide in enumerate(presentation.slides, 1):
+            slide_text = f"--- Slide {slide_num} ---\n"
+            
+            # Extract text from all shapes in the slide
+            for shape in slide.shapes:
+                if hasattr(shape, "text") and shape.text.strip():
+                    slide_text += shape.text.strip() + "\n"
+            
+            # Add slide content if it has text
+            if slide_text.strip() != f"--- Slide {slide_num} ---":
+                text_content.append(slide_text)
+        
+        return "\n\n".join(text_content) if text_content else "No text content found in PowerPoint file."
+    
+    except Exception as e:
+        return f"Error reading PowerPoint file: {str(e)}"
 
 def read_uploaded_file(file):
     filename = file.name.lower()
@@ -35,6 +66,8 @@ def read_uploaded_file(file):
         return read_pdf(file)
     elif filename.endswith('.docx'):
         return read_docx(file)
+    elif filename.endswith(('.ppt', '.pptx')):
+        return extract_text_from_ppt(file)
     elif filename.endswith('.csv'):
         return read_csv(file)
     elif filename.endswith(('.xls', '.xlsx')):
