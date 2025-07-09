@@ -1188,8 +1188,8 @@ class CurrentUserProfileAPIView(APIView):
         if user_profile.excel_access: allowed_tabs.append('Excel/CSV')
         if user_profile.qna_access: allowed_tabs.append('Q&A')
         if user_profile.url_access: allowed_tabs.append('URL')
+        if user_profile.ppt_access: allowed_tabs.append('PPT')
         if user_profile.chat_history_access: allowed_tabs.append('History')
-        
         if user_profile.user_details_access: allowed_tabs.append('User Details')
         # Optionally, check Profile fields (if you want to merge both)
         if user_profile.profile:
@@ -1198,8 +1198,8 @@ class CurrentUserProfileAPIView(APIView):
             if user_profile.profile.excel_access and 'Excel/CSV' not in allowed_tabs: allowed_tabs.append('Excel/CSV')
             if user_profile.profile.qna_access and 'Q&A' not in allowed_tabs: allowed_tabs.append('Q&A')
             if user_profile.profile.url_access and 'URL' not in allowed_tabs: allowed_tabs.append('URL')
+            if user_profile.profile.ppt_access and 'PPT' not in allowed_tabs: allowed_tabs.append('PPT')
             if user_profile.profile.chat_history_access and 'History' not in allowed_tabs: allowed_tabs.append('History')
-        # Remove 'Profile' from always-allowed tabs, only add if allowed
         allowed_tabs.append('Chatbot')  # Always allow Chatbot for navigation
         # Only add 'Profile' if user_profile_access is True in either userprofile or profile
         if (user_profile.user_profile_access or (user_profile.profile and getattr(user_profile.profile, 'user_profile_access', False))):
@@ -1210,14 +1210,6 @@ class CurrentUserProfileAPIView(APIView):
             'profile': profile_data,
             'allowed_tabs': allowed_tabs
         }, status=200)
-
-# Add to your urls.py:
-# path('api/userprofiles/me/', CurrentUserProfileAPIView.as_view(), name='current-user-profile')
-
-from .models import KnowledgeBase
-from .serializers import KnowledgeBaseSerializer
-from rest_framework import generics
-from rest_framework.permissions import IsAuthenticated
 
 class KnowledgeBaseListCreateAPIView(generics.ListCreateAPIView):
     queryset = KnowledgeBase.objects.all()
@@ -2088,6 +2080,105 @@ class BulkDeleteFolderView(APIView):
             
             return Response({
                 "message": f"Successfully deleted {deleted_count} folders",
+                "deleted_count": deleted_count
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class PPTFileView(APIView):
+    parser_classes = (MultiPartParser, FormParser)
+
+    def get(self, request):
+        files = PPTFile.objects.all()
+        serializer = PPTFileSerializer(files, many=True)
+        data = serializer.data
+        for i, file in enumerate(files):
+            data[i]['added_by'] = file.added_by.username if file.added_by else None
+        return Response(data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        from .file_reader import extract_text_from_ppt
+        from .utils.vector_store import store_in_vector_db
+        data = request.data.copy()
+        data.pop('added_by', None)
+        user = request.user if request.user and request.user.is_authenticated else None
+        serializer = PPTFileSerializer(data=data)
+        if serializer.is_valid():
+            ppt_file = serializer.save(added_by=user)
+            # Vector DB integration: extract content and store
+            try:
+                if 'file' in request.FILES:
+                    ppt_file_obj = request.FILES['file']
+                    content = extract_text_from_ppt(ppt_file_obj)
+                    ppt_file.content = content
+                    ppt_file.save()
+                    # Store in vector DB if knowledge_bases are set
+                    kb_names = list(ppt_file.knowledge_bases.values_list('name', flat=True))
+                    if content and kb_names:
+                        pages = [(ppt_file.description, content)]
+                        store_in_vector_db(pages, knowledge_base=kb_names)
+            except Exception as e:
+                print(f"[VECTOR DB] PPT vector storage error: {e}")
+            return Response(PPTFileSerializer(ppt_file).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def patch(self, request, pk=None):
+        try:
+            ppt_file = PPTFile.objects.get(pk=pk)
+        except PPTFile.DoesNotExist:
+            return Response({'error': 'PPT file not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        data = request.data.copy()
+        data.pop('added_by', None)
+        user = request.user if request.user and request.user.is_authenticated else None
+        serializer = PPTFileSerializer(ppt_file, data=data, partial=True)
+        if serializer.is_valid():
+            ppt_file = serializer.save(added_by=user)
+            return Response(PPTFileSerializer(ppt_file).data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk=None):
+        from .utils.vector_store import remove_from_vector_db
+        try:
+            ppt_file = PPTFile.objects.get(pk=pk)
+            identifier = f"ppt_{ppt_file.id}" if hasattr(ppt_file, 'id') else str(pk)
+            ppt_file.delete()
+            try:
+                remove_from_vector_db(identifier)
+            except Exception as e:
+                print(f"Failed to remove PPT file {identifier} from vector DB: {str(e)}")
+            return Response({'message': 'PPT file deleted'}, status=status.HTTP_204_NO_CONTENT)
+        except PPTFile.DoesNotExist:
+            return Response({'error': 'PPT file not found'}, status=status.HTTP_404_NOT_FOUND)
+
+class BulkDeletePPTFileView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def delete(self, request):
+        try:
+            ids = request.data.get('ids', [])
+            if not ids:
+                return Response({"error": "No IDs provided"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            files = PPTFile.objects.filter(id__in=ids)
+            if not files.exists():
+                return Response({"error": "No PPT files found with provided IDs"}, status=status.HTTP_404_NOT_FOUND)
+            
+            # Remove from vector DB for each PPT file
+            from .utils.vector_store import remove_from_vector_db
+            for file in files:
+                try:
+                    identifier = f"ppt_{file.id}" if hasattr(file, 'id') else str(file.pk)
+                    remove_from_vector_db(identifier)
+                except Exception as e:
+                    print(f"Failed to remove PPT file {identifier} from vector DB: {str(e)}")
+            
+            deleted_count = files.count()
+            files.delete()
+            
+            return Response({
+                "message": f"Successfully deleted {deleted_count} PPT files",
                 "deleted_count": deleted_count
             }, status=status.HTTP_200_OK)
             

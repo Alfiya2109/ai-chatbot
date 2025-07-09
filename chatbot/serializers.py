@@ -11,6 +11,7 @@ from .models import (
     ChatbotSubCategory,
     Profile,  # <-- import Profile
     KnowledgeBase,
+    PPTFile,
 )
 from .models import ChatSession, SitemapFetch, GoogleDriveFileData,GoogleDriveDocumentFileData,GoogleDriveExcelFileData
 
@@ -244,6 +245,22 @@ class URLModelSerializer(serializers.ModelSerializer):
     description = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     class Meta:
         model = URLModel
+        fields = '__all__'
+
+import os
+class PPTFileSerializer(serializers.ModelSerializer):
+    added_by = serializers.SlugRelatedField(slug_field='username', queryset=User.objects.all(), required=False, allow_null=True)
+    knowledge_bases = serializers.SlugRelatedField(many=True, slug_field='name', queryset=KnowledgeBase.objects.all())
+    content = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    
+    def validate_file(self, value):
+        ext = os.path.splitext(value.name)[1].lower()
+        if ext not in ['.ppt', '.pptx']:
+            raise serializers.ValidationError("Only .ppt and .pptx files are allowed.")
+        return value
+
+    class Meta:
+        model = PPTFile
         fields = '__all__'
 
 #chathistory

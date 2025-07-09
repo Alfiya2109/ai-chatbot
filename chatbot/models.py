@@ -18,6 +18,7 @@ class UserProfile(models.Model):
     excel_access = models.BooleanField(default=False)
     qna_access = models.BooleanField(default=False)
     url_access = models.BooleanField(default=False)
+    ppt_access = models.BooleanField(default=False)
     chat_history_access = models.BooleanField(default=False)
     user_profile_access = models.BooleanField(default=False)
     user_details_access = models.BooleanField(default=False)
@@ -157,6 +158,17 @@ class URLModel(models.Model):
     def __str__(self):
         return self.url
 
+class PPTFile(models.Model):
+    description = models.CharField(max_length=255)  # Use description instead of title
+    file = models.FileField(upload_to='ppt_files/')
+    content = models.TextField(blank=True, null=True)
+    added_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='ppts_uploaded')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    knowledge_bases = models.ManyToManyField('KnowledgeBase', blank=True, related_name='ppt_documents')
+
+    def __str__(self):
+        return self.description
+
 class Profile(models.Model):
     
     name = models.CharField(max_length=100, unique=True)
@@ -165,6 +177,7 @@ class Profile(models.Model):
     excel_access = models.BooleanField(default=False)
     qna_access = models.BooleanField(default=False)
     url_access = models.BooleanField(default=False)
+    ppt_access = models.BooleanField(default=False)
     chat_history_access = models.BooleanField(default=False)
     user_profile_access = models.BooleanField(default=False)
     user_details_access = models.BooleanField(default=False)

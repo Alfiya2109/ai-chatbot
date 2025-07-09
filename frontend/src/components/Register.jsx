@@ -28,10 +28,10 @@ function Register() {
     console.log('Profiles loaded:', profiles)
   }, [profiles])
 
-  // Remove profile input and set default profile to first non-sales profile
+  // Set default profile to "Non-Sales" only
   useEffect(() => {
     if (profiles.length > 0) {
-      const nonSales = profiles.find((p) => p.name.toLowerCase() !== 'sales');
+      const nonSales = profiles.find((p) => p.name.toLowerCase() === 'non-sales' || p.name.toLowerCase() === 'nonsales');
       if (nonSales) {
         setFormData((prev) => ({ ...prev, profile: nonSales.id }));
       }
@@ -53,8 +53,8 @@ function Register() {
     e.preventDefault();
     // Prevent registration if no non-sales profile is available
     const selectedProfile = profiles.find((p) => p.id === formData.profile);
-    if (!selectedProfile || selectedProfile.name.toLowerCase() === 'sales') {
-      alert('Only non-sales users can register.');
+    if (!selectedProfile || (selectedProfile.name.toLowerCase() !== 'non-sales' && selectedProfile.name.toLowerCase() !== 'nonsales')) {
+      alert('Only Non-Sales users can register through this form.');
       return;
     }
     await register(formData)
