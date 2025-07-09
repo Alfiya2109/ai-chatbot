@@ -544,14 +544,56 @@ const handleDeleteSession = async (sessionId) => {
                       : 'bg-white text-gray-900 border-none shadow-none'
                   }`}>
                     {message.sender === 'bot' ? (
-                      <span dangerouslySetInnerHTML={{ __html: formatBotAnswer(message.text) }} />
+                      // Table UI fix: wrap HTML tables in a scrollable div for wide tables
+                      <span>
+                        {/* If the bot answer contains a table, wrap it in a scrollable container */}
+                        {message.text && message.text.includes('<table') ? (
+                          <div style={{ overflowX: 'auto', width: '100%', maxWidth: '100%' }}>
+                            <style>{`
+                              .ai-chat-table { border-collapse: collapse; width: 100%; }
+                              .ai-chat-table th, .ai-chat-table td { border: 1px solid #d1d5db; padding: 6px 10px; text-align: left; }
+                              .ai-chat-table th { background: #f3f4f6; white-space: nowrap; font-weight: 600; }
+                              .ai-chat-table td { background: #fff; }
+                            `}</style>
+                            <div style={{ width: '100%', display: 'inline-block' }}>
+                              <span
+                                dangerouslySetInnerHTML={{
+                                  __html: formatBotAnswer(
+                                    message.text.replace(
+                                      /<table(.*?)>/,
+                                      '<table class="ai-chat-table"$1>'
+                                    )
+                                  )
+                                }}
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <span dangerouslySetInnerHTML={{ __html: formatBotAnswer(message.text) }} />
+                        )}
+                      </span>
                     ) : (
                       message.text
                     )}
                   </div>
                 </div>
               ))}
-              
+
+              {/* Typing loader */}
+              {loading && (
+                <div className="flex justify-start">
+                  <div className="rounded-xl px-4 py-3 max-w-[80%] bg-white text-gray-900 border-none shadow-none flex items-center gap-2">
+                    <span>
+                      <svg className="animate-spin h-5 w-5 text-gray-400 inline-block mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                      </svg>
+                      AI is typing...
+                    </span>
+                  </div>
+                </div>
+              )}
+
               <div ref={messagesEndRef} />
             </div>
             

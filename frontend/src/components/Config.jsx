@@ -1,4 +1,25 @@
 import { useState, useEffect } from 'react';
+import React from 'react';
+// Modal component for viewing table answers
+function TableModal({ open, onClose, html }) {
+  if (!open) return null;
+  return (
+    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.3)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ background: '#fff', borderRadius: 12, maxWidth: '90vw', maxHeight: '80vh', overflow: 'auto', padding: 24, position: 'relative', boxShadow: '0 2px 16px rgba(0,0,0,0.2)' }}>
+        <button onClick={onClose} style={{ position: 'absolute', top: 8, right: 16, fontSize: 22, background: 'none', border: 'none', cursor: 'pointer', color: '#888' }}>&times;</button>
+        <div style={{ minWidth: 600 }}>
+          <style>{`
+            .ai-chat-table { border-collapse: collapse; width: 100%; }
+            .ai-chat-table th, .ai-chat-table td { border: 1px solid #d1d5db; padding: 6px 10px; text-align: left; }
+            .ai-chat-table th { background: #f3f4f6; white-space: nowrap; font-weight: 600; }
+            .ai-chat-table td { background: #fff; }
+          `}</style>
+          <div dangerouslySetInnerHTML={{ __html: html }} />
+        </div>
+      </div>
+    </div>
+  );
+}
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import * as XLSX from 'xlsx';
@@ -11,6 +32,8 @@ import { BASE_URL } from '../base_url';
 const API_BASE_URL = BASE_URL;
 
 function Config() {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalHtml, setModalHtml] = useState('');
   const [editId, setEditId] = useState(null);
   const [editAnswer, setEditAnswer] = useState('');
   const [editCategory, setEditCategory] = useState([]);
@@ -451,7 +474,28 @@ function Config() {
                       {isEditingAnswer ? (
                         <input type="text" value={editAnswer} onChange={e => setEditAnswer(e.target.value)} className="w-10/12 px-2 py-1 border rounded" />
                       ) : (
-                        <div style={{ width: '90%', textAlign: 'justify' }}>{log.gpt_answer}</div>
+                        log.gpt_answer && log.gpt_answer.includes('<table') ? (
+                          <>
+                            <a
+                              href="#"
+                              style={{ color: '#2563eb', textDecoration: 'underline', cursor: 'pointer' }}
+                              onClick={e => {
+                                e.preventDefault();
+                                // Add table class if not present
+                                let html = log.gpt_answer.replace(
+                                  /<table(.*?)>/,
+                                  '<table class="ai-chat-table"$1>'
+                                );
+                                setModalHtml(html);
+                                setModalOpen(true);
+                              }}
+                            >
+                              View Table
+                            </a>
+                          </>
+                        ) : (
+                          <div style={{ width: '90%', textAlign: 'justify' }}>{log.gpt_answer}</div>
+                        )
                       )}
                       <button onClick={() => isEditingAnswer ? handleUpdateFeedback(log.id) : (setEditId(log.id), setEditAnswer(log.gpt_answer))} className="ml-1 bg-gray-500 text-white rounded-full p-2 hover:bg-gray-500" style={{ width: '30px', height: '30px', alignSelf: 'center' }}>
                         {isEditingAnswer ? <FaCheck size={16} /> : <FaPencilAlt size={16} />}
@@ -510,6 +554,7 @@ function Config() {
           </>
         )}
       </div>
+    <TableModal open={modalOpen} onClose={() => setModalOpen(false)} html={modalHtml} />
     </div>
   );
 }
