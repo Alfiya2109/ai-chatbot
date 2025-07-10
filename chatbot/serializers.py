@@ -329,10 +329,13 @@ class FileDataSerializer(serializers.ModelSerializer):
     knowledge_bases_info = KnowledgeBaseSerializer(source='knowledge_bases', many=True, read_only=True)
     description = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     added_by = serializers.SlugRelatedField(slug_field='username', read_only=True)
+    file_count = serializers.SerializerMethodField()
 
     class Meta:
         model = FileData
-        fields = ['id', 'title', 'description', 'knowledge_bases', 'knowledge_bases_info', 'created_at', 'added_by', 'document_files', 'excel_files']
+        fields = ['id', 'title', 'description', 'knowledge_bases', 'knowledge_bases_info', 'created_at', 'added_by', 'document_files', 'excel_files','file_count']
+    def get_file_count(self, obj):
+        return obj.document_files.count() + obj.excel_files.count()
 
 class SitemapFetchSerializer(serializers.ModelSerializer):
     class Meta:
