@@ -831,6 +831,7 @@ function CreateAgent() {
       trainFormData.append('answer', qa.answer);
       trainFormData.append('category', qa.category && qa.category.length > 0 ? parseInt(qa.category[0]) : 'general');
       trainFormData.append('subcategory', qa.subcategory && qa.subcategory.length > 0 ? parseInt(qa.subcategory[0]) : '');
+      trainFormData.append('description', qa.description || '');
       // Map names to IDs if needed, and append only IDs
       const kbIds = qa.knowledge_bases.map(nameOrId => {
         if (!isNaN(Number(nameOrId))) return Number(nameOrId);
@@ -891,6 +892,7 @@ function CreateAgent() {
           requestData.append('answer', qa.answer);
           requestData.append('category', qa.category || 'general');
           requestData.append('subcategory', qa.subcategory || '');
+          requestData.append('description', qa.description || '');
           // Add knowledge base IDs to the training payload
           qa.knowledge_bases.forEach((id) => requestData.append('knowledge_bases', id));
         }
@@ -921,7 +923,14 @@ function CreateAgent() {
         },
       });
 
-      const embedResponse = await axios.post(`${BASE_URL}/api/embed-website/`, { url: urlInput }, {
+      const embedResponse = await axios.post(`${BASE_URL}/api/embed-website/`, { 
+        url: urlForm.url,
+        description: urlForm.description, // <-- Add this line
+        knowledge_bases: urlForm.knowledge_bases.length > 0 ? 
+          knowledgeBases
+        .filter(kb => urlForm.knowledge_bases.includes(String(kb.id)))
+        .map(kb => kb.name) : []
+      }, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -1129,6 +1138,7 @@ function CreateAgent() {
       const trainFormData = new FormData();
       trainFormData.append('type', 'file');
       trainFormData.append('file', fileForm.file);
+      if (fileForm.description) trainFormData.append('description', fileForm.description);
       // Add knowledge base IDs to the training payload
       fileForm.knowledge_bases.forEach((id) => trainFormData.append('knowledge_bases', id));
 
@@ -1184,6 +1194,7 @@ function CreateAgent() {
       const trainFormData = new FormData();
       trainFormData.append('type', 'file');
       trainFormData.append('file', excelForm.file);
+      if (excelForm.description) trainFormData.append('description', excelForm.description);
       // Add knowledge base IDs to the training payload
       excelForm.knowledge_bases.forEach((id) => trainFormData.append('knowledge_bases', id));
 
@@ -1239,6 +1250,7 @@ function CreateAgent() {
       const trainFormData = new FormData();
       trainFormData.append('type', 'text');
       trainFormData.append('text', textForm.content);
+      if (textForm.description) trainFormData.append('description', textForm.description);
       // Add knowledge base IDs to the training payload
       textForm.knowledge_bases.forEach((id) => trainFormData.append('knowledge_bases', id));
 
@@ -1779,6 +1791,7 @@ function CreateAgent() {
       trainFormData.append('answer', qaForm.answer);
       trainFormData.append('category', qaForm.category && qaForm.category.length > 0 ? parseInt(qaForm.category[0]) : 'general');
       trainFormData.append('subcategory', qaForm.subcategory && qaForm.subcategory.length > 0 ? parseInt(qaForm.subcategory[0]) : '');
+      if (qaForm.description) trainFormData.append('description', qaForm.description);
       // Add knowledge base IDs to the training payload
       qaForm.knowledge_bases.forEach((id) => trainFormData.append('knowledge_bases', id));
 
