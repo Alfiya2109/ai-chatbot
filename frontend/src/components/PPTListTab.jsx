@@ -10,17 +10,20 @@ const PPTListTab = ({ uploadedPPTs, renderTable, pptModalOpen, setPptModalOpen, 
   const [sortDirection, setSortDirection] = useState('asc');
   const [knowledgeBaseSearch, setKnowledgeBaseSearch] = useState('');
   const [showSearchBox, setShowSearchBox] = useState(false);
+  // Change single value filter states to arrays
+  const [selectedFileNameFilter, setSelectedFileNameFilter] = useState([]);
+  const [selectedDescriptionFilter, setSelectedDescriptionFilter] = useState([]);
+  const [selectedAddedByFilter, setSelectedAddedByFilter] = useState([]);
+  const [selectedDateFilter, setSelectedDateFilter] = useState([]);
   const [selectedKBFilters, setSelectedKBFilters] = useState([]);
 
   // Add filter popover state for each column
   const [showFileNameFilter, setShowFileNameFilter] = useState(false);
-  const [selectedFileNameFilter, setSelectedFileNameFilter] = useState(null);
   const [showDescriptionFilter, setShowDescriptionFilter] = useState(false);
-  const [selectedDescriptionFilter, setSelectedDescriptionFilter] = useState(null);
   const [showAddedByFilter, setShowAddedByFilter] = useState(false);
-  const [selectedAddedByFilter, setSelectedAddedByFilter] = useState(null);
   const [showDateFilter, setShowDateFilter] = useState(false);
-  const [selectedDateFilter, setSelectedDateFilter] = useState(null);
+  // Add state for Knowledge Bases filter popover
+  const [showKBFilter, setShowKBFilter] = useState(false);
 
   // Unique options for each filter
   const fileNameOptions = useMemo(() => {
@@ -44,34 +47,36 @@ const PPTListTab = ({ uploadedPPTs, renderTable, pptModalOpen, setPptModalOpen, 
   const filteredAndSortedPPTs = useMemo(() => {
     let filtered = uploadedPPTs;
 
-    // File Name filter
-    if (selectedFileNameFilter) {
-      filtered = filtered.filter(f => (f.file ? f.file.split('/').pop() : 'Unknown File') === selectedFileNameFilter);
+    // File Name filter (multi)
+    if (selectedFileNameFilter && selectedFileNameFilter.length > 0) {
+      filtered = filtered.filter(f => selectedFileNameFilter.includes(f.file ? f.file.split('/').pop() : 'Unknown File'));
     }
-    // Description filter
-    if (selectedDescriptionFilter) {
-      filtered = filtered.filter(f => (f.description || '-') === selectedDescriptionFilter);
+    // Description filter (multi)
+    if (selectedDescriptionFilter && selectedDescriptionFilter.length > 0) {
+      filtered = filtered.filter(f => selectedDescriptionFilter.includes(f.description || '-'));
     }
-    // Added By filter
-    if (selectedAddedByFilter) {
-      filtered = filtered.filter(f => (f.added_by || '-') === selectedAddedByFilter);
+    // Added By filter (multi)
+    if (selectedAddedByFilter && selectedAddedByFilter.length > 0) {
+      filtered = filtered.filter(f => selectedAddedByFilter.includes(f.added_by || '-'));
     }
-    // Date filter
-    if (selectedDateFilter) {
-      filtered = filtered.filter(f => (f.uploaded_at ? new Date(f.uploaded_at).toLocaleDateString() : '-') === selectedDateFilter);
+    // Date filter (multi)
+    if (selectedDateFilter && selectedDateFilter.length > 0) {
+      filtered = filtered.filter(f => selectedDateFilter.includes(f.uploaded_at ? new Date(f.uploaded_at).toLocaleDateString() : '-'));
     }
-
-    // Knowledge base dropdown filter
-    if (showSearchBox && selectedKBFilters.length > 0) {
-      filtered = uploadedPPTs.filter(ppt =>
-        ppt.knowledge_bases &&
-        ppt.knowledge_bases.some(kb =>
+    // Knowledge Bases filter (multi)
+    if (selectedKBFilters && selectedKBFilters.length > 0) {
+      filtered = filtered.filter(f =>
+        f.knowledge_bases &&
+        f.knowledge_bases.some(kb =>
           typeof kb === 'string'
             ? selectedKBFilters.includes(kb)
             : (kb.name && selectedKBFilters.includes(kb.name))
         )
       );
-    } else if (searchTerm) {
+    }
+
+    // Search term filter
+    if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = uploadedPPTs.filter(ppt => (
         (ppt.file && ppt.file.toLowerCase().includes(term)) ||
@@ -306,12 +311,16 @@ const PPTListTab = ({ uploadedPPTs, renderTable, pptModalOpen, setPptModalOpen, 
                 </div>
                 {showFileNameFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowFileNameFilter(false)} title="Close">✖</button>
+                    <button type="button" 
+                      className="absolute top-2 right-2 z-50"
+                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                      onClick={() => setShowFileNameFilter(false)} title="Close">✖</button>
                     <Select
+                      isMulti
                       isSearchable
                       options={fileNameOptions}
-                      value={selectedFileNameFilter ? [{ value: selectedFileNameFilter, label: selectedFileNameFilter }] : []}
-                      onChange={selectedOption => setSelectedFileNameFilter(selectedOption ? selectedOption.value : null)}
+                      value={fileNameOptions.filter(opt => selectedFileNameFilter.includes(opt.value))}
+                      onChange={selectedOptions => setSelectedFileNameFilter(selectedOptions ? selectedOptions.map(opt => opt.value) : [])}
                       classNamePrefix="react-select"
                       placeholder="Filter File Name..."
                       styles={{
@@ -408,12 +417,16 @@ const PPTListTab = ({ uploadedPPTs, renderTable, pptModalOpen, setPptModalOpen, 
                 </div>
                 {showDescriptionFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowDescriptionFilter(false)} title="Close">✖</button>
+                    <button type="button" 
+                      className="absolute top-2 right-2 z-50"
+                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                      onClick={() => setShowDescriptionFilter(false)} title="Close">✖</button>
                     <Select
+                      isMulti
                       isSearchable
                       options={descriptionOptions}
-                      value={selectedDescriptionFilter ? [{ value: selectedDescriptionFilter, label: selectedDescriptionFilter }] : []}
-                      onChange={selectedOption => setSelectedDescriptionFilter(selectedOption ? selectedOption.value : null)}
+                      value={descriptionOptions.filter(opt => selectedDescriptionFilter.includes(opt.value))}
+                      onChange={selectedOptions => setSelectedDescriptionFilter(selectedOptions ? selectedOptions.map(opt => opt.value) : [])}
                       classNamePrefix="react-select"
                       placeholder="Filter Description..."
                       styles={{
@@ -484,7 +497,7 @@ const PPTListTab = ({ uploadedPPTs, renderTable, pptModalOpen, setPptModalOpen, 
                 )}
               </th>
               <th 
-                className="px-3 py-2 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors relative"
+                className="relative px-3 py-2 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('knowledge_bases')}
               >
                 <div className="flex items-center space-x-1">
@@ -495,111 +508,97 @@ const PPTListTab = ({ uploadedPPTs, renderTable, pptModalOpen, setPptModalOpen, 
                     className="ml-1 focus:outline-none"
                     onClick={e => {
                       e.stopPropagation();
-                      fetchKnowledgeBases && fetchKnowledgeBases();
-                      setShowSearchBox(prev => !prev);
+                      setShowFileNameFilter(false);
+                      setShowDescriptionFilter(false);
+                      setShowAddedByFilter(false);
+                      setShowDateFilter(false);
+                      setShowKBFilter(prev => !prev);
                     }}
-                    title="Search Knowledge Base"
+                    title="Filter Knowledge Bases"
                   >
                     <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
                 </div>
-                {showSearchBox && (
-                  <div className="absolute z-40 left-1/2 -translate-x-1/2 top-full mt-2 w-80 min-w-[260px] bg-white border border-gray-200 rounded-2xl shadow-2xl flex flex-col p-4 animate-fadeIn" style={{ minWidth: '260px', boxShadow: '0 8px 32px 0 rgba(60,72,88,0.18)' }} onClick={e => e.stopPropagation()}>
-                    {knowledgeBases && knowledgeBases.length > 0 ? (
-                      <Select
-                        isMulti
-                        isSearchable
-                        options={knowledgeBases.map(kb => ({ value: String(kb.id), label: kb.name }))}
-                        value={knowledgeBases.filter(kb => selectedKBFilters.includes(kb.name)).map(kb => ({ value: String(kb.id), label: kb.name }))}
-                        onChange={selectedOptions => {
-                          setSelectedKBFilters(selectedOptions ? selectedOptions.map(opt => opt.label) : []);
-                        }}
-                        classNamePrefix="react-select"
-                        placeholder="Search Knowledge Base..."
-                        styles={{
-                          control: (base, state) => ({
-                            ...base,
-                            borderRadius: '4px',
-                            borderColor: state.isFocused ? '#2563eb' : '#e5e7eb',
-                            boxShadow: state.isFocused ? '0 0 0 2px #2563eb33' : '0 2px 8px 0 rgba(60,72,88,0.10)',
-                            minHeight: '32px',
-                            fontSize: '0.9rem',
-                            background: '#f9fafb',
-                            transition: 'border-color 0.2s, box-shadow 0.2s',
-                          }),
-                          option: (base, state) => ({
-                            ...base,
-                            backgroundColor: state.isSelected
-                              ? '#2563eb22'
-                              : state.isFocused
-                              ? '#eff6ff'
-                              : '#fff',
-                            color: state.isSelected ? '#1d4ed8' : '#222',
-                            fontWeight: state.isSelected ? 600 : 400,
-                            borderRadius: '4px',
-                            margin: 0,
-                            padding: '6px 10px',
-                            fontSize: '0.9rem',
-                            cursor: 'pointer',
-                          }),
-                          multiValue: (base) => ({
-                            ...base,
-                            backgroundColor: '#dbeafe',
-                            borderRadius: '4px',
-                            color: '#1d4ed8',
-                            fontWeight: 500,
-                            fontSize: '0.9rem',
-                          }),
-                          multiValueLabel: (base) => ({
-                            ...base,
-                            color: '#1d4ed8',
-                            fontWeight: 500,
-                            fontSize: '0.9rem',
-                          }),
-                          multiValueRemove: (base) => ({
-                            ...base,
-                            color: '#1d4ed8',
-                            ':hover': {
-                              backgroundColor: '#1d4ed8',
-                              color: 'white',
-                            },
-                          }),
-                          menu: (base) => ({
-                            ...base,
-                            borderRadius: '6px',
-                            boxShadow: '0 8px 32px 0 rgba(60,72,88,0.18)',
-                            zIndex: 9999,
-                            maxHeight: 250,
-                            overflowY: 'auto',
-                          }),
-                          placeholder: (base) => ({
-                            ...base,
-                            color: '#9ca3af',
-                            fontSize: '0.9rem',
-                          }),
-                          input: (base) => ({
-                            ...base,
-                            color: '#222',
-                            fontSize: '0.9rem',
-                          }),
-                        }}
-                        autoFocus
-                      />
-                    ) : (
-                      <div className="text-gray-400 text-base px-3 py-4 text-center select-none">No knowledge bases found.</div>
-                      )}
-                      <button
-                        type="button"
-                      className="mt-2 text-gray-400 hover:text-gray-600 self-end"
-                        onClick={() => setShowSearchBox(false)}
-                        title="Close"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
+                {showKBFilter && (
+                  <div style={{ position: 'relative' }}>
+                    <button type="button" 
+                      className="absolute top-2 right-2 z-50"
+                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                      onClick={() => setShowKBFilter(false)} title="Close">✖</button>
+                    <Select
+                      isMulti
+                      isSearchable
+                      options={knowledgeBases.map(kb => ({ value: kb.name, label: kb.name }))}
+                      value={knowledgeBases.filter(kb => selectedKBFilters.includes(kb.name)).map(kb => ({ value: kb.name, label: kb.name }))}
+                      onChange={selectedOptions => setSelectedKBFilters(selectedOptions ? selectedOptions.map(opt => opt.value) : [])}
+                      classNamePrefix="react-select"
+                      placeholder="Filter Knowledge Bases..."
+                      styles={{
+                        control: (base, state) => ({
+                          ...base,
+                          borderRadius: '12px',
+                          borderColor: state.isFocused ? '#2563eb' : '#e5e7eb',
+                          boxShadow: state.isFocused ? '0 0 0 2px #2563eb33' : '0 2px 8px 0 rgba(60,72,88,0.10)',
+                          minHeight: '44px',
+                          fontSize: '1rem',
+                          background: '#f9fafb',
+                          transition: 'border-color 0.2s, box-shadow 0.2s',
+                        }),
+                        option: (base, state) => ({
+                          ...base,
+                          backgroundColor: state.isSelected
+                            ? '#2563eb22'
+                            : state.isFocused
+                            ? '#eff6ff'
+                            : '#fff',
+                          color: state.isSelected ? '#1d4ed8' : '#222',
+                          fontWeight: state.isSelected ? 600 : 400,
+                          borderRadius: '8px',
+                          margin: '2px 4px',
+                          padding: '10px 16px',
+                          cursor: 'pointer',
+                        }),
+                        multiValue: (base) => ({
+                          ...base,
+                          backgroundColor: '#dbeafe',
+                          borderRadius: '8px',
+                          color: '#1d4ed8',
+                          fontWeight: 500,
+                        }),
+                        multiValueLabel: (base) => ({
+                          ...base,
+                          color: '#1d4ed8',
+                          fontWeight: 500,
+                        }),
+                        multiValueRemove: (base) => ({
+                          ...base,
+                          color: '#1d4ed8',
+                          ':hover': {
+                            backgroundColor: '#1d4ed8',
+                            color: 'white',
+                          },
+                        }),
+                        menu: (base) => ({
+                          ...base,
+                          borderRadius: '12px',
+                          boxShadow: '0 8px 32px 0 rgba(60,72,88,0.18)',
+                          zIndex: 9999,
+                        }),
+                        placeholder: (base) => ({
+                          ...base,
+                          color: '#9ca3af',
+                        }),
+                        input: (base) => ({
+                          ...base,
+                          color: '#222',
+                        }),
+                      }}
+                      autoFocus
+                      menuPortalTarget={document.body}
+                      menuPosition="fixed"
+                    />
                   </div>
                 )}
               </th>
@@ -630,12 +629,16 @@ const PPTListTab = ({ uploadedPPTs, renderTable, pptModalOpen, setPptModalOpen, 
                 </div>
                 {showAddedByFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowAddedByFilter(false)} title="Close">✖</button>
+                    <button type="button" 
+                      className="absolute top-2 right-2 z-50"
+                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                      onClick={() => setShowAddedByFilter(false)} title="Close">✖</button>
                     <Select
+                      isMulti
                       isSearchable
                       options={addedByOptions}
-                      value={selectedAddedByFilter ? [{ value: selectedAddedByFilter, label: selectedAddedByFilter }] : []}
-                      onChange={selectedOption => setSelectedAddedByFilter(selectedOption ? selectedOption.value : null)}
+                      value={addedByOptions.filter(opt => selectedAddedByFilter.includes(opt.value))}
+                      onChange={selectedOptions => setSelectedAddedByFilter(selectedOptions ? selectedOptions.map(opt => opt.value) : [])}
                       classNamePrefix="react-select"
                       placeholder="Filter Added By..."
                       styles={{
@@ -732,12 +735,16 @@ const PPTListTab = ({ uploadedPPTs, renderTable, pptModalOpen, setPptModalOpen, 
                 </div>
                 {showDateFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowDateFilter(false)} title="Close">✖</button>
+                    <button type="button" 
+                      className="absolute top-2 right-2 z-50"
+                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                      onClick={() => setShowDateFilter(false)} title="Close">✖</button>
                     <Select
+                      isMulti
                       isSearchable
                       options={dateOptions}
-                      value={selectedDateFilter ? [{ value: selectedDateFilter, label: selectedDateFilter }] : []}
-                      onChange={selectedOption => setSelectedDateFilter(selectedOption ? selectedOption.value : null)}
+                      value={dateOptions.filter(opt => selectedDateFilter.includes(opt.value))}
+                      onChange={selectedOptions => setSelectedDateFilter(selectedOptions ? selectedOptions.map(opt => opt.value) : [])}
                       classNamePrefix="react-select"
                       placeholder="Filter Upload Date..."
                       styles={{

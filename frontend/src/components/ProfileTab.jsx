@@ -199,7 +199,10 @@ const ProfileTab = ({ profiles, handleEditProfile, handleDeleteProfile, handleCr
               </div>
               {showProfileFilter && (
                 <div style={{ position: 'relative', zIndex: 9999 }}>
-                  <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowProfileFilter(false)} title="Close">✖</button>
+                  <button type="button"
+                    className="absolute top-2 right-2 z-50"
+                    style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                    onClick={() => setShowProfileFilter(false)} title="Close">✖</button>
                   <Select
                     isMulti
                     isSearchable
@@ -292,7 +295,10 @@ const ProfileTab = ({ profiles, handleEditProfile, handleDeleteProfile, handleCr
               </div>
               {showPermFilter && (
                 <div style={{ position: 'relative', zIndex: 9999 }}>
-                  <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowPermFilter(false)} title="Close">✖</button>
+                  <button type="button"
+                    className="absolute top-2 right-2 z-50"
+                    style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                    onClick={() => setShowPermFilter(false)} title="Close">✖</button>
                   <Select
                     isMulti
                     isSearchable

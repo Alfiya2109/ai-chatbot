@@ -32,19 +32,22 @@ const QAListTab = ({
 
   // Add filter popover state for each column
   const [showQuestionFilter, setShowQuestionFilter] = useState(false);
-  const [selectedQuestionFilter, setSelectedQuestionFilter] = useState(null);
+  const [selectedQuestionFilter, setSelectedQuestionFilter] = useState([]);
   const [showAnswerFilter, setShowAnswerFilter] = useState(false);
-  const [selectedAnswerFilter, setSelectedAnswerFilter] = useState(null);
+  const [selectedAnswerFilter, setSelectedAnswerFilter] = useState([]);
   const [showDescriptionFilter, setShowDescriptionFilter] = useState(false);
-  const [selectedDescriptionFilter, setSelectedDescriptionFilter] = useState(null);
+  const [selectedDescriptionFilter, setSelectedDescriptionFilter] = useState([]);
   const [showCategoryFilter, setShowCategoryFilter] = useState(false);
-  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState(null);
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState([]);
   const [showSubcategoryFilter, setShowSubcategoryFilter] = useState(false);
-  const [selectedSubcategoryFilter, setSelectedSubcategoryFilter] = useState(null);
+  const [selectedSubcategoryFilter, setSelectedSubcategoryFilter] = useState([]);
   const [showAddedByFilter, setShowAddedByFilter] = useState(false);
-  const [selectedAddedByFilter, setSelectedAddedByFilter] = useState(null);
+  const [selectedAddedByFilter, setSelectedAddedByFilter] = useState([]);
   const [showDateFilter, setShowDateFilter] = useState(false);
-  const [selectedDateFilter, setSelectedDateFilter] = useState(null);
+  const [selectedDateFilter, setSelectedDateFilter] = useState([]);
+
+  // Add state for Knowledge Bases filter popover
+  const [showKBFilter, setShowKBFilter] = useState(false);
 
   // Unique options for each filter
   const questionOptions = useMemo(() => {
@@ -84,44 +87,39 @@ const QAListTab = ({
   const filteredAndSortedQAData = useMemo(() => {
     let filtered = qaData;
 
-    // Question filter
-    if (selectedQuestionFilter) {
-      filtered = filtered.filter(q => (q.question || 'Unknown Question') === selectedQuestionFilter);
+    // Question filter (multi)
+    if (selectedQuestionFilter && selectedQuestionFilter.length > 0) {
+      filtered = filtered.filter(q => selectedQuestionFilter.includes(q.question || 'Unknown Question'));
     }
-    // Answer filter
-    if (selectedAnswerFilter) {
-      filtered = filtered.filter(q => (q.answer || 'Unknown Answer') === selectedAnswerFilter);
+    // Answer filter (multi)
+    if (selectedAnswerFilter && selectedAnswerFilter.length > 0) {
+      filtered = filtered.filter(q => selectedAnswerFilter.includes(q.answer || 'Unknown Answer'));
     }
-    // Description filter
-    if (selectedDescriptionFilter) {
-      filtered = filtered.filter(q => (q.description || '-') === selectedDescriptionFilter);
+    // Description filter (multi)
+    if (selectedDescriptionFilter && selectedDescriptionFilter.length > 0) {
+      filtered = filtered.filter(q => selectedDescriptionFilter.includes(q.description || '-'));
     }
-    // Category filter
-    if (selectedCategoryFilter) {
-      filtered = filtered.filter(q => 
-        q.category && q.category.some(cat => 
-          (typeof cat === 'string' ? cat : cat.name) === selectedCategoryFilter
-        )
+    // Category filter (multi)
+    if (selectedCategoryFilter && selectedCategoryFilter.length > 0) {
+      filtered = filtered.filter(q =>
+        q.category && q.category.some(cat => selectedCategoryFilter.includes(typeof cat === 'string' ? cat : cat.name))
       );
     }
-    // Subcategory filter
-    if (selectedSubcategoryFilter) {
-      filtered = filtered.filter(q => 
-        q.subcategory && q.subcategory.some(subcat => 
-          (typeof subcat === 'string' ? subcat : subcat.name) === selectedSubcategoryFilter
-        )
+    // Subcategory filter (multi)
+    if (selectedSubcategoryFilter && selectedSubcategoryFilter.length > 0) {
+      filtered = filtered.filter(q =>
+        q.subcategory && q.subcategory.some(subcat => selectedSubcategoryFilter.includes(typeof subcat === 'string' ? subcat : subcat.name))
       );
     }
-    // Added By filter
-    if (selectedAddedByFilter) {
-      filtered = filtered.filter(q => (q.added_by || '-') === selectedAddedByFilter);
+    // Added By filter (multi)
+    if (selectedAddedByFilter && selectedAddedByFilter.length > 0) {
+      filtered = filtered.filter(q => selectedAddedByFilter.includes(q.added_by || '-'));
     }
-    // Date filter
-    if (selectedDateFilter) {
-      filtered = filtered.filter(q => (q.uploaded_at ? new Date(q.uploaded_at).toLocaleDateString() : '-') === selectedDateFilter);
+    // Date filter (multi)
+    if (selectedDateFilter && selectedDateFilter.length > 0) {
+      filtered = filtered.filter(q => selectedDateFilter.includes(q.uploaded_at ? new Date(q.uploaded_at).toLocaleDateString() : '-'));
     }
-
-    // Knowledge base dropdown filter
+    // Knowledge base filter (multi)
     if (showSearchBox && selectedKBFilters.length > 0) {
       filtered = filtered.filter(qa =>
         qa.knowledge_bases &&
@@ -475,12 +473,16 @@ const QAListTab = ({
                 </div>
                 {showQuestionFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowQuestionFilter(false)} title="Close">✖</button>
+                    <button type="button"
+                      className="absolute top-2 right-2 z-50"
+                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                      onClick={() => setShowQuestionFilter(false)} title="Close">✖</button>
                     <Select
+                      isMulti
                       isSearchable
                       options={questionOptions}
-                      value={selectedQuestionFilter ? [{ value: selectedQuestionFilter, label: selectedQuestionFilter }] : []}
-                      onChange={selectedOption => setSelectedQuestionFilter(selectedOption ? selectedOption.value : null)}
+                      value={questionOptions.filter(opt => selectedQuestionFilter.includes(opt.value))}
+                      onChange={selectedOptions => setSelectedQuestionFilter(selectedOptions ? selectedOptions.map(opt => opt.value) : [])}
                       classNamePrefix="react-select"
                       placeholder="Filter Question..."
                       styles={{
@@ -580,12 +582,16 @@ const QAListTab = ({
                 </div>
                 {showAnswerFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowAnswerFilter(false)} title="Close">✖</button>
+                    <button type="button"
+                      className="absolute top-2 right-2 z-50"
+                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                      onClick={() => setShowAnswerFilter(false)} title="Close">✖</button>
                     <Select
+                      isMulti
                       isSearchable
                       options={answerOptions}
-                      value={selectedAnswerFilter ? [{ value: selectedAnswerFilter, label: selectedAnswerFilter }] : []}
-                      onChange={selectedOption => setSelectedAnswerFilter(selectedOption ? selectedOption.value : null)}
+                      value={answerOptions.filter(opt => selectedAnswerFilter.includes(opt.value))}
+                      onChange={selectedOptions => setSelectedAnswerFilter(selectedOptions ? selectedOptions.map(opt => opt.value) : [])}
                       classNamePrefix="react-select"
                       placeholder="Filter Answer..."
                       styles={{
@@ -685,12 +691,16 @@ const QAListTab = ({
                 </div>
                 {showDescriptionFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowDescriptionFilter(false)} title="Close">✖</button>
+                    <button type="button"
+                      className="absolute top-2 right-2 z-50"
+                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                      onClick={() => setShowDescriptionFilter(false)} title="Close">✖</button>
                     <Select
+                      isMulti
                       isSearchable
                       options={descriptionOptions}
-                      value={selectedDescriptionFilter ? [{ value: selectedDescriptionFilter, label: selectedDescriptionFilter }] : []}
-                      onChange={selectedOption => setSelectedDescriptionFilter(selectedOption ? selectedOption.value : null)}
+                      value={descriptionOptions.filter(opt => selectedDescriptionFilter.includes(opt.value))}
+                      onChange={selectedOptions => setSelectedDescriptionFilter(selectedOptions ? selectedOptions.map(opt => opt.value) : [])}
                       classNamePrefix="react-select"
                       placeholder="Filter Description..."
                       styles={{
@@ -790,12 +800,16 @@ const QAListTab = ({
                 </div>
                 {showCategoryFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowCategoryFilter(false)} title="Close">✖</button>
+                    <button type="button"
+                      className="absolute top-2 right-2 z-50"
+                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                      onClick={() => setShowCategoryFilter(false)} title="Close">✖</button>
                     <Select
+                      isMulti
                       isSearchable
                       options={categoryOptions}
-                      value={selectedCategoryFilter ? [{ value: selectedCategoryFilter, label: selectedCategoryFilter }] : []}
-                      onChange={selectedOption => setSelectedCategoryFilter(selectedOption ? selectedOption.value : null)}
+                      value={categoryOptions.filter(opt => selectedCategoryFilter.includes(opt.value))}
+                      onChange={selectedOptions => setSelectedCategoryFilter(selectedOptions ? selectedOptions.map(opt => opt.value) : [])}
                       classNamePrefix="react-select"
                       placeholder="Filter Category..."
                       styles={{
@@ -895,12 +909,16 @@ const QAListTab = ({
                 </div>
                 {showSubcategoryFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowSubcategoryFilter(false)} title="Close">✖</button>
+                    <button type="button"
+                      className="absolute top-2 right-2 z-50"
+                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                      onClick={() => setShowSubcategoryFilter(false)} title="Close">✖</button>
                     <Select
+                      isMulti
                       isSearchable
                       options={subcategoryOptions}
-                      value={selectedSubcategoryFilter ? [{ value: selectedSubcategoryFilter, label: selectedSubcategoryFilter }] : []}
-                      onChange={selectedOption => setSelectedSubcategoryFilter(selectedOption ? selectedOption.value : null)}
+                      value={subcategoryOptions.filter(opt => selectedSubcategoryFilter.includes(opt.value))}
+                      onChange={selectedOptions => setSelectedSubcategoryFilter(selectedOptions ? selectedOptions.map(opt => opt.value) : [])}
                       classNamePrefix="react-select"
                       placeholder="Filter Subcategory..."
                       styles={{
@@ -982,108 +1000,100 @@ const QAListTab = ({
                     className="ml-1 focus:outline-none"
                     onClick={e => {
                       e.stopPropagation();
-                      setShowSearchBox(prev => !prev);
+                      setShowQuestionFilter(false);
+                      setShowAnswerFilter(false);
+                      setShowDescriptionFilter(false);
+                      setShowCategoryFilter(false);
+                      setShowSubcategoryFilter(false);
+                      setShowAddedByFilter(false);
+                      setShowDateFilter(false);
+                      setShowKBFilter(prev => !prev);
                     }}
-                    title="Search Knowledge Base"
+                    title="Filter Knowledge Bases"
                   >
                     <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
                 </div>
-                {showSearchBox && (
-                  <div className="absolute z-40 left-1/2 -translate-x-1/2 top-full mt-2 w-80 min-w-[260px] bg-white border border-gray-200 rounded-2xl shadow-2xl flex flex-col p-4 animate-fadeIn" style={{ minWidth: '260px', boxShadow: '0 8px 32px 0 rgba(60,72,88,0.18)' }} onClick={e => e.stopPropagation()}>
-                    <div className="custom-scrollbar">
-                      <Select
-                        isMulti
-                        isSearchable
-                        options={knowledgeBases.map(kb => ({ value: String(kb.id), label: kb.name }))}
-                        value={knowledgeBases.filter(kb => selectedKBFilters.includes(kb.name)).map(kb => ({ value: String(kb.id), label: kb.name }))}
-                        onChange={selectedOptions => {
-                          setSelectedKBFilters(selectedOptions ? selectedOptions.map(opt => opt.label) : []);
-                        }}
-                        classNamePrefix="react-select"
-                        placeholder="Search Knowledge Base..."
-                        styles={{
-                          control: (base, state) => ({
-                            ...base,
-                            borderRadius: '4px',
-                            borderColor: state.isFocused ? '#2563eb' : '#e5e7eb',
-                            boxShadow: state.isFocused ? '0 0 0 2px #2563eb33' : '0 2px 8px 0 rgba(60,72,88,0.10)',
-                            minHeight: '32px',
-                            fontSize: '0.9rem',
-                            background: '#f9fafb',
-                            transition: 'border-color 0.2s, box-shadow 0.2s',
-                          }),
-                          option: (base, state) => ({
-                            ...base,
-                            backgroundColor: state.isSelected
-                              ? '#2563eb22'
-                              : state.isFocused
-                              ? '#eff6ff'
-                              : '#fff',
-                            color: state.isSelected ? '#1d4ed8' : '#222',
-                            fontWeight: state.isSelected ? 600 : 400,
-                            borderRadius: '4px',
-                            margin: 0,
-                            padding: '6px 10px',
-                            fontSize: '0.9rem',
-                            cursor: 'pointer',
-                          }),
-                          multiValue: (base) => ({
-                            ...base,
-                            backgroundColor: '#dbeafe',
-                            borderRadius: '4px',
-                            color: '#1d4ed8',
-                            fontWeight: 500,
-                            fontSize: '0.9rem',
-                          }),
-                          multiValueLabel: (base) => ({
-                            ...base,
-                            color: '#1d4ed8',
-                            fontWeight: 500,
-                            fontSize: '0.9rem',
-                          }),
-                          multiValueRemove: (base) => ({
-                            ...base,
-                            color: '#1d4ed8',
-                            ':hover': {
-                              backgroundColor: '#1d4ed8',
-                              color: 'white',
-                            },
-                          }),
-                          menu: (base) => ({
-                            ...base,
-                            borderRadius: '6px',
-                            boxShadow: '0 8px 32px 0 rgba(60,72,88,0.18)',
-                            zIndex: 9999,
-                            maxHeight: 250,
-                            overflowY: 'auto',
-                          }),
-                          placeholder: (base) => ({
-                            ...base,
-                            color: '#9ca3af',
-                            fontSize: '0.9rem',
-                          }),
-                          input: (base) => ({
-                            ...base,
-                            color: '#222',
-                            fontSize: '0.9rem',
-                          }),
-                        }}
-                        autoFocus
-                      />
-                    </div>
-                        <button
-                          type="button"
-                      className="mt-2 text-gray-400 hover:text-gray-600 self-end"
-                        onClick={() => setShowSearchBox(false)}
-                        title="Close"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
+                {showKBFilter && (
+                  <div style={{ position: 'relative' }}>
+                    <button type="button"
+                      className="absolute top-2 right-2 z-50"
+                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                      onClick={() => setShowKBFilter(false)} title="Close">✖</button>
+                    <Select
+                      isMulti
+                      isSearchable
+                      options={knowledgeBases.map(kb => ({ value: kb.name, label: kb.name }))}
+                      value={knowledgeBases.filter(kb => selectedKBFilters.includes(kb.name)).map(kb => ({ value: kb.name, label: kb.name }))}
+                      onChange={selectedOptions => setSelectedKBFilters(selectedOptions ? selectedOptions.map(opt => opt.value) : [])}
+                      classNamePrefix="react-select"
+                      placeholder="Filter Knowledge Bases..."
+                      styles={{
+                        control: (base, state) => ({
+                          ...base,
+                          borderRadius: '12px',
+                          borderColor: state.isFocused ? '#2563eb' : '#e5e7eb',
+                          boxShadow: state.isFocused ? '0 0 0 2px #2563eb33' : '0 2px 8px 0 rgba(60,72,88,0.10)',
+                          minHeight: '44px',
+                          fontSize: '1rem',
+                          background: '#f9fafb',
+                          transition: 'border-color 0.2s, box-shadow 0.2s',
+                        }),
+                        option: (base, state) => ({
+                          ...base,
+                          backgroundColor: state.isSelected
+                            ? '#2563eb22'
+                            : state.isFocused
+                            ? '#eff6ff'
+                            : '#fff',
+                          color: state.isSelected ? '#1d4ed8' : '#222',
+                          fontWeight: state.isSelected ? 600 : 400,
+                          borderRadius: '8px',
+                          margin: '2px 4px',
+                          padding: '10px 16px',
+                          cursor: 'pointer',
+                        }),
+                        multiValue: (base) => ({
+                          ...base,
+                          backgroundColor: '#dbeafe',
+                          borderRadius: '8px',
+                          color: '#1d4ed8',
+                          fontWeight: 500,
+                        }),
+                        multiValueLabel: (base) => ({
+                          ...base,
+                          color: '#1d4ed8',
+                          fontWeight: 500,
+                        }),
+                        multiValueRemove: (base) => ({
+                          ...base,
+                          color: '#1d4ed8',
+                          ':hover': {
+                            backgroundColor: '#1d4ed8',
+                            color: 'white',
+                          },
+                        }),
+                        menu: (base) => ({
+                          ...base,
+                          borderRadius: '12px',
+                          boxShadow: '0 8px 32px 0 rgba(60,72,88,0.18)',
+                          zIndex: 9999,
+                        }),
+                        placeholder: (base) => ({
+                          ...base,
+                          color: '#9ca3af',
+                        }),
+                        input: (base) => ({
+                          ...base,
+                          color: '#222',
+                        }),
+                      }}
+                      autoFocus
+                      menuPortalTarget={document.body}
+                      menuPosition="fixed"
+                    />
                   </div>
                 )}
               </th>
@@ -1117,12 +1127,16 @@ const QAListTab = ({
                 </div>
                 {showAddedByFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowAddedByFilter(false)} title="Close">✖</button>
+                    <button type="button"
+                      className="absolute top-2 right-2 z-50"
+                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                      onClick={() => setShowAddedByFilter(false)} title="Close">✖</button>
                     <Select
+                      isMulti
                       isSearchable
                       options={addedByOptions}
-                      value={selectedAddedByFilter ? [{ value: selectedAddedByFilter, label: selectedAddedByFilter }] : []}
-                      onChange={selectedOption => setSelectedAddedByFilter(selectedOption ? selectedOption.value : null)}
+                      value={addedByOptions.filter(opt => selectedAddedByFilter.includes(opt.value))}
+                      onChange={selectedOptions => setSelectedAddedByFilter(selectedOptions ? selectedOptions.map(opt => opt.value) : [])}
                       classNamePrefix="react-select"
                       placeholder="Filter Added By..."
                       styles={{
@@ -1222,12 +1236,16 @@ const QAListTab = ({
                 </div>
                 {showDateFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowDateFilter(false)} title="Close">✖</button>
+                    <button type="button"
+                      className="absolute top-2 right-2 z-50"
+                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                      onClick={() => setShowDateFilter(false)} title="Close">✖</button>
                     <Select
+                      isMulti
                       isSearchable
                       options={dateOptions}
-                      value={selectedDateFilter ? [{ value: selectedDateFilter, label: selectedDateFilter }] : []}
-                      onChange={selectedOption => setSelectedDateFilter(selectedOption ? selectedOption.value : null)}
+                      value={dateOptions.filter(opt => selectedDateFilter.includes(opt.value))}
+                      onChange={selectedOptions => setSelectedDateFilter(selectedOptions ? selectedOptions.map(opt => opt.value) : [])}
                       classNamePrefix="react-select"
                       placeholder="Filter Upload Date..."
                       styles={{

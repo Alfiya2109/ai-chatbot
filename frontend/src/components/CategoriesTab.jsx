@@ -32,12 +32,14 @@ const CategoriesTab = ({ categoriesList, handleEditCategory, handleDeleteCategor
     }
   };
 
-  // Filter categories based on search term and KB filter
+  // Update filteredCategories to apply multi-select filter before search and KB filter
   const filteredCategories = useMemo(() => {
     let filtered = categoriesList;
+    // Multi-select Name filter
     if (selectedNameFilter.length > 0) {
       filtered = filtered.filter(cat => selectedNameFilter.includes(cat.name));
     }
+    // Knowledge Base filter
     if (showSearchBox && selectedKBFilters.length > 0) {
       filtered = filtered.filter(category =>
         category.knowledge_bases &&
@@ -47,11 +49,11 @@ const CategoriesTab = ({ categoriesList, handleEditCategory, handleDeleteCategor
             : (kb.name && selectedKBFilters.includes(kb.name))
         )
       );
-    } else if (searchTerm) {
-    const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(category => {
-      return category.name.toLowerCase().includes(term);
-    });
+    }
+    // Search term filter
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(category => category.name.toLowerCase().includes(term));
     }
     return filtered;
   }, [categoriesList, searchTerm, selectedKBFilters, showSearchBox, selectedNameFilter]);
@@ -172,7 +174,10 @@ const CategoriesTab = ({ categoriesList, handleEditCategory, handleDeleteCategor
               </div>
               {showNameFilter && (
                 <div style={{ position: 'relative', zIndex: 9999 }}>
-                  <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowNameFilter(false)} title="Close">✖</button>
+                  <button type="button"
+                    className="absolute top-2 right-2 z-50"
+                    style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                    onClick={() => setShowNameFilter(false)} title="Close">✖</button>
                   <Select
                     isMulti
                     isSearchable
@@ -249,7 +254,7 @@ const CategoriesTab = ({ categoriesList, handleEditCategory, handleDeleteCategor
               )}
             </th>
             <th 
-              className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors relative"
+              className="relative px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
               onClick={() => handleSort('knowledge_bases')}
             >
               <div className="flex items-center space-x-1">
@@ -274,7 +279,11 @@ const CategoriesTab = ({ categoriesList, handleEditCategory, handleDeleteCategor
                 </button>
               </div>
               {showSearchBox && (
-                <div className="absolute z-40 left-1/2 -translate-x-1/2 top-full mt-2 w-80 min-w-[260px] bg-white border border-gray-200 rounded-2xl shadow-2xl flex flex-col p-4 animate-fadeIn" style={{ minWidth: '260px', boxShadow: '0 8px 32px 0 rgba(60,72,88,0.18)' }} onClick={e => e.stopPropagation()}>
+                <div style={{ position: 'relative', zIndex: 9999 }}>
+                  <button type="button"
+                    className="absolute top-2 right-2 z-50"
+                    style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                    onClick={() => setShowSearchBox(false)} title="Close">✖</button>
                   <Select
                     isMulti
                     isSearchable
@@ -345,18 +354,10 @@ const CategoriesTab = ({ categoriesList, handleEditCategory, handleDeleteCategor
                         color: '#222',
                       }),
                     }}
-                      autoFocus
-                    />
-                      <button
-                        type="button"
-                    className="mt-2 text-gray-400 hover:text-gray-600 self-end"
-                      onClick={() => setShowSearchBox(false)}
-                      title="Close"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
+                    autoFocus
+                    menuPortalTarget={document.body}
+                    menuPosition="fixed"
+                  />
                 </div>
               )}
             </th>

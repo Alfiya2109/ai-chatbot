@@ -10,14 +10,18 @@ const KnowledgeBaseTab = ({ knowledgeBases, handleEditKb, handleDeleteKb, handle
 
   // Filter knowledge bases based on search term
   const filteredKnowledgeBases = useMemo(() => {
-    if (!searchTerm) return knowledgeBases;
-    
-    const term = searchTerm.toLowerCase();
-    return knowledgeBases.filter(kb => {
-      // Search in knowledge base name
-      return kb.name.toLowerCase().includes(term);
-    });
-  }, [knowledgeBases, searchTerm]);
+    let filtered = knowledgeBases;
+    // Multi-select Name filter
+    if (selectedNameFilter.length > 0) {
+      filtered = filtered.filter(kb => selectedNameFilter.includes(kb.name));
+    }
+    // Search term filter
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(kb => kb.name.toLowerCase().includes(term));
+    }
+    return filtered;
+  }, [knowledgeBases, searchTerm, selectedNameFilter]);
 
   const sortedKnowledgeBases = useMemo(() => {
     let filtered = filteredKnowledgeBases;
@@ -40,11 +44,8 @@ const KnowledgeBaseTab = ({ knowledgeBases, handleEditKb, handleDeleteKb, handle
         }
       });
     }
-    if (selectedNameFilter.length > 0) {
-      filtered = filtered.filter(kb => selectedNameFilter.includes(kb.name));
-    }
     return filtered;
-  }, [filteredKnowledgeBases, sortField, sortDirection, selectedNameFilter]);
+  }, [filteredKnowledgeBases, sortField, sortDirection]);
 
   const handleSort = (field) => {
     if (sortField === field) {
@@ -138,7 +139,10 @@ const KnowledgeBaseTab = ({ knowledgeBases, handleEditKb, handleDeleteKb, handle
               </div>
               {showNameFilter && (
                 <div style={{ position: 'relative', zIndex: 9999 }}>
-                  <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowNameFilter(false)} title="Close">✖</button>
+                  <button type="button"
+                    className="absolute top-2 right-2 z-50"
+                    style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                    onClick={() => setShowNameFilter(false)} title="Close">✖</button>
                   <Select
                     isMulti
                     isSearchable

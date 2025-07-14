@@ -32,15 +32,18 @@ const SubcategoriesTable = ({ subCategories, categories, onAddSubcategory, onEdi
   const categoryOptions = useMemo(() => Array.from(new Set(data.map(row => row.categoryName))).map(name => ({ value: name, label: name })), [data]);
   const subcategoryOptions = useMemo(() => Array.from(new Set(data.map(row => row.subcategoryName))).map(name => ({ value: name, label: name })), [data]);
 
-  // Filter subcategories based on search term and dropdown filters
+  // Update filteredData to apply multi-select filters before search
   const filteredData = useMemo(() => {
     let filtered = data;
+    // Multi-select Category filter
     if (selectedCategoryFilter.length > 0) {
       filtered = filtered.filter(row => selectedCategoryFilter.includes(row.categoryName));
     }
+    // Multi-select Subcategory filter
     if (selectedSubcategoryFilter.length > 0) {
       filtered = filtered.filter(row => selectedSubcategoryFilter.includes(row.subcategoryName));
     }
+    // Search term filter
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(row => {
@@ -197,7 +200,10 @@ const SubcategoriesTable = ({ subCategories, categories, onAddSubcategory, onEdi
                   </div>
                   {showCategoryFilter && (
                     <div style={{ position: 'relative', zIndex: 9999 }}>
-                      <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowCategoryFilter(false)} title="Close">✖</button>
+                      <button type="button"
+                        className="absolute top-2 right-2 z-50"
+                        style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                        onClick={() => setShowCategoryFilter(false)} title="Close">✖</button>
                       <Select
                         isMulti
                         isSearchable
@@ -290,7 +296,10 @@ const SubcategoriesTable = ({ subCategories, categories, onAddSubcategory, onEdi
                   </div>
                   {showSubcategoryFilter && (
                     <div style={{ position: 'relative', zIndex: 9999 }}>
-                      <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowSubcategoryFilter(false)} title="Close">✖</button>
+                      <button type="button"
+                        className="absolute top-2 right-2 z-50"
+                        style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                        onClick={() => setShowSubcategoryFilter(false)} title="Close">✖</button>
                       <Select
                         isMulti
                         isSearchable

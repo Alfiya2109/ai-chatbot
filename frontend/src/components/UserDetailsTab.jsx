@@ -229,7 +229,10 @@ const UserDetailsTab = ({
                 </div>
                 {showFirstNameFilter && (
                   <div style={{ position: 'relative', zIndex: 9999 }}>
-                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowFirstNameFilter(false)} title="Close">✖</button>
+                    <button type="button"
+                      className="absolute top-2 right-2 z-50"
+                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                      onClick={() => setShowFirstNameFilter(false)} title="Close">✖</button>
                     <Select
                       isMulti
                       isSearchable
@@ -322,7 +325,10 @@ const UserDetailsTab = ({
                 </div>
                 {showLastNameFilter && (
                   <div style={{ position: 'relative', zIndex: 9999 }}>
-                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowLastNameFilter(false)} title="Close">✖</button>
+                    <button type="button"
+                      className="absolute top-2 right-2 z-50"
+                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                      onClick={() => setShowLastNameFilter(false)} title="Close">✖</button>
                     <Select
                       isMulti
                       isSearchable
@@ -415,7 +421,10 @@ const UserDetailsTab = ({
                 </div>
                 {showPhoneFilter && (
                   <div style={{ position: 'relative', zIndex: 9999 }}>
-                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowPhoneFilter(false)} title="Close">✖</button>
+                    <button type="button"
+                      className="absolute top-2 right-2 z-50"
+                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                      onClick={() => setShowPhoneFilter(false)} title="Close">✖</button>
                     <Select
                       isMulti
                       isSearchable
@@ -508,7 +517,10 @@ const UserDetailsTab = ({
                 </div>
                 {showEmailFilter && (
                   <div style={{ position: 'relative', zIndex: 9999 }}>
-                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowEmailFilter(false)} title="Close">✖</button>
+                    <button type="button"
+                      className="absolute top-2 right-2 z-50"
+                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                      onClick={() => setShowEmailFilter(false)} title="Close">✖</button>
                     <Select
                       isMulti
                       isSearchable
@@ -601,7 +613,10 @@ const UserDetailsTab = ({
                 </div>
                 {showDateFilter && (
                   <div style={{ position: 'relative', zIndex: 9999 }}>
-                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowDateFilter(false)} title="Close">✖</button>
+                    <button type="button"
+                      className="absolute top-2 right-2 z-50"
+                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                      onClick={() => setShowDateFilter(false)} title="Close">✖</button>
                     <Select
                       isMulti
                       isSearchable
@@ -694,7 +709,10 @@ const UserDetailsTab = ({
                 </div>
                 {showProfileFilter && (
                   <div style={{ position: 'relative', zIndex: 9999 }}>
-                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowProfileFilter(false)} title="Close">✖</button>
+                    <button type="button"
+                      className="absolute top-2 right-2 z-50"
+                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                      onClick={() => setShowProfileFilter(false)} title="Close">✖</button>
                     <Select
                       isMulti
                       isSearchable
@@ -786,7 +804,10 @@ const UserDetailsTab = ({
                 </div>
                 {showKBFilter && (
                   <div style={{ position: 'relative', zIndex: 9999 }}>
-                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowKBFilter(false)} title="Close">✖</button>
+                    <button type="button"
+                      className="absolute top-2 right-2 z-50"
+                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                      onClick={() => setShowKBFilter(false)} title="Close">✖</button>
                     <Select
                       isMulti
                       isSearchable
