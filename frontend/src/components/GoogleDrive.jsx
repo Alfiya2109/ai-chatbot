@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { FaPlus, FaTrash } from 'react-icons/fa';
 import {BASE_URL} from '../base_url';
+import Select from 'react-select';
 
 const GOOGLE_CLIENT_ID = '601820931949-4u7o7k6gvd5its0cmegmgd2pgk8dc0oe.apps.googleusercontent.com';
 const GOOGLE_API_KEY = 'AIzaSyDHWkEDkqzwrm-VS23Vo_8m8AMDRwOyTTk';
@@ -65,26 +66,97 @@ const GoogleDrive = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState('');
   const [sortDirection, setSortDirection] = useState('asc');
+  const [showSearchBox, setShowSearchBox] = useState(false);
+  const [selectedKBFilters, setSelectedKBFilters] = useState([]);
+  // 1. Add filter popover state for each column
+  const [showFolderNameFilter, setShowFolderNameFilter] = useState(false);
+  const [selectedFolderNameFilter, setSelectedFolderNameFilter] = useState([]);
+  const [showPathFilter, setShowPathFilter] = useState(false);
+  const [selectedPathFilter, setSelectedPathFilter] = useState([]);
+  const [showDescriptionFilter, setShowDescriptionFilter] = useState(false);
+  const [selectedDescriptionFilter, setSelectedDescriptionFilter] = useState([]);
+  const [showKBFilter, setShowKBFilter] = useState(false);
+  const [selectedKBFilter, setSelectedKBFilter] = useState([]);
+  const [showAddedByFilter, setShowAddedByFilter] = useState(false);
+  const [selectedAddedByFilter, setSelectedAddedByFilter] = useState([]);
+  const [showDateFilter, setShowDateFilter] = useState(false);
+  const [selectedDateFilter, setSelectedDateFilter] = useState([]);
 
-  // Filter drive files based on search term
+  // 2. Unique options for each filter
+  const folderNameOptions = useMemo(() => {
+    const names = Array.from(new Set(driveFiles.map(f => f.folder_name || f.file_name || 'Unknown Folder')));
+    return names.map(name => ({ value: name, label: name }));
+  }, [driveFiles]);
+  const pathOptions = useMemo(() => {
+    const paths = Array.from(new Set(driveFiles.map(f => f.relative_path || '-')));
+    return paths.map(path => ({ value: path, label: path }));
+  }, [driveFiles]);
+  const descriptionOptions = useMemo(() => {
+    const descs = Array.from(new Set(driveFiles.map(f => f.description || '-')));
+    return descs.map(desc => ({ value: desc, label: desc }));
+  }, [driveFiles]);
+  const kbOptions = useMemo(() => {
+    const kbs = Array.from(new Set(driveFiles.flatMap(f => (f.knowledge_bases || []).map(kb => typeof kb === 'string' ? kb : (kb.name || '')))));
+    return kbs.map(kb => ({ value: kb, label: kb }));
+  }, [driveFiles]);
+  const addedByOptions = useMemo(() => {
+    const users = Array.from(new Set(driveFiles.map(f => f.added_by || '-')));
+    return users.map(user => ({ value: user, label: user }));
+  }, [driveFiles]);
+  const dateOptions = useMemo(() => {
+    const dates = Array.from(new Set(driveFiles.map(f => f.uploaded_at ? new Date(f.uploaded_at).toLocaleDateString() : '-')));
+    return dates.map(date => ({ value: date, label: date }));
+  }, [driveFiles]);
+
+  // Filter drive files based on search term and KB filter
   const filteredDriveFiles = useMemo(() => {
-    if (!searchTerm) return driveFiles;
-    
-    const term = searchTerm.toLowerCase();
-    return driveFiles.filter(file => {
-      // Search in folder name, file name, path, description, knowledge bases, and added by
-      return (
-        (file.folder_name && file.folder_name.toLowerCase().includes(term)) ||
-        (file.file_name && file.file_name.toLowerCase().includes(term)) ||
-        (file.relative_path && file.relative_path.toLowerCase().includes(term)) ||
-        (file.description && file.description.toLowerCase().includes(term)) ||
-        (file.knowledge_bases && file.knowledge_bases.some(kb => 
-          typeof kb === 'string' ? kb.toLowerCase().includes(term) : false
-        )) ||
-        (file.added_by && file.added_by.toLowerCase().includes(term))
+    let filtered = driveFiles;
+    // Folder Name filter
+    if (selectedFolderNameFilter.length > 0) {
+      filtered = filtered.filter(f => selectedFolderNameFilter.includes(f.folder_name || f.file_name || 'Unknown Folder'));
+    }
+    // Path filter
+    if (selectedPathFilter.length > 0) {
+      filtered = filtered.filter(f => selectedPathFilter.includes(f.relative_path || '-'));
+    }
+    // Description filter
+    if (selectedDescriptionFilter.length > 0) {
+      filtered = filtered.filter(f => selectedDescriptionFilter.includes(f.description || '-'));
+    }
+    // Knowledge Base filter
+    if (selectedKBFilter.length > 0) {
+      filtered = filtered.filter(f =>
+        f.knowledge_bases && f.knowledge_bases.some(kb =>
+          selectedKBFilter.includes(typeof kb === 'string' ? kb : (kb.name || ''))
+        )
       );
-    });
-  }, [driveFiles, searchTerm]);
+    }
+    // Added By filter
+    if (selectedAddedByFilter.length > 0) {
+      filtered = filtered.filter(f => selectedAddedByFilter.includes(f.added_by || '-'));
+    }
+    // Date filter
+    if (selectedDateFilter.length > 0) {
+      filtered = filtered.filter(f => selectedDateFilter.includes(f.uploaded_at ? new Date(f.uploaded_at).toLocaleDateString() : '-'));
+    }
+    // Search term (fallback)
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(file => {
+        return (
+          (file.folder_name && file.folder_name.toLowerCase().includes(term)) ||
+          (file.file_name && file.file_name.toLowerCase().includes(term)) ||
+          (file.relative_path && file.relative_path.toLowerCase().includes(term)) ||
+          (file.description && file.description.toLowerCase().includes(term)) ||
+          (file.knowledge_bases && file.knowledge_bases.some(kb =>
+            typeof kb === 'string' ? kb.toLowerCase().includes(term) : (kb.name && kb.name.toLowerCase().includes(term))
+          )) ||
+          (file.added_by && file.added_by.toLowerCase().includes(term))
+        );
+      });
+    }
+    return filtered;
+  }, [driveFiles, searchTerm, selectedFolderNameFilter, selectedPathFilter, selectedDescriptionFilter, selectedKBFilter, selectedAddedByFilter, selectedDateFilter]);
 
   const sortedDriveFiles = useMemo(() => {
     let filtered = filteredDriveFiles;
@@ -410,41 +482,221 @@ const GoogleDrive = () => {
         <table className="min-w-full text-sm">
           <thead>
             <tr className="bg-gray-100">
-              <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('folder_name')}>
+              <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200 relative" onClick={() => handleSort('folder_name')}>
                 <div className="flex items-center space-x-1">
                   <span>Folder Name</span>
                   {getSortIcon('folder_name')}
+                  <button type="button" className="ml-1 focus:outline-none" onClick={e => {e.stopPropagation(); setShowPathFilter(false); setShowDescriptionFilter(false); setShowKBFilter(false); setShowAddedByFilter(false); setShowDateFilter(false); setShowFolderNameFilter(prev => !prev);}} title="Filter Folder Name">
+                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                  </button>
                 </div>
+                {showFolderNameFilter && (
+                  <div style={{ position: 'relative' }}>
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowFolderNameFilter(false)} title="Close">✖</button>
+                    <Select
+                      isMulti
+                      isSearchable
+                      options={folderNameOptions}
+                      value={selectedFolderNameFilter.map(val => ({ value: val, label: val }))}
+                      onChange={opts => setSelectedFolderNameFilter(opts ? opts.map(o => o.value) : [])}
+                      classNamePrefix="react-select"
+                      placeholder="Filter Folder Name..."
+                      styles={/* FileListTab styles */{
+                        control: (base, state) => ({...base, borderRadius: '12px', borderColor: state.isFocused ? '#2563eb' : '#e5e7eb', boxShadow: state.isFocused ? '0 0 0 2px #2563eb33' : '0 2px 8px 0 rgba(60,72,88,0.10)', minHeight: '44px', fontSize: '1rem', background: '#f9fafb', transition: 'border-color 0.2s, box-shadow 0.2s',}),
+                        option: (base, state) => ({...base, backgroundColor: state.isSelected ? '#2563eb22' : state.isFocused ? '#eff6ff' : '#fff', color: state.isSelected ? '#1d4ed8' : '#222', fontWeight: state.isSelected ? 600 : 400, borderRadius: '8px', margin: '2px 4px', padding: '10px 16px', cursor: 'pointer',}),
+                        multiValue: (base) => ({...base, backgroundColor: '#dbeafe', borderRadius: '8px', color: '#1d4ed8', fontWeight: 500,}),
+                        multiValueLabel: (base) => ({...base, color: '#1d4ed8', fontWeight: 500,}),
+                        multiValueRemove: (base) => ({...base, color: '#1d4ed8', ':hover': {backgroundColor: '#1d4ed8', color: 'white',},}),
+                        menu: (base) => ({...base, borderRadius: '12px', boxShadow: '0 8px 32px 0 rgba(60,72,88,0.18)', zIndex: 9999,}),
+                        placeholder: (base) => ({...base, color: '#9ca3af',}),
+                        input: (base) => ({...base, color: '#222',}),
+                      }}
+                      autoFocus
+                      menuPortalTarget={document.body}
+                      menuPosition="fixed"
+                    />
+                  </div>
+                )}
               </th>
-              <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('relative_path')}>
+              <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200 relative" onClick={() => handleSort('relative_path')}>
                 <div className="flex items-center space-x-1">
                   <span>Path</span>
                   {getSortIcon('relative_path')}
+                  <button type="button" className="ml-1 focus:outline-none" onClick={e => {e.stopPropagation(); setShowFolderNameFilter(false); setShowDescriptionFilter(false); setShowKBFilter(false); setShowAddedByFilter(false); setShowDateFilter(false); setShowPathFilter(prev => !prev);}} title="Filter Path">
+                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                  </button>
                 </div>
+                {showPathFilter && (
+                  <div style={{ position: 'relative' }}>
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowPathFilter(false)} title="Close">✖</button>
+                    <Select
+                      isMulti
+                      isSearchable
+                      options={pathOptions}
+                      value={selectedPathFilter.map(val => ({ value: val, label: val }))}
+                      onChange={opts => setSelectedPathFilter(opts ? opts.map(o => o.value) : [])}
+                      classNamePrefix="react-select"
+                      placeholder="Filter Path..."
+                      styles={/* FileListTab styles */{
+                        control: (base, state) => ({...base, borderRadius: '12px', borderColor: state.isFocused ? '#2563eb' : '#e5e7eb', boxShadow: state.isFocused ? '0 0 0 2px #2563eb33' : '0 2px 8px 0 rgba(60,72,88,0.10)', minHeight: '44px', fontSize: '1rem', background: '#f9fafb', transition: 'border-color 0.2s, box-shadow 0.2s',}),
+                        option: (base, state) => ({...base, backgroundColor: state.isSelected ? '#2563eb22' : state.isFocused ? '#eff6ff' : '#fff', color: state.isSelected ? '#1d4ed8' : '#222', fontWeight: state.isSelected ? 600 : 400, borderRadius: '8px', margin: '2px 4px', padding: '10px 16px', cursor: 'pointer',}),
+                        multiValue: (base) => ({...base, backgroundColor: '#dbeafe', borderRadius: '8px', color: '#1d4ed8', fontWeight: 500,}),
+                        multiValueLabel: (base) => ({...base, color: '#1d4ed8', fontWeight: 500,}),
+                        multiValueRemove: (base) => ({...base, color: '#1d4ed8', ':hover': {backgroundColor: '#1d4ed8', color: 'white',},}),
+                        menu: (base) => ({...base, borderRadius: '12px', boxShadow: '0 8px 32px 0 rgba(60,72,88,0.18)', zIndex: 9999,}),
+                        placeholder: (base) => ({...base, color: '#9ca3af',}),
+                        input: (base) => ({...base, color: '#222',}),
+                      }}
+                      autoFocus
+                      menuPortalTarget={document.body}
+                      menuPosition="fixed"
+                    />
+                  </div>
+                )}
               </th>
-              <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('description')}>
+              <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200 relative" onClick={() => handleSort('description')}>
                 <div className="flex items-center space-x-1">
                   <span>Description</span>
                   {getSortIcon('description')}
+                  <button type="button" className="ml-1 focus:outline-none" onClick={e => {e.stopPropagation(); setShowFolderNameFilter(false); setShowPathFilter(false); setShowKBFilter(false); setShowAddedByFilter(false); setShowDateFilter(false); setShowDescriptionFilter(prev => !prev);}} title="Filter Description">
+                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                  </button>
                 </div>
+                {showDescriptionFilter && (
+                  <div style={{ position: 'relative' }}>
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowDescriptionFilter(false)} title="Close">✖</button>
+                    <Select
+                      isMulti
+                      isSearchable
+                      options={descriptionOptions}
+                      value={selectedDescriptionFilter.map(val => ({ value: val, label: val }))}
+                      onChange={opts => setSelectedDescriptionFilter(opts ? opts.map(o => o.value) : [])}
+                      classNamePrefix="react-select"
+                      placeholder="Filter Description..."
+                      styles={/* FileListTab styles */{
+                        control: (base, state) => ({...base, borderRadius: '12px', borderColor: state.isFocused ? '#2563eb' : '#e5e7eb', boxShadow: state.isFocused ? '0 0 0 2px #2563eb33' : '0 2px 8px 0 rgba(60,72,88,0.10)', minHeight: '44px', fontSize: '1rem', background: '#f9fafb', transition: 'border-color 0.2s, box-shadow 0.2s',}),
+                        option: (base, state) => ({...base, backgroundColor: state.isSelected ? '#2563eb22' : state.isFocused ? '#eff6ff' : '#fff', color: state.isSelected ? '#1d4ed8' : '#222', fontWeight: state.isSelected ? 600 : 400, borderRadius: '8px', margin: '2px 4px', padding: '10px 16px', cursor: 'pointer',}),
+                        multiValue: (base) => ({...base, backgroundColor: '#dbeafe', borderRadius: '8px', color: '#1d4ed8', fontWeight: 500,}),
+                        multiValueLabel: (base) => ({...base, color: '#1d4ed8', fontWeight: 500,}),
+                        multiValueRemove: (base) => ({...base, color: '#1d4ed8', ':hover': {backgroundColor: '#1d4ed8', color: 'white',},}),
+                        menu: (base) => ({...base, borderRadius: '12px', boxShadow: '0 8px 32px 0 rgba(60,72,88,0.18)', zIndex: 9999,}),
+                        placeholder: (base) => ({...base, color: '#9ca3af',}),
+                        input: (base) => ({...base, color: '#222',}),
+                      }}
+                      autoFocus
+                      menuPortalTarget={document.body}
+                      menuPosition="fixed"
+                    />
+                  </div>
+                )}
               </th>
-              <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('knowledge_bases')}>
+              <th className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors relative" onClick={() => handleSort('knowledge_bases')}>
                 <div className="flex items-center space-x-1">
                   <span>Knowledge Bases</span>
                   {getSortIcon('knowledge_bases')}
+                  <button type="button" className="ml-1 focus:outline-none" onClick={e => {e.stopPropagation(); setShowFolderNameFilter(false); setShowPathFilter(false); setShowDescriptionFilter(false); setShowAddedByFilter(false); setShowDateFilter(false); setShowKBFilter(prev => !prev);}} title="Filter Knowledge Base">
+                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                  </button>
                 </div>
+                {showKBFilter && (
+                  <div style={{ position: 'relative' }}>
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowKBFilter(false)} title="Close">✖</button>
+                    <Select
+                      isMulti
+                      isSearchable
+                      options={kbOptions}
+                      value={selectedKBFilter.map(val => ({ value: val, label: val }))}
+                      onChange={opts => setSelectedKBFilter(opts ? opts.map(o => o.value) : [])}
+                      classNamePrefix="react-select"
+                      placeholder="Filter Knowledge Base..."
+                      styles={/* FileListTab styles */{
+                        control: (base, state) => ({...base, borderRadius: '12px', borderColor: state.isFocused ? '#2563eb' : '#e5e7eb', boxShadow: state.isFocused ? '0 0 0 2px #2563eb33' : '0 2px 8px 0 rgba(60,72,88,0.10)', minHeight: '44px', fontSize: '1rem', background: '#f9fafb', transition: 'border-color 0.2s, box-shadow 0.2s',}),
+                        option: (base, state) => ({...base, backgroundColor: state.isSelected ? '#2563eb22' : state.isFocused ? '#eff6ff' : '#fff', color: state.isSelected ? '#1d4ed8' : '#222', fontWeight: state.isSelected ? 600 : 400, borderRadius: '8px', margin: '2px 4px', padding: '10px 16px', cursor: 'pointer',}),
+                        multiValue: (base) => ({...base, backgroundColor: '#dbeafe', borderRadius: '8px', color: '#1d4ed8', fontWeight: 500,}),
+                        multiValueLabel: (base) => ({...base, color: '#1d4ed8', fontWeight: 500,}),
+                        multiValueRemove: (base) => ({...base, color: '#1d4ed8', ':hover': {backgroundColor: '#1d4ed8', color: 'white',},}),
+                        menu: (base) => ({...base, borderRadius: '12px', boxShadow: '0 8px 32px 0 rgba(60,72,88,0.18)', zIndex: 9999,}),
+                        placeholder: (base) => ({...base, color: '#9ca3af',}),
+                        input: (base) => ({...base, color: '#222',}),
+                      }}
+                      autoFocus
+                      menuPortalTarget={document.body}
+                      menuPosition="fixed"
+                    />
+                  </div>
+                )}
               </th>
-              <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('added_by')}>
+              <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200 relative" onClick={() => handleSort('added_by')}>
                 <div className="flex items-center space-x-1">
                   <span>Added By</span>
                   {getSortIcon('added_by')}
+                  <button type="button" className="ml-1 focus:outline-none" onClick={e => {e.stopPropagation(); setShowFolderNameFilter(false); setShowPathFilter(false); setShowDescriptionFilter(false); setShowKBFilter(false); setShowDateFilter(false); setShowAddedByFilter(prev => !prev);}} title="Filter Added By">
+                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                  </button>
                 </div>
+                {showAddedByFilter && (
+                  <div style={{ position: 'relative' }}>
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowAddedByFilter(false)} title="Close">✖</button>
+                    <Select
+                      isMulti
+                      isSearchable
+                      options={addedByOptions}
+                      value={selectedAddedByFilter.map(val => ({ value: val, label: val }))}
+                      onChange={opts => setSelectedAddedByFilter(opts ? opts.map(o => o.value) : [])}
+                      classNamePrefix="react-select"
+                      placeholder="Filter Added By..."
+                      styles={/* FileListTab styles */{
+                        control: (base, state) => ({...base, borderRadius: '12px', borderColor: state.isFocused ? '#2563eb' : '#e5e7eb', boxShadow: state.isFocused ? '0 0 0 2px #2563eb33' : '0 2px 8px 0 rgba(60,72,88,0.10)', minHeight: '44px', fontSize: '1rem', background: '#f9fafb', transition: 'border-color 0.2s, box-shadow 0.2s',}),
+                        option: (base, state) => ({...base, backgroundColor: state.isSelected ? '#2563eb22' : state.isFocused ? '#eff6ff' : '#fff', color: state.isSelected ? '#1d4ed8' : '#222', fontWeight: state.isSelected ? 600 : 400, borderRadius: '8px', margin: '2px 4px', padding: '10px 16px', cursor: 'pointer',}),
+                        multiValue: (base) => ({...base, backgroundColor: '#dbeafe', borderRadius: '8px', color: '#1d4ed8', fontWeight: 500,}),
+                        multiValueLabel: (base) => ({...base, color: '#1d4ed8', fontWeight: 500,}),
+                        multiValueRemove: (base) => ({...base, color: '#1d4ed8', ':hover': {backgroundColor: '#1d4ed8', color: 'white',},}),
+                        menu: (base) => ({...base, borderRadius: '12px', boxShadow: '0 8px 32px 0 rgba(60,72,88,0.18)', zIndex: 9999,}),
+                        placeholder: (base) => ({...base, color: '#9ca3af',}),
+                        input: (base) => ({...base, color: '#222',}),
+                      }}
+                      autoFocus
+                      menuPortalTarget={document.body}
+                      menuPosition="fixed"
+                    />
+                  </div>
+                )}
               </th>
-              <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('uploaded_at')}>
+              <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200 relative" onClick={() => handleSort('uploaded_at')}>
                 <div className="flex items-center space-x-1">
                   <span>Uploaded Date</span>
                   {getSortIcon('uploaded_at')}
+                  <button type="button" className="ml-1 focus:outline-none" onClick={e => {e.stopPropagation(); setShowFolderNameFilter(false); setShowPathFilter(false); setShowDescriptionFilter(false); setShowKBFilter(false); setShowAddedByFilter(false); setShowDateFilter(prev => !prev);}} title="Filter Uploaded Date">
+                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                  </button>
                 </div>
+                {showDateFilter && (
+                  <div style={{ position: 'relative' }}>
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowDateFilter(false)} title="Close">✖</button>
+                    <Select
+                      isMulti
+                      isSearchable
+                      options={dateOptions}
+                      value={selectedDateFilter.map(val => ({ value: val, label: val }))}
+                      onChange={opts => setSelectedDateFilter(opts ? opts.map(o => o.value) : [])}
+                      classNamePrefix="react-select"
+                      placeholder="Filter Uploaded Date..."
+                      styles={/* FileListTab styles */{
+                        control: (base, state) => ({...base, borderRadius: '12px', borderColor: state.isFocused ? '#2563eb' : '#e5e7eb', boxShadow: state.isFocused ? '0 0 0 2px #2563eb33' : '0 2px 8px 0 rgba(60,72,88,0.10)', minHeight: '44px', fontSize: '1rem', background: '#f9fafb', transition: 'border-color 0.2s, box-shadow 0.2s',}),
+                        option: (base, state) => ({...base, backgroundColor: state.isSelected ? '#2563eb22' : state.isFocused ? '#eff6ff' : '#fff', color: state.isSelected ? '#1d4ed8' : '#222', fontWeight: state.isSelected ? 600 : 400, borderRadius: '8px', margin: '2px 4px', padding: '10px 16px', cursor: 'pointer',}),
+                        multiValue: (base) => ({...base, backgroundColor: '#dbeafe', borderRadius: '8px', color: '#1d4ed8', fontWeight: 500,}),
+                        multiValueLabel: (base) => ({...base, color: '#1d4ed8', fontWeight: 500,}),
+                        multiValueRemove: (base) => ({...base, color: '#1d4ed8', ':hover': {backgroundColor: '#1d4ed8', color: 'white',},}),
+                        menu: (base) => ({...base, borderRadius: '12px', boxShadow: '0 8px 32px 0 rgba(60,72,88,0.18)', zIndex: 9999,}),
+                        placeholder: (base) => ({...base, color: '#9ca3af',}),
+                        input: (base) => ({...base, color: '#222',}),
+                      }}
+                      autoFocus
+                      menuPortalTarget={document.body}
+                      menuPosition="fixed"
+                    />
+                  </div>
+                )}
               </th>
               <th className="px-3 py-2 text-left">Actions</th>
             </tr>
@@ -533,21 +785,19 @@ const GoogleDrive = () => {
             </div>
             <div>
               <label className="block text-sm font-medium mb-1 text-gray-700">Knowledge Base</label>
-              <select
-                multiple
-                value={selectedKBs}
-                onChange={e => setSelectedKBs(Array.from(e.target.selectedOptions, option => option.value))}
-                className="block w-full text-sm text-gray-700 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 px-2 py-1 h-20"
-              >
-                {knowledgeBases.length === 0 ? (
-                  <option disabled>No knowledge bases found</option>
-                ) : (
-                  knowledgeBases.map(kb => (
-                    <option key={kb.id} value={kb.id}>{kb.name}</option>
-                  ))
-                )}
-              </select>
-              <div className="text-xs text-gray-500 mt-1">Hold Ctrl (Windows) or Cmd (Mac) to select multiple</div>
+              <Select
+                isMulti
+                isSearchable
+                options={knowledgeBases.map(kb => ({ value: String(kb.id), label: kb.name }))}
+                value={knowledgeBases.filter(kb => selectedKBs.includes(String(kb.id))).map(kb => ({ value: String(kb.id), label: kb.name }))}
+                onChange={selectedOptions => {
+                  setSelectedKBs(selectedOptions ? selectedOptions.map(opt => opt.value) : []);
+                }}
+                classNamePrefix="react-select"
+                placeholder="Select knowledge bases..."
+                styles={{ menu: base => ({ ...base, zIndex: 9999 }) }}
+              />
+              <div className="text-xs text-gray-500 mt-1">You can search and select multiple. Searched/selected will show on top.</div>
             </div>
             <div className="flex justify-end gap-2 mt-4">
               <button

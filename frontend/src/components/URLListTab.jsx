@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import Loader from './Loader';
+import Select from 'react-select';
 
 const URLListTab = ({ urlList, renderTable, urlModalOpen, setUrlModalOpen, urlForm, setUrlForm, knowledgeBases, urlFormError, handleUrlModalSubmit, onBulkDelete, isLoading }) => {
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
@@ -7,13 +8,72 @@ const URLListTab = ({ urlList, renderTable, urlModalOpen, setUrlModalOpen, urlFo
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState('');
   const [sortDirection, setSortDirection] = useState('asc');
+  const [showSearchBox, setShowSearchBox] = useState(false);
+  const [knowledgeBaseSearch, setKnowledgeBaseSearch] = useState('');
+  const [selectedKBFilters, setSelectedKBFilters] = useState([]);
+
+  // Add filter popover state for each column
+  const [showURLFilter, setShowURLFilter] = useState(false);
+  const [selectedURLFilter, setSelectedURLFilter] = useState(null);
+  const [showDescriptionFilter, setShowDescriptionFilter] = useState(false);
+  const [selectedDescriptionFilter, setSelectedDescriptionFilter] = useState(null);
+  const [showAddedByFilter, setShowAddedByFilter] = useState(false);
+  const [selectedAddedByFilter, setSelectedAddedByFilter] = useState(null);
+  const [showDateFilter, setShowDateFilter] = useState(false);
+  const [selectedDateFilter, setSelectedDateFilter] = useState(null);
+
+  // Unique options for each filter
+  const urlOptions = useMemo(() => {
+    const urls = Array.from(new Set(urlList.map(u => u.url || 'Unknown URL')));
+    return urls.map(url => ({ value: url, label: url }));
+  }, [urlList]);
+  const descriptionOptions = useMemo(() => {
+    const descs = Array.from(new Set(urlList.map(u => u.description || '-')));
+    return descs.map(desc => ({ value: desc, label: desc }));
+  }, [urlList]);
+  const addedByOptions = useMemo(() => {
+    const users = Array.from(new Set(urlList.map(u => u.added_by || '-')));
+    return users.map(user => ({ value: user, label: user }));
+  }, [urlList]);
+  const dateOptions = useMemo(() => {
+    const dates = Array.from(new Set(urlList.map(u => u.uploaded_at ? new Date(u.uploaded_at).toLocaleDateString() : '-')));
+    return dates.map(date => ({ value: date, label: date }));
+  }, [urlList]);
 
   // Filter and sort URLs based on search term and sort settings
   const filteredURLs = useMemo(() => {
     let filtered = urlList;
-    if (searchTerm) {
+
+    // URL filter
+    if (selectedURLFilter) {
+      filtered = filtered.filter(u => (u.url || 'Unknown URL') === selectedURLFilter);
+    }
+    // Description filter
+    if (selectedDescriptionFilter) {
+      filtered = filtered.filter(u => (u.description || '-') === selectedDescriptionFilter);
+    }
+    // Added By filter
+    if (selectedAddedByFilter) {
+      filtered = filtered.filter(u => (u.added_by || '-') === selectedAddedByFilter);
+    }
+    // Date filter
+    if (selectedDateFilter) {
+      filtered = filtered.filter(u => (u.uploaded_at ? new Date(u.uploaded_at).toLocaleDateString() : '-') === selectedDateFilter);
+    }
+
+    // Knowledge base dropdown filter
+    if (showSearchBox && selectedKBFilters.length > 0) {
+      filtered = filtered.filter(url =>
+        url.knowledge_bases &&
+        url.knowledge_bases.some(kb =>
+          typeof kb === 'string'
+            ? selectedKBFilters.includes(kb)
+            : (kb.name && selectedKBFilters.includes(kb.name))
+        )
+      );
+    } else if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      filtered = urlList.filter(url => {
+      filtered = filtered.filter(url => {
         return (
           (url.url && url.url.toLowerCase().includes(term)) ||
           (url.description && url.description.toLowerCase().includes(term)) ||
@@ -66,7 +126,7 @@ const URLListTab = ({ urlList, renderTable, urlModalOpen, setUrlModalOpen, urlFo
       });
     }
     return filtered;
-  }, [urlList, searchTerm, sortField, sortDirection]);
+  }, [urlList, searchTerm, selectedKBFilters, showSearchBox, sortField, sortDirection, selectedURLFilter, selectedDescriptionFilter, selectedAddedByFilter, selectedDateFilter]);
 
   const handleSort = (field) => {
     if (sortField === field) {
@@ -237,35 +297,535 @@ const URLListTab = ({ urlList, renderTable, urlModalOpen, setUrlModalOpen, urlFo
                   />
                 </th>
               )}
-              <th className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('url')}>
+              <th 
+                className="relative px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                onClick={() => handleSort('url')}
+              >
                 <div className="flex items-center space-x-1">
                   <span>URL</span>
                   {getSortIcon('url')}
+                  <button
+                    type="button"
+                    className="ml-1 focus:outline-none"
+                    onClick={e => {
+                      e.stopPropagation();
+                      setShowDescriptionFilter(false);
+                      setShowAddedByFilter(false);
+                      setShowDateFilter(false);
+                      setShowSearchBox(false);
+                      setShowURLFilter(prev => !prev);
+                    }}
+                    title="Filter URL"
+                  >
+                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </button>
                 </div>
+                {showURLFilter && (
+                  <div style={{ position: 'relative' }}>
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowURLFilter(false)} title="Close">✖</button>
+                    <Select
+                      isSearchable
+                      options={urlOptions}
+                      value={selectedURLFilter ? [{ value: selectedURLFilter, label: selectedURLFilter }] : []}
+                      onChange={selectedOption => setSelectedURLFilter(selectedOption ? selectedOption.value : null)}
+                      classNamePrefix="react-select"
+                      placeholder="Filter URL..."
+                      styles={{
+                        control: (base, state) => ({
+                          ...base,
+                          borderRadius: '12px',
+                          borderColor: state.isFocused ? '#2563eb' : '#e5e7eb',
+                          boxShadow: state.isFocused ? '0 0 0 2px #2563eb33' : '0 2px 8px 0 rgba(60,72,88,0.10)',
+                          minHeight: '44px',
+                          fontSize: '1rem',
+                          background: '#f9fafb',
+                          transition: 'border-color 0.2s, box-shadow 0.2s',
+                        }),
+                        option: (base, state) => ({
+                          ...base,
+                          backgroundColor: state.isSelected
+                            ? '#2563eb22'
+                            : state.isFocused
+                            ? '#eff6ff'
+                            : '#fff',
+                          color: state.isSelected ? '#1d4ed8' : '#222',
+                          fontWeight: state.isSelected ? 600 : 400,
+                          borderRadius: '8px',
+                          margin: '2px 4px',
+                          padding: '10px 16px',
+                          cursor: 'pointer',
+                        }),
+                        multiValue: (base) => ({
+                          ...base,
+                          backgroundColor: '#dbeafe',
+                          borderRadius: '8px',
+                          color: '#1d4ed8',
+                          fontWeight: 500,
+                        }),
+                        multiValueLabel: (base) => ({
+                          ...base,
+                          color: '#1d4ed8',
+                          fontWeight: 500,
+                        }),
+                        multiValueRemove: (base) => ({
+                          ...base,
+                          color: '#1d4ed8',
+                          ':hover': {
+                            backgroundColor: '#1d4ed8',
+                            color: 'white',
+                          },
+                        }),
+                        menu: (base) => ({
+                          ...base,
+                          borderRadius: '12px',
+                          boxShadow: '0 8px 32px 0 rgba(60,72,88,0.18)',
+                          zIndex: 9999,
+                        }),
+                        placeholder: (base) => ({
+                          ...base,
+                          color: '#9ca3af',
+                        }),
+                        input: (base) => ({
+                          ...base,
+                          color: '#222',
+                        }),
+                      }}
+                      autoFocus
+                      menuPortalTarget={document.body}
+                      menuPosition="fixed"
+                    />
+                  </div>
+                )}
               </th>
-              <th className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('description')}>
+              <th 
+                className="relative px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                onClick={() => handleSort('description')}
+              >
                 <div className="flex items-center space-x-1">
                   <span>Description</span>
                   {getSortIcon('description')}
+                  <button
+                    type="button"
+                    className="ml-1 focus:outline-none"
+                    onClick={e => {
+                      e.stopPropagation();
+                      setShowURLFilter(false);
+                      setShowAddedByFilter(false);
+                      setShowDateFilter(false);
+                      setShowSearchBox(false);
+                      setShowDescriptionFilter(prev => !prev);
+                    }}
+                    title="Filter Description"
+                  >
+                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </button>
                 </div>
+                {showDescriptionFilter && (
+                  <div style={{ position: 'relative' }}>
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowDescriptionFilter(false)} title="Close">✖</button>
+                    <Select
+                      isSearchable
+                      options={descriptionOptions}
+                      value={selectedDescriptionFilter ? [{ value: selectedDescriptionFilter, label: selectedDescriptionFilter }] : []}
+                      onChange={selectedOption => setSelectedDescriptionFilter(selectedOption ? selectedOption.value : null)}
+                      classNamePrefix="react-select"
+                      placeholder="Filter Description..."
+                      styles={{
+                        control: (base, state) => ({
+                          ...base,
+                          borderRadius: '12px',
+                          borderColor: state.isFocused ? '#2563eb' : '#e5e7eb',
+                          boxShadow: state.isFocused ? '0 0 0 2px #2563eb33' : '0 2px 8px 0 rgba(60,72,88,0.10)',
+                          minHeight: '44px',
+                          fontSize: '1rem',
+                          background: '#f9fafb',
+                          transition: 'border-color 0.2s, box-shadow 0.2s',
+                        }),
+                        option: (base, state) => ({
+                          ...base,
+                          backgroundColor: state.isSelected
+                            ? '#2563eb22'
+                            : state.isFocused
+                            ? '#eff6ff'
+                            : '#fff',
+                          color: state.isSelected ? '#1d4ed8' : '#222',
+                          fontWeight: state.isSelected ? 600 : 400,
+                          borderRadius: '8px',
+                          margin: '2px 4px',
+                          padding: '10px 16px',
+                          cursor: 'pointer',
+                        }),
+                        multiValue: (base) => ({
+                          ...base,
+                          backgroundColor: '#dbeafe',
+                          borderRadius: '8px',
+                          color: '#1d4ed8',
+                          fontWeight: 500,
+                        }),
+                        multiValueLabel: (base) => ({
+                          ...base,
+                          color: '#1d4ed8',
+                          fontWeight: 500,
+                        }),
+                        multiValueRemove: (base) => ({
+                          ...base,
+                          color: '#1d4ed8',
+                          ':hover': {
+                            backgroundColor: '#1d4ed8',
+                            color: 'white',
+                          },
+                        }),
+                        menu: (base) => ({
+                          ...base,
+                          borderRadius: '12px',
+                          boxShadow: '0 8px 32px 0 rgba(60,72,88,0.18)',
+                          zIndex: 9999,
+                        }),
+                        placeholder: (base) => ({
+                          ...base,
+                          color: '#9ca3af',
+                        }),
+                        input: (base) => ({
+                          ...base,
+                          color: '#222',
+                        }),
+                      }}
+                      autoFocus
+                      menuPortalTarget={document.body}
+                      menuPosition="fixed"
+                    />
+                  </div>
+                )}
               </th>
-              <th className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('knowledge_bases')}>
+              <th 
+                className="px-3 py-2 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors relative"
+                onClick={() => handleSort('knowledge_bases')}
+              >
                 <div className="flex items-center space-x-1">
                   <span>Knowledge Bases</span>
                   {getSortIcon('knowledge_bases')}
+                  <button
+                    type="button"
+                    className="ml-1 focus:outline-none"
+                    onClick={e => {
+                      e.stopPropagation();
+                      setShowURLFilter(false);
+                      setShowDescriptionFilter(false);
+                      setShowAddedByFilter(false);
+                      setShowDateFilter(false);
+                      setShowSearchBox(prev => !prev);
+                    }}
+                    title="Search Knowledge Base"
+                  >
+                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </button>
                 </div>
+                {showSearchBox && (
+                  <div className="absolute z-40 left-1/2 -translate-x-1/2 top-full mt-2 w-80 min-w-[260px] bg-white border border-gray-200 rounded-2xl shadow-2xl flex flex-col p-4 animate-fadeIn" style={{ minWidth: '260px', boxShadow: '0 8px 32px 0 rgba(60,72,88,0.18)' }} onClick={e => e.stopPropagation()}>
+                    {/* Wrap Select in custom-scrollbar div for modern scrollbar look */}
+                    <div className="custom-scrollbar">
+                      <Select
+                        isMulti
+                        isSearchable
+                        options={knowledgeBases.map(kb => ({ value: String(kb.id), label: kb.name }))}
+                        value={knowledgeBases.filter(kb => selectedKBFilters.includes(kb.name)).map(kb => ({ value: String(kb.id), label: kb.name }))}
+                        onChange={selectedOptions => {
+                          setSelectedKBFilters(selectedOptions ? selectedOptions.map(opt => opt.label) : []);
+                        }}
+                        classNamePrefix="react-select"
+                        placeholder="Search Knowledge Base..."
+                        styles={{
+                          control: (base, state) => ({
+                            ...base,
+                            borderRadius: '4px',
+                            borderColor: state.isFocused ? '#2563eb' : '#e5e7eb',
+                            boxShadow: state.isFocused ? '0 0 0 2px #2563eb33' : '0 2px 8px 0 rgba(60,72,88,0.10)',
+                            minHeight: '32px',
+                            fontSize: '0.9rem',
+                            background: '#f9fafb',
+                            transition: 'border-color 0.2s, box-shadow 0.2s',
+                          }),
+                          option: (base, state) => ({
+                            ...base,
+                            backgroundColor: state.isSelected
+                              ? '#2563eb22'
+                              : state.isFocused
+                              ? '#eff6ff'
+                              : '#fff',
+                            color: state.isSelected ? '#1d4ed8' : '#222',
+                            fontWeight: state.isSelected ? 600 : 400,
+                            borderRadius: '4px',
+                            margin: 0,
+                            padding: '6px 10px',
+                            fontSize: '0.9rem',
+                            cursor: 'pointer',
+                          }),
+                          multiValue: (base) => ({
+                            ...base,
+                            backgroundColor: '#dbeafe',
+                            borderRadius: '4px',
+                            color: '#1d4ed8',
+                            fontWeight: 500,
+                            fontSize: '0.9rem',
+                          }),
+                          multiValueLabel: (base) => ({
+                            ...base,
+                            color: '#1d4ed8',
+                            fontWeight: 500,
+                            fontSize: '0.9rem',
+                          }),
+                          multiValueRemove: (base) => ({
+                            ...base,
+                            color: '#1d4ed8',
+                            ':hover': {
+                              backgroundColor: '#1d4ed8',
+                              color: 'white',
+                            },
+                          }),
+                          menu: (base) => ({
+                            ...base,
+                            borderRadius: '6px',
+                            boxShadow: '0 8px 32px 0 rgba(60,72,88,0.18)',
+                            zIndex: 9999,
+                            maxHeight: 250,
+                            overflowY: 'auto',
+                          }),
+                          placeholder: (base) => ({
+                            ...base,
+                            color: '#9ca3af',
+                            fontSize: '0.9rem',
+                          }),
+                          input: (base) => ({
+                            ...base,
+                            color: '#222',
+                            fontSize: '0.9rem',
+                          }),
+                        }}
+                        autoFocus
+                      />
+                    </div>
+                        <button
+                          type="button"
+                      className="mt-2 text-gray-400 hover:text-gray-600 self-end"
+                        onClick={() => setShowSearchBox(false)}
+                        title="Close"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                  </div>
+                )}
               </th>
-              <th className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('added_by')}>
+              <th 
+                className="relative px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                onClick={() => handleSort('added_by')}
+              >
                 <div className="flex items-center space-x-1">
                   <span>Added By</span>
                   {getSortIcon('added_by')}
+                  <button
+                    type="button"
+                    className="ml-1 focus:outline-none"
+                    onClick={e => {
+                      e.stopPropagation();
+                      setShowURLFilter(false);
+                      setShowDescriptionFilter(false);
+                      setShowDateFilter(false);
+                      setShowSearchBox(false);
+                      setShowAddedByFilter(prev => !prev);
+                    }}
+                    title="Filter Added By"
+                  >
+                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </button>
                 </div>
+                {showAddedByFilter && (
+                  <div style={{ position: 'relative' }}>
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowAddedByFilter(false)} title="Close">✖</button>
+                    <Select
+                      isSearchable
+                      options={addedByOptions}
+                      value={selectedAddedByFilter ? [{ value: selectedAddedByFilter, label: selectedAddedByFilter }] : []}
+                      onChange={selectedOption => setSelectedAddedByFilter(selectedOption ? selectedOption.value : null)}
+                      classNamePrefix="react-select"
+                      placeholder="Filter Added By..."
+                      styles={{
+                        control: (base, state) => ({
+                          ...base,
+                          borderRadius: '12px',
+                          borderColor: state.isFocused ? '#2563eb' : '#e5e7eb',
+                          boxShadow: state.isFocused ? '0 0 0 2px #2563eb33' : '0 2px 8px 0 rgba(60,72,88,0.10)',
+                          minHeight: '44px',
+                          fontSize: '1rem',
+                          background: '#f9fafb',
+                          transition: 'border-color 0.2s, box-shadow 0.2s',
+                        }),
+                        option: (base, state) => ({
+                          ...base,
+                          backgroundColor: state.isSelected
+                            ? '#2563eb22'
+                            : state.isFocused
+                            ? '#eff6ff'
+                            : '#fff',
+                          color: state.isSelected ? '#1d4ed8' : '#222',
+                          fontWeight: state.isSelected ? 600 : 400,
+                          borderRadius: '8px',
+                          margin: '2px 4px',
+                          padding: '10px 16px',
+                          cursor: 'pointer',
+                        }),
+                        multiValue: (base) => ({
+                          ...base,
+                          backgroundColor: '#dbeafe',
+                          borderRadius: '8px',
+                          color: '#1d4ed8',
+                          fontWeight: 500,
+                        }),
+                        multiValueLabel: (base) => ({
+                          ...base,
+                          color: '#1d4ed8',
+                          fontWeight: 500,
+                        }),
+                        multiValueRemove: (base) => ({
+                          ...base,
+                          color: '#1d4ed8',
+                          ':hover': {
+                            backgroundColor: '#1d4ed8',
+                            color: 'white',
+                          },
+                        }),
+                        menu: (base) => ({
+                          ...base,
+                          borderRadius: '12px',
+                          boxShadow: '0 8px 32px 0 rgba(60,72,88,0.18)',
+                          zIndex: 9999,
+                        }),
+                        placeholder: (base) => ({
+                          ...base,
+                          color: '#9ca3af',
+                        }),
+                        input: (base) => ({
+                          ...base,
+                          color: '#222',
+                        }),
+                      }}
+                      autoFocus
+                      menuPortalTarget={document.body}
+                      menuPosition="fixed"
+                    />
+                  </div>
+                )}
               </th>
-              <th className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('uploaded_at')}>
+              <th 
+                className="relative px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                onClick={() => handleSort('uploaded_at')}
+              >
                 <div className="flex items-center space-x-1">
                   <span>Uploaded Date</span>
                   {getSortIcon('uploaded_at')}
+                  <button
+                    type="button"
+                    className="ml-1 focus:outline-none"
+                    onClick={e => {
+                      e.stopPropagation();
+                      setShowURLFilter(false);
+                      setShowDescriptionFilter(false);
+                      setShowAddedByFilter(false);
+                      setShowSearchBox(false);
+                      setShowDateFilter(prev => !prev);
+                    }}
+                    title="Filter Uploaded Date"
+                  >
+                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </button>
                 </div>
+                {showDateFilter && (
+                  <div style={{ position: 'relative' }}>
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowDateFilter(false)} title="Close">✖</button>
+                    <Select
+                      isSearchable
+                      options={dateOptions}
+                      value={selectedDateFilter ? [{ value: selectedDateFilter, label: selectedDateFilter }] : []}
+                      onChange={selectedOption => setSelectedDateFilter(selectedOption ? selectedOption.value : null)}
+                      classNamePrefix="react-select"
+                      placeholder="Filter Uploaded Date..."
+                      styles={{
+                        control: (base, state) => ({
+                          ...base,
+                          borderRadius: '12px',
+                          borderColor: state.isFocused ? '#2563eb' : '#e5e7eb',
+                          boxShadow: state.isFocused ? '0 0 0 2px #2563eb33' : '0 2px 8px 0 rgba(60,72,88,0.10)',
+                          minHeight: '44px',
+                          fontSize: '1rem',
+                          background: '#f9fafb',
+                          transition: 'border-color 0.2s, box-shadow 0.2s',
+                        }),
+                        option: (base, state) => ({
+                          ...base,
+                          backgroundColor: state.isSelected
+                            ? '#2563eb22'
+                            : state.isFocused
+                            ? '#eff6ff'
+                            : '#fff',
+                          color: state.isSelected ? '#1d4ed8' : '#222',
+                          fontWeight: state.isSelected ? 600 : 400,
+                          borderRadius: '8px',
+                          margin: '2px 4px',
+                          padding: '10px 16px',
+                          cursor: 'pointer',
+                        }),
+                        multiValue: (base) => ({
+                          ...base,
+                          backgroundColor: '#dbeafe',
+                          borderRadius: '8px',
+                          color: '#1d4ed8',
+                          fontWeight: 500,
+                        }),
+                        multiValueLabel: (base) => ({
+                          ...base,
+                          color: '#1d4ed8',
+                          fontWeight: 500,
+                        }),
+                        multiValueRemove: (base) => ({
+                          ...base,
+                          color: '#1d4ed8',
+                          ':hover': {
+                            backgroundColor: '#1d4ed8',
+                            color: 'white',
+                          },
+                        }),
+                        menu: (base) => ({
+                          ...base,
+                          borderRadius: '12px',
+                          boxShadow: '0 8px 32px 0 rgba(60,72,88,0.18)',
+                          zIndex: 9999,
+                        }),
+                        placeholder: (base) => ({
+                          ...base,
+                          color: '#9ca3af',
+                        }),
+                        input: (base) => ({
+                          ...base,
+                          color: '#222',
+                        }),
+                      }}
+                      autoFocus
+                      menuPortalTarget={document.body}
+                      menuPosition="fixed"
+                    />
+                  </div>
+                )}
               </th>
               <th className="px-4 py-3 text-left font-semibold text-gray-700">Actions</th>
             </tr>
@@ -391,19 +951,89 @@ const URLListTab = ({ urlList, renderTable, urlModalOpen, setUrlModalOpen, urlFo
               </div>
               <div>
                 <label className="block mb-1 font-medium">Knowledge Base</label>
-                <select
-                  multiple
-                  value={urlForm.knowledge_bases}
-                  onChange={e => {
-                    const options = Array.from(e.target.selectedOptions, option => option.value);
-                    setUrlForm({ ...urlForm, knowledge_bases: options });
+                <Select
+                  isMulti
+                  isSearchable
+                  options={knowledgeBases.map(kb => ({ value: String(kb.id), label: kb.name }))}
+                  value={knowledgeBases.filter(kb => urlForm.knowledge_bases.includes(String(kb.id))).map(kb => ({ value: String(kb.id), label: kb.name }))}
+                  onChange={selectedOptions => {
+                    setUrlForm({
+                      ...urlForm,
+                      knowledge_bases: selectedOptions ? selectedOptions.map(opt => opt.value) : []
+                    });
                   }}
-                  className="w-full p-2 border rounded"
-                >
-                  {knowledgeBases.map((kb) => (
-                    <option key={kb.id} value={String(kb.id)}>{kb.name}</option>
-                  ))}
-                </select>
+                  classNamePrefix="react-select"
+                  placeholder="Select knowledge bases..."
+                  styles={{
+                    control: (base, state) => ({
+                      ...base,
+                      borderRadius: '4px',
+                      borderColor: state.isFocused ? '#2563eb' : '#e5e7eb',
+                      boxShadow: state.isFocused ? '0 0 0 2px #2563eb33' : '0 2px 8px 0 rgba(60,72,88,0.10)',
+                      minHeight: '32px',
+                      fontSize: '0.9rem',
+                      background: '#f9fafb',
+                      transition: 'border-color 0.2s, box-shadow 0.2s',
+                    }),
+                    option: (base, state) => ({
+                      ...base,
+                      backgroundColor: state.isSelected
+                        ? '#2563eb22'
+                        : state.isFocused
+                        ? '#eff6ff'
+                        : '#fff',
+                      color: state.isSelected ? '#1d4ed8' : '#222',
+                      fontWeight: state.isSelected ? 600 : 400,
+                      borderRadius: '4px',
+                      margin: 0,
+                      padding: '6px 10px',
+                      fontSize: '0.9rem',
+                      cursor: 'pointer',
+                    }),
+                    multiValue: (base) => ({
+                      ...base,
+                      backgroundColor: '#dbeafe',
+                      borderRadius: '4px',
+                      color: '#1d4ed8',
+                      fontWeight: 500,
+                      fontSize: '0.9rem',
+                    }),
+                    multiValueLabel: (base) => ({
+                      ...base,
+                      color: '#1d4ed8',
+                      fontWeight: 500,
+                      fontSize: '0.9rem',
+                    }),
+                    multiValueRemove: (base) => ({
+                      ...base,
+                      color: '#1d4ed8',
+                      ':hover': {
+                        backgroundColor: '#1d4ed8',
+                        color: 'white',
+                      },
+                    }),
+                    menu: (base) => ({
+                      ...base,
+                      borderRadius: '6px',
+                      boxShadow: '0 8px 32px 0 rgba(60,72,88,0.18)',
+                      zIndex: 9999,
+                      maxHeight: 250,
+                      overflowY: 'auto',
+                      // Add custom-scrollbar class for modern scrollbar look
+                      // Make sure .custom-scrollbar CSS is present in global styles
+                    }),
+                    placeholder: (base) => ({
+                      ...base,
+                      color: '#9ca3af',
+                      fontSize: '0.9rem',
+                    }),
+                    input: (base) => ({
+                      ...base,
+                      color: '#222',
+                      fontSize: '0.9rem',
+                    }),
+                  }}
+                />
                 <span className="text-xs text-gray-500">Hold Ctrl (Windows) or Cmd (Mac) to select multiple</span>
               </div>
               {urlFormError && <div className="text-red-500 text-xs">{urlFormError}</div>}
