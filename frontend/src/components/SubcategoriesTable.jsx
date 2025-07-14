@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import Select from 'react-select';
 
 const SubcategoriesTable = ({ subCategories, categories, onAddSubcategory, onEditSubcategory }) => {
   const [modalOpen, setModalOpen] = useState(false);
@@ -10,6 +11,11 @@ const SubcategoriesTable = ({ subCategories, categories, onAddSubcategory, onEdi
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState('');
   const [sortDirection, setSortDirection] = useState('asc');
+  // Dropdown filter state
+  const [showCategoryFilter, setShowCategoryFilter] = useState(false);
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState([]);
+  const [showSubcategoryFilter, setShowSubcategoryFilter] = useState(false);
+  const [selectedSubcategoryFilter, setSelectedSubcategoryFilter] = useState([]);
 
   // Flatten subcategories for table: each row is a subcategory with its parent category
   const data = subCategories.map((sub) => {
@@ -22,17 +28,28 @@ const SubcategoriesTable = ({ subCategories, categories, onAddSubcategory, onEdi
     };
   });
 
-  // Filter subcategories based on search term
+  // Unique options for each filter
+  const categoryOptions = useMemo(() => Array.from(new Set(data.map(row => row.categoryName))).map(name => ({ value: name, label: name })), [data]);
+  const subcategoryOptions = useMemo(() => Array.from(new Set(data.map(row => row.subcategoryName))).map(name => ({ value: name, label: name })), [data]);
+
+  // Filter subcategories based on search term and dropdown filters
   const filteredData = useMemo(() => {
-    if (!searchTerm) return data;
-    
-    const term = searchTerm.toLowerCase();
-    return data.filter(row => {
-      // Search in subcategory name or category name
-      return row.subcategoryName.toLowerCase().includes(term) || 
-             row.categoryName.toLowerCase().includes(term);
-    });
-  }, [data, searchTerm]);
+    let filtered = data;
+    if (selectedCategoryFilter.length > 0) {
+      filtered = filtered.filter(row => selectedCategoryFilter.includes(row.categoryName));
+    }
+    if (selectedSubcategoryFilter.length > 0) {
+      filtered = filtered.filter(row => selectedSubcategoryFilter.includes(row.subcategoryName));
+    }
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(row => {
+        return row.subcategoryName.toLowerCase().includes(term) || 
+               row.categoryName.toLowerCase().includes(term);
+      });
+    }
+    return filtered;
+  }, [data, searchTerm, selectedCategoryFilter, selectedSubcategoryFilter]);
 
   const sortedData = useMemo(() => {
     let filtered = filteredData;
@@ -163,17 +180,191 @@ const SubcategoriesTable = ({ subCategories, categories, onAddSubcategory, onEdi
           <table className="min-w-full text-sm">
             <thead>
               <tr className="bg-gray-100">
-                <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('categoryName')}>
+                <th className="relative px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('categoryName')}>
                   <div className="flex items-center space-x-1">
                     <span>Category</span>
                     {getSortIcon('categoryName')}
+                    <button
+                      type="button"
+                      className="ml-1 focus:outline-none"
+                      onClick={e => {e.stopPropagation(); setShowSubcategoryFilter(false); setShowCategoryFilter(prev => !prev);}}
+                      title="Filter Category"
+                    >
+                      <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </button>
                   </div>
+                  {showCategoryFilter && (
+                    <div style={{ position: 'relative', zIndex: 9999 }}>
+                      <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowCategoryFilter(false)} title="Close">✖</button>
+                      <Select
+                        isMulti
+                        isSearchable
+                        options={categoryOptions}
+                        value={selectedCategoryFilter.map(val => ({ value: val, label: val }))}
+                        onChange={selected => setSelectedCategoryFilter(selected ? selected.map(s => s.value) : [])}
+                        classNamePrefix="react-select"
+                        placeholder="Filter Category..."
+                        styles={{
+                          control: (base, state) => ({
+                            ...base,
+                            borderRadius: '12px',
+                            borderColor: state.isFocused ? '#2563eb' : '#e5e7eb',
+                            boxShadow: state.isFocused ? '0 0 0 2px #2563eb33' : '0 2px 8px 0 rgba(60,72,88,0.10)',
+                            minHeight: '44px',
+                            fontSize: '1rem',
+                            background: '#f9fafb',
+                            transition: 'border-color 0.2s, box-shadow 0.2s',
+                          }),
+                          option: (base, state) => ({
+                            ...base,
+                            backgroundColor: state.isSelected
+                              ? '#2563eb22'
+                              : state.isFocused
+                              ? '#eff6ff'
+                              : '#fff',
+                            color: state.isSelected ? '#1d4ed8' : '#222',
+                            fontWeight: state.isSelected ? 600 : 400,
+                            borderRadius: '8px',
+                            margin: '2px 4px',
+                            padding: '10px 16px',
+                            cursor: 'pointer',
+                          }),
+                          multiValue: (base) => ({
+                            ...base,
+                            backgroundColor: '#dbeafe',
+                            borderRadius: '8px',
+                            color: '#1d4ed8',
+                            fontWeight: 500,
+                          }),
+                          multiValueLabel: (base) => ({
+                            ...base,
+                            color: '#1d4ed8',
+                            fontWeight: 500,
+                          }),
+                          multiValueRemove: (base) => ({
+                            ...base,
+                            color: '#1d4ed8',
+                            ':hover': {
+                              backgroundColor: '#1d4ed8',
+                              color: 'white',
+                            },
+                          }),
+                          menu: (base) => ({
+                            ...base,
+                            borderRadius: '12px',
+                            boxShadow: '0 8px 32px 0 rgba(60,72,88,0.18)',
+                            zIndex: 9999,
+                          }),
+                          placeholder: (base) => ({
+                            ...base,
+                            color: '#9ca3af',
+                          }),
+                          input: (base) => ({
+                            ...base,
+                            color: '#222',
+                          }),
+                        }}
+                        autoFocus
+                        menuPortalTarget={document.body}
+                        menuPosition="fixed"
+                      />
+                    </div>
+                  )}
                 </th>
-                <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('subcategoryName')}>
+                <th className="relative px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('subcategoryName')}>
                   <div className="flex items-center space-x-1">
                     <span>Subcategory</span>
                     {getSortIcon('subcategoryName')}
+                    <button
+                      type="button"
+                      className="ml-1 focus:outline-none"
+                      onClick={e => {e.stopPropagation(); setShowCategoryFilter(false); setShowSubcategoryFilter(prev => !prev);}}
+                      title="Filter Subcategory"
+                    >
+                      <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </button>
                   </div>
+                  {showSubcategoryFilter && (
+                    <div style={{ position: 'relative', zIndex: 9999 }}>
+                      <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowSubcategoryFilter(false)} title="Close">✖</button>
+                      <Select
+                        isMulti
+                        isSearchable
+                        options={subcategoryOptions}
+                        value={selectedSubcategoryFilter.map(val => ({ value: val, label: val }))}
+                        onChange={selected => setSelectedSubcategoryFilter(selected ? selected.map(s => s.value) : [])}
+                        classNamePrefix="react-select"
+                        placeholder="Filter Subcategory..."
+                        styles={{
+                          control: (base, state) => ({
+                            ...base,
+                            borderRadius: '12px',
+                            borderColor: state.isFocused ? '#2563eb' : '#e5e7eb',
+                            boxShadow: state.isFocused ? '0 0 0 2px #2563eb33' : '0 2px 8px 0 rgba(60,72,88,0.10)',
+                            minHeight: '44px',
+                            fontSize: '1rem',
+                            background: '#f9fafb',
+                            transition: 'border-color 0.2s, box-shadow 0.2s',
+                          }),
+                          option: (base, state) => ({
+                            ...base,
+                            backgroundColor: state.isSelected
+                              ? '#2563eb22'
+                              : state.isFocused
+                              ? '#eff6ff'
+                              : '#fff',
+                            color: state.isSelected ? '#1d4ed8' : '#222',
+                            fontWeight: state.isSelected ? 600 : 400,
+                            borderRadius: '8px',
+                            margin: '2px 4px',
+                            padding: '10px 16px',
+                            cursor: 'pointer',
+                          }),
+                          multiValue: (base) => ({
+                            ...base,
+                            backgroundColor: '#dbeafe',
+                            borderRadius: '8px',
+                            color: '#1d4ed8',
+                            fontWeight: 500,
+                          }),
+                          multiValueLabel: (base) => ({
+                            ...base,
+                            color: '#1d4ed8',
+                            fontWeight: 500,
+                          }),
+                          multiValueRemove: (base) => ({
+                            ...base,
+                            color: '#1d4ed8',
+                            ':hover': {
+                              backgroundColor: '#1d4ed8',
+                              color: 'white',
+                            },
+                          }),
+                          menu: (base) => ({
+                            ...base,
+                            borderRadius: '12px',
+                            boxShadow: '0 8px 32px 0 rgba(60,72,88,0.18)',
+                            zIndex: 9999,
+                          }),
+                          placeholder: (base) => ({
+                            ...base,
+                            color: '#9ca3af',
+                          }),
+                          input: (base) => ({
+                            ...base,
+                            color: '#222',
+                          }),
+                        }}
+                        autoFocus
+                        menuPortalTarget={document.body}
+                        menuPosition="fixed"
+                      />
+                    </div>
+                  )}
                 </th>
                 <th className="px-3 py-2 text-left">Actions</th>
               </tr>

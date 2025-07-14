@@ -368,7 +368,8 @@ function CreateAgent() {
       const response = await axios.get(`${BASE_URL}/api/knowledgebase/`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setKnowledgeBases(response.data);
+      const data = response.data;
+      setKnowledgeBases(Array.isArray(data) ? data : (data.results || []));
     } catch (error) {
       console.error('Error fetching knowledge bases:', error);
     }
@@ -1977,7 +1978,7 @@ function CreateAgent() {
                   </select>
                   <span className="text-xs text-gray-500">Hold Ctrl (Windows) or Cmd (Mac) to select multiple</span>
                 </div>
-                {registerFormError && <div className="text-red-500 text-xs">{registerFormError}</div>}
+                {registerFormError && <div className="text-red-500 text-sm">{registerFormError}</div>}
                 <div className="flex justify-end space-x-2">
                   <button
                     type="button"

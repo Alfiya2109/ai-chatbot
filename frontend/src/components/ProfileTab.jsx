@@ -1,33 +1,75 @@
 import React, { useState, useMemo } from 'react';
+import Select from 'react-select';
 
 const ProfileTab = ({ profiles, handleEditProfile, handleDeleteProfile, handleCreateProfile, profileModalOpen, setProfileModalOpen, editingProfile, profileForm, setProfileForm, handleProfileFormSubmit }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState('');
   const [sortDirection, setSortDirection] = useState('asc');
+  // Dropdown filter state
+  const [showProfileFilter, setShowProfileFilter] = useState(false);
+  const [selectedProfileFilter, setSelectedProfileFilter] = useState([]);
+  const [showPermFilter, setShowPermFilter] = useState(false);
+  const [selectedPermFilter, setSelectedPermFilter] = useState([]);
 
-  // Filter profiles based on search term
-  const filteredProfiles = useMemo(() => {
-    if (!searchTerm) return profiles;
-    
-    const term = searchTerm.toLowerCase();
-    return profiles.filter(profile => {
-      // Search in profile name
-      if (profile.name.toLowerCase().includes(term)) return true;
-      
-      // Search in access permissions
-      const accessKeys = [
-        'files_access', 'text_access', 'excel_access', 'qna_access', 
-        'url_access', 'chat_history_access', 'user_profile_access', 'user_details_access'
-      ];
-      
-      for (const key of accessKeys) {
-        const accessName = key.replace('_access', '').replace('_', ' ');
-        if (profile[key] && accessName.includes(term)) return true;
-      }
-      
-      return false;
+  // Unique options for each filter
+  const profileNameOptions = useMemo(() => Array.from(new Set(profiles.map(p => p.name))).map(name => ({ value: name, label: name })), [profiles]);
+  const permOptions = useMemo(() => {
+    const allPerms = [
+      { key: 'files_access', label: 'Files' },
+      { key: 'text_access', label: 'Text' },
+      { key: 'excel_access', label: 'Excel' },
+      { key: 'qna_access', label: 'Q&A' },
+      { key: 'url_access', label: 'URL' },
+      { key: 'chat_history_access', label: 'Chat History' },
+      { key: 'user_profile_access', label: 'Profile' },
+      { key: 'user_details_access', label: 'User Details' },
+    ];
+    // Only show permissions that exist in at least one profile
+    const permsSet = new Set();
+    profiles.forEach(profile => {
+      allPerms.forEach(perm => { if (profile[perm.key]) permsSet.add(perm.label); });
     });
-  }, [profiles, searchTerm]);
+    return Array.from(permsSet).map(label => ({ value: label, label }));
+  }, [profiles]);
+
+  // Filter logic
+  const filteredProfiles = useMemo(() => {
+    let filtered = profiles;
+    if (selectedProfileFilter.length > 0) {
+      filtered = filtered.filter(profile => selectedProfileFilter.includes(profile.name));
+    }
+    if (selectedPermFilter.length > 0) {
+      filtered = filtered.filter(profile => {
+        const perms = [
+          { key: 'files_access', label: 'Files' },
+          { key: 'text_access', label: 'Text' },
+          { key: 'excel_access', label: 'Excel' },
+          { key: 'qna_access', label: 'Q&A' },
+          { key: 'url_access', label: 'URL' },
+          { key: 'chat_history_access', label: 'Chat History' },
+          { key: 'user_profile_access', label: 'Profile' },
+          { key: 'user_details_access', label: 'User Details' },
+        ].filter(perm => profile[perm.key]).map(perm => perm.label);
+        return perms.some(label => selectedPermFilter.includes(label));
+      });
+    }
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(profile => {
+        if (profile.name.toLowerCase().includes(term)) return true;
+        const accessKeys = [
+          'files_access', 'text_access', 'excel_access', 'qna_access', 
+          'url_access', 'chat_history_access', 'user_profile_access', 'user_details_access'
+        ];
+        for (const key of accessKeys) {
+          const accessName = key.replace('_access', '').replace('_', ' ');
+          if (profile[key] && accessName.includes(term)) return true;
+        }
+        return false;
+      });
+    }
+    return filtered;
+  }, [profiles, searchTerm, selectedProfileFilter, selectedPermFilter]);
 
   const sortedProfiles = useMemo(() => {
     let filtered = filteredProfiles;
@@ -140,17 +182,191 @@ const ProfileTab = ({ profiles, handleEditProfile, handleDeleteProfile, handleCr
       <table className="min-w-full text-sm">
         <thead>
           <tr className="bg-gray-100">
-            <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('name')}>
+            <th className="relative px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('name')}>
               <div className="flex items-center space-x-1">
                 <span>Profile</span>
                 {getSortIcon('name')}
+                <button
+                  type="button"
+                  className="ml-1 focus:outline-none"
+                  onClick={e => {e.stopPropagation(); setShowPermFilter(false); setShowProfileFilter(prev => !prev);}}
+                  title="Filter Profile Name"
+                >
+                  <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </button>
               </div>
+              {showProfileFilter && (
+                <div style={{ position: 'relative', zIndex: 9999 }}>
+                  <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowProfileFilter(false)} title="Close">✖</button>
+                  <Select
+                    isMulti
+                    isSearchable
+                    options={profileNameOptions}
+                    value={selectedProfileFilter.map(val => ({ value: val, label: val }))}
+                    onChange={selected => setSelectedProfileFilter(selected ? selected.map(s => s.value) : [])}
+                    classNamePrefix="react-select"
+                    placeholder="Filter Profile Name..."
+                    styles={{
+                      control: (base, state) => ({
+                        ...base,
+                        borderRadius: '12px',
+                        borderColor: state.isFocused ? '#2563eb' : '#e5e7eb',
+                        boxShadow: state.isFocused ? '0 0 0 2px #2563eb33' : '0 2px 8px 0 rgba(60,72,88,0.10)',
+                        minHeight: '44px',
+                        fontSize: '1rem',
+                        background: '#f9fafb',
+                        transition: 'border-color 0.2s, box-shadow 0.2s',
+                      }),
+                      option: (base, state) => ({
+                        ...base,
+                        backgroundColor: state.isSelected
+                          ? '#2563eb22'
+                          : state.isFocused
+                          ? '#eff6ff'
+                          : '#fff',
+                        color: state.isSelected ? '#1d4ed8' : '#222',
+                        fontWeight: state.isSelected ? 600 : 400,
+                        borderRadius: '8px',
+                        margin: '2px 4px',
+                        padding: '10px 16px',
+                        cursor: 'pointer',
+                      }),
+                      multiValue: (base) => ({
+                        ...base,
+                        backgroundColor: '#dbeafe',
+                        borderRadius: '8px',
+                        color: '#1d4ed8',
+                        fontWeight: 500,
+                      }),
+                      multiValueLabel: (base) => ({
+                        ...base,
+                        color: '#1d4ed8',
+                        fontWeight: 500,
+                      }),
+                      multiValueRemove: (base) => ({
+                        ...base,
+                        color: '#1d4ed8',
+                        ':hover': {
+                          backgroundColor: '#1d4ed8',
+                          color: 'white',
+                        },
+                      }),
+                      menu: (base) => ({
+                        ...base,
+                        borderRadius: '12px',
+                        boxShadow: '0 8px 32px 0 rgba(60,72,88,0.18)',
+                        zIndex: 9999,
+                      }),
+                      placeholder: (base) => ({
+                        ...base,
+                        color: '#9ca3af',
+                      }),
+                      input: (base) => ({
+                        ...base,
+                        color: '#222',
+                      }),
+                    }}
+                    autoFocus
+                    menuPortalTarget={document.body}
+                    menuPosition="fixed"
+                  />
+                </div>
+              )}
             </th>
-            <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('permissions')}>
+            <th className="relative px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('permissions')}>
               <div className="flex items-center space-x-1">
                 <span>Access Permissions</span>
                 {getSortIcon('permissions')}
+                <button
+                  type="button"
+                  className="ml-1 focus:outline-none"
+                  onClick={e => {e.stopPropagation(); setShowProfileFilter(false); setShowPermFilter(prev => !prev);}}
+                  title="Filter Access Permissions"
+                >
+                  <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </button>
               </div>
+              {showPermFilter && (
+                <div style={{ position: 'relative', zIndex: 9999 }}>
+                  <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowPermFilter(false)} title="Close">✖</button>
+                  <Select
+                    isMulti
+                    isSearchable
+                    options={permOptions}
+                    value={selectedPermFilter.map(val => ({ value: val, label: val }))}
+                    onChange={selected => setSelectedPermFilter(selected ? selected.map(s => s.value) : [])}
+                    classNamePrefix="react-select"
+                    placeholder="Filter Access Permissions..."
+                    styles={{
+                      control: (base, state) => ({
+                        ...base,
+                        borderRadius: '12px',
+                        borderColor: state.isFocused ? '#2563eb' : '#e5e7eb',
+                        boxShadow: state.isFocused ? '0 0 0 2px #2563eb33' : '0 2px 8px 0 rgba(60,72,88,0.10)',
+                        minHeight: '44px',
+                        fontSize: '1rem',
+                        background: '#f9fafb',
+                        transition: 'border-color 0.2s, box-shadow 0.2s',
+                      }),
+                      option: (base, state) => ({
+                        ...base,
+                        backgroundColor: state.isSelected
+                          ? '#2563eb22'
+                          : state.isFocused
+                          ? '#eff6ff'
+                          : '#fff',
+                        color: state.isSelected ? '#1d4ed8' : '#222',
+                        fontWeight: state.isSelected ? 600 : 400,
+                        borderRadius: '8px',
+                        margin: '2px 4px',
+                        padding: '10px 16px',
+                        cursor: 'pointer',
+                      }),
+                      multiValue: (base) => ({
+                        ...base,
+                        backgroundColor: '#dbeafe',
+                        borderRadius: '8px',
+                        color: '#1d4ed8',
+                        fontWeight: 500,
+                      }),
+                      multiValueLabel: (base) => ({
+                        ...base,
+                        color: '#1d4ed8',
+                        fontWeight: 500,
+                      }),
+                      multiValueRemove: (base) => ({
+                        ...base,
+                        color: '#1d4ed8',
+                        ':hover': {
+                          backgroundColor: '#1d4ed8',
+                          color: 'white',
+                        },
+                      }),
+                      menu: (base) => ({
+                        ...base,
+                        borderRadius: '12px',
+                        boxShadow: '0 8px 32px 0 rgba(60,72,88,0.18)',
+                        zIndex: 9999,
+                      }),
+                      placeholder: (base) => ({
+                        ...base,
+                        color: '#9ca3af',
+                      }),
+                      input: (base) => ({
+                        ...base,
+                        color: '#222',
+                      }),
+                    }}
+                    autoFocus
+                    menuPortalTarget={document.body}
+                    menuPosition="fixed"
+                  />
+                </div>
+              )}
             </th>
             <th className="px-3 py-2 text-left">Actions</th>
           </tr>

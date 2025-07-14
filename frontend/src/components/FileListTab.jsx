@@ -1,21 +1,115 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Loader from './Loader';
+import Select from 'react-select';
+import { BASE_URL } from '../base_url';
 
-const FileListTab = ({ uploadedFiles, renderTable, fileModalOpen, setFileModalOpen, fileForm, setFileForm, knowledgeBases, fileFormError, handleFileModalSubmit, fetchKnowledgeBases, onBulkDelete, isLoading }) => {
+const FileListTab = ({ uploadedFiles, renderTable, fileModalOpen, setFileModalOpen, fileForm, setFileForm, fileFormError, handleFileModalSubmit, onBulkDelete, isLoading }) => {
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState('');
   const [sortDirection, setSortDirection] = useState('asc');
+  const [showSearchBox, setShowSearchBox] = useState(false);
+  const [knowledgeBaseSearch, setKnowledgeBaseSearch] = useState('');
+
+  // Add filter popover state for each column
+  const [showFileFilter, setShowFileFilter] = useState(false);
+  const [selectedFileFilter, setSelectedFileFilter] = useState(null);
+  const [showDescriptionFilter, setShowDescriptionFilter] = useState(false);
+  const [selectedDescriptionFilter, setSelectedDescriptionFilter] = useState(null);
+  const [showAddedByFilter, setShowAddedByFilter] = useState(false);
+  const [selectedAddedByFilter, setSelectedAddedByFilter] = useState(null);
+  const [showDateFilter, setShowDateFilter] = useState(false);
+  const [selectedDateFilter, setSelectedDateFilter] = useState(null);
+
+  // Unique options for each filter
+  const fileNameOptions = useMemo(() => {
+    const names = Array.from(new Set(uploadedFiles.map(f => f.file ? f.file.split('/').pop() : 'Unknown File')));
+    return names.map(name => ({ value: name, label: name }));
+  }, [uploadedFiles]);
+  const descriptionOptions = useMemo(() => {
+    const descs = Array.from(new Set(uploadedFiles.map(f => f.description || '-')));
+    return descs.map(desc => ({ value: desc, label: desc }));
+  }, [uploadedFiles]);
+  const addedByOptions = useMemo(() => {
+    const users = Array.from(new Set(uploadedFiles.map(f => f.added_by || '-')));
+    return users.map(user => ({ value: user, label: user }));
+  }, [uploadedFiles]);
+  const dateOptions = useMemo(() => {
+    const dates = Array.from(new Set(uploadedFiles.map(f => f.uploaded_at ? new Date(f.uploaded_at).toLocaleDateString() : '-')));
+    return dates.map(date => ({ value: date, label: date }));
+  }, [uploadedFiles]);
+
+  // Add local knowledgeBases state for modal
+  const [knowledgeBases, setKnowledgeBases] = useState([]);
+
+  // Fetch knowledge bases for modal
+  const fetchKnowledgeBases = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      console.log('Fetching KBs...');
+      const res = await fetch(`${BASE_URL}/api/knowledgebase/`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      console.log('Fetch response:', res);
+      if (res.ok) {
+        const data = await res.json();
+        console.log('Fetched KBs data:', data);
+        setKnowledgeBases(Array.isArray(data) ? data : (data.results || []));
+      } else {
+        console.log('Fetch not ok:', res.status);
+        setKnowledgeBases([]);
+      }
+    } catch (err) {
+      console.log('Fetch error:', err);
+      setKnowledgeBases([]);
+    }
+  };
+
+  // On modal open, fetch knowledge bases
+  useEffect(() => {
+    if (fileModalOpen) {
+      fetchKnowledgeBases();
+      setTimeout(() => {
+        console.log('knowledgeBases (modal open):', knowledgeBases);
+      }, 1000);
+    }
+  }, [fileModalOpen]);
 
   // Filter and sort files based on search term and sort settings
   const filteredAndSortedFiles = useMemo(() => {
     let filtered = uploadedFiles;
-    
-    // Apply search filterKnowledge Base
-    if (searchTerm) {
+
+    // File Name filter
+    if (selectedFileFilter) {
+      filtered = filtered.filter(f => (f.file ? f.file.split('/').pop() : 'Unknown File') === selectedFileFilter);
+    }
+    // Description filter
+    if (selectedDescriptionFilter) {
+      filtered = filtered.filter(f => (f.description || '-') === selectedDescriptionFilter);
+    }
+    // Added By filter
+    if (selectedAddedByFilter) {
+      filtered = filtered.filter(f => (f.added_by || '-') === selectedAddedByFilter);
+    }
+    // Date filter
+    if (selectedDateFilter) {
+      filtered = filtered.filter(f => (f.uploaded_at ? new Date(f.uploaded_at).toLocaleDateString() : '-') === selectedDateFilter);
+    }
+
+    // Knowledge base dropdown filter
+    if (showSearchBox && knowledgeBaseSearch) {
+      const term = knowledgeBaseSearch.toLowerCase();
+      filtered = filtered.filter(file =>
+        file.knowledge_bases && file.knowledge_bases.some(kb =>
+          typeof kb === 'string'
+            ? kb.toLowerCase().includes(term)
+            : (kb.name && kb.name.toLowerCase().includes(term))
+        )
+      );
+    } else if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      filtered = uploadedFiles.filter(file => {
+      filtered = filtered.filter(file => {
         // Search in file name, description, knowledge bases, and added by
         return (
           (file.file && file.file.toLowerCase().includes(term)) ||
@@ -73,7 +167,7 @@ const FileListTab = ({ uploadedFiles, renderTable, fileModalOpen, setFileModalOp
     }
     
     return filtered;
-  }, [uploadedFiles, searchTerm, sortField, sortDirection]);
+  }, [uploadedFiles, searchTerm, knowledgeBaseSearch, showSearchBox, sortField, sortDirection, selectedFileFilter, selectedDescriptionFilter, selectedAddedByFilter, selectedDateFilter]);
 
   const handleSort = (field) => {
     if (sortField === field) {
@@ -242,49 +336,524 @@ const FileListTab = ({ uploadedFiles, renderTable, fileModalOpen, setFileModalOp
                 </th>
               )}
               <th 
-                className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                className="relative px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('file')}
               >
                 <div className="flex items-center space-x-1">
                   <span>File Name</span>
                   {getSortIcon('file')}
+                  <button
+                    type="button"
+                    className="ml-1 focus:outline-none"
+                    onClick={e => {
+                      e.stopPropagation();
+                      setShowDescriptionFilter(false);
+                      setShowAddedByFilter(false);
+                      setShowDateFilter(false);
+                      setShowSearchBox(false);
+                      setShowFileFilter(prev => !prev);
+                    }}
+                    title="Filter File Name"
+                  >
+                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </button>
                 </div>
+                {showFileFilter && (
+                  <div style={{ position: 'relative' }}>
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowFileFilter(false)} title="Close">✖</button>
+                    <Select
+                      isSearchable
+                      options={fileNameOptions}
+                      value={selectedFileFilter ? [{ value: selectedFileFilter, label: selectedFileFilter }] : []}
+                      onChange={selectedOption => setSelectedFileFilter(selectedOption ? selectedOption.value : null)}
+                      classNamePrefix="react-select"
+                      placeholder="Filter File Name..."
+                      styles={{
+                        control: (base, state) => ({
+                          ...base,
+                          borderRadius: '12px',
+                          borderColor: state.isFocused ? '#2563eb' : '#e5e7eb',
+                          boxShadow: state.isFocused ? '0 0 0 2px #2563eb33' : '0 2px 8px 0 rgba(60,72,88,0.10)',
+                          minHeight: '44px',
+                          fontSize: '1rem',
+                          background: '#f9fafb',
+                          transition: 'border-color 0.2s, box-shadow 0.2s',
+                        }),
+                        option: (base, state) => ({
+                          ...base,
+                          backgroundColor: state.isSelected
+                            ? '#2563eb22'
+                            : state.isFocused
+                            ? '#eff6ff'
+                            : '#fff',
+                          color: state.isSelected ? '#1d4ed8' : '#222',
+                          fontWeight: state.isSelected ? 600 : 400,
+                          borderRadius: '8px',
+                          margin: '2px 4px',
+                          padding: '10px 16px',
+                          cursor: 'pointer',
+                        }),
+                        multiValue: (base) => ({
+                          ...base,
+                          backgroundColor: '#dbeafe',
+                          borderRadius: '8px',
+                          color: '#1d4ed8',
+                          fontWeight: 500,
+                        }),
+                        multiValueLabel: (base) => ({
+                          ...base,
+                          color: '#1d4ed8',
+                          fontWeight: 500,
+                        }),
+                        multiValueRemove: (base) => ({
+                          ...base,
+                          color: '#1d4ed8',
+                          ':hover': {
+                            backgroundColor: '#1d4ed8',
+                            color: 'white',
+                          },
+                        }),
+                        menu: (base) => ({
+                          ...base,
+                          borderRadius: '12px',
+                          boxShadow: '0 8px 32px 0 rgba(60,72,88,0.18)',
+                          zIndex: 9999,
+                        }),
+                        placeholder: (base) => ({
+                          ...base,
+                          color: '#9ca3af',
+                        }),
+                        input: (base) => ({
+                          ...base,
+                          color: '#222',
+                        }),
+                      }}
+                      autoFocus
+                      menuPortalTarget={document.body}
+                      menuPosition="fixed"
+                    />
+                  </div>
+                )}
               </th>
               <th 
-                className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                className="relative px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('description')}
               >
                 <div className="flex items-center space-x-1">
                   <span>Description</span>
                   {getSortIcon('description')}
+                  <button
+                    type="button"
+                    className="ml-1 focus:outline-none"
+                    onClick={e => {
+                      e.stopPropagation();
+                      setShowFileFilter(false);
+                      setShowSearchBox(false);
+                      setShowAddedByFilter(false);
+                      setShowDateFilter(false);
+                      setShowDescriptionFilter(prev => !prev);
+                    }}
+                    title="Filter Description"
+                  >
+                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </button>
                 </div>
+                {showDescriptionFilter && (
+                  <div style={{ position: 'relative' }}>
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowDescriptionFilter(false)} title="Close">✖</button>
+                    <Select
+                      isSearchable
+                      options={descriptionOptions}
+                      value={selectedDescriptionFilter ? [{ value: selectedDescriptionFilter, label: selectedDescriptionFilter }] : []}
+                      onChange={selectedOption => setSelectedDescriptionFilter(selectedOption ? selectedOption.value : null)}
+                      classNamePrefix="react-select"
+                      placeholder="Filter Description..."
+                      styles={{
+                        control: (base, state) => ({
+                          ...base,
+                          borderRadius: '12px',
+                          borderColor: state.isFocused ? '#2563eb' : '#e5e7eb',
+                          boxShadow: state.isFocused ? '0 0 0 2px #2563eb33' : '0 2px 8px 0 rgba(60,72,88,0.10)',
+                          minHeight: '44px',
+                          fontSize: '1rem',
+                          background: '#f9fafb',
+                          transition: 'border-color 0.2s, box-shadow 0.2s',
+                        }),
+                        option: (base, state) => ({
+                          ...base,
+                          backgroundColor: state.isSelected
+                            ? '#2563eb22'
+                            : state.isFocused
+                            ? '#eff6ff'
+                            : '#fff',
+                          color: state.isSelected ? '#1d4ed8' : '#222',
+                          fontWeight: state.isSelected ? 600 : 400,
+                          borderRadius: '8px',
+                          margin: '2px 4px',
+                          padding: '10px 16px',
+                          cursor: 'pointer',
+                        }),
+                        multiValue: (base) => ({
+                          ...base,
+                          backgroundColor: '#dbeafe',
+                          borderRadius: '8px',
+                          color: '#1d4ed8',
+                          fontWeight: 500,
+                        }),
+                        multiValueLabel: (base) => ({
+                          ...base,
+                          color: '#1d4ed8',
+                          fontWeight: 500,
+                        }),
+                        multiValueRemove: (base) => ({
+                          ...base,
+                          color: '#1d4ed8',
+                          ':hover': {
+                            backgroundColor: '#1d4ed8',
+                            color: 'white',
+                          },
+                        }),
+                        menu: (base) => ({
+                          ...base,
+                          borderRadius: '12px',
+                          boxShadow: '0 8px 32px 0 rgba(60,72,88,0.18)',
+                          zIndex: 9999,
+                        }),
+                        placeholder: (base) => ({
+                          ...base,
+                          color: '#9ca3af',
+                        }),
+                        input: (base) => ({
+                          ...base,
+                          color: '#222',
+                        }),
+                      }}
+                      autoFocus
+                      menuPortalTarget={document.body}
+                      menuPosition="fixed"
+                    />
+                  </div>
+                )}
               </th>
               <th 
-                className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                className="relative px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('knowledge_bases')}
               >
                 <div className="flex items-center space-x-1">
                   <span>Knowledge Bases</span>
                   {getSortIcon('knowledge_bases')}
+                  <button
+                    type="button"
+                    className="ml-1 focus:outline-none"
+                    onClick={e => {
+                      e.stopPropagation();
+                      setShowFileFilter(false);
+                      setShowDescriptionFilter(false);
+                      setShowAddedByFilter(false);
+                      setShowDateFilter(false);
+                      setShowSearchBox(prev => !prev);
+                    }}
+                    title="Search Knowledge Base"
+                  >
+                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </button>
                 </div>
+                {showSearchBox && (
+                  <div style={{ position: 'relative' }}>
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowSearchBox(false)} title="Close">✖</button>
+                    <Select
+                      isMulti
+                      isSearchable
+                      options={
+                        knowledgeBases.length > 0
+                          ? knowledgeBases.map(kb => ({ value: String(kb.id), label: kb.name }))
+                          : [{ value: '', label: 'No knowledge bases found.' }]
+                      }
+                      value={knowledgeBases.filter(kb => fileForm.knowledge_bases.includes(String(kb.id))).map(kb => ({ value: String(kb.id), label: kb.name }))}
+                      onChange={selectedOptions => {
+                        setFileForm({
+                          ...fileForm,
+                          knowledge_bases: selectedOptions ? selectedOptions.map(opt => opt.value) : []
+                        });
+                      }}
+                      classNamePrefix="react-select"
+                      placeholder="Search Knowledge Base..."
+                      styles={{
+                        control: (base, state) => ({
+                          ...base,
+                          borderRadius: '12px',
+                          borderColor: state.isFocused ? '#2563eb' : '#e5e7eb',
+                          boxShadow: state.isFocused ? '0 0 0 2px #2563eb33' : '0 2px 8px 0 rgba(60,72,88,0.10)',
+                          minHeight: '44px',
+                          fontSize: '1rem',
+                          background: '#f9fafb',
+                          transition: 'border-color 0.2s, box-shadow 0.2s',
+                        }),
+                        option: (base, state) => ({
+                          ...base,
+                          backgroundColor: state.isSelected
+                            ? '#2563eb22'
+                            : state.isFocused
+                            ? '#eff6ff'
+                            : '#fff',
+                          color: state.isSelected ? '#1d4ed8' : '#222',
+                          fontWeight: state.isSelected ? 600 : 400,
+                          borderRadius: '8px',
+                          margin: '2px 4px',
+                          padding: '10px 16px',
+                          cursor: 'pointer',
+                        }),
+                        multiValue: (base) => ({
+                          ...base,
+                          backgroundColor: '#dbeafe',
+                          borderRadius: '8px',
+                          color: '#1d4ed8',
+                          fontWeight: 500,
+                        }),
+                        multiValueLabel: (base) => ({
+                          ...base,
+                          color: '#1d4ed8',
+                          fontWeight: 500,
+                        }),
+                        multiValueRemove: (base) => ({
+                          ...base,
+                          color: '#1d4ed8',
+                          ':hover': {
+                            backgroundColor: '#1d4ed8',
+                            color: 'white',
+                          },
+                        }),
+                        menu: (base) => ({
+                          ...base,
+                          borderRadius: '12px',
+                          boxShadow: '0 8px 32px 0 rgba(60,72,88,0.18)',
+                          zIndex: 9999,
+                        }),
+                        placeholder: (base) => ({
+                          ...base,
+                          color: '#9ca3af',
+                        }),
+                        input: (base) => ({
+                          ...base,
+                          color: '#222',
+                        }),
+                      }}
+                      autoFocus
+                      menuPortalTarget={document.body}
+                      menuPosition="fixed"
+                    />
+                  </div>
+                )}
               </th>
               <th 
-                className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                className="relative px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('added_by')}
               >
                 <div className="flex items-center space-x-1">
                   <span>Added By</span>
                   {getSortIcon('added_by')}
+                  <button
+                    type="button"
+                    className="ml-1 focus:outline-none"
+                    onClick={e => {
+                      e.stopPropagation();
+                      setShowFileFilter(false);
+                      setShowDescriptionFilter(false);
+                      setShowSearchBox(false);
+                      setShowDateFilter(false);
+                      setShowAddedByFilter(prev => !prev);
+                    }}
+                    title="Filter Added By"
+                  >
+                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </button>
                 </div>
+                {showAddedByFilter && (
+                  <div style={{ position: 'relative' }}>
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowAddedByFilter(false)} title="Close">✖</button>
+                    <Select
+                      isSearchable
+                      options={addedByOptions}
+                      value={selectedAddedByFilter ? [{ value: selectedAddedByFilter, label: selectedAddedByFilter }] : []}
+                      onChange={selectedOption => setSelectedAddedByFilter(selectedOption ? selectedOption.value : null)}
+                      classNamePrefix="react-select"
+                      placeholder="Filter Added By..."
+                      styles={{
+                        control: (base, state) => ({
+                          ...base,
+                          borderRadius: '12px',
+                          borderColor: state.isFocused ? '#2563eb' : '#e5e7eb',
+                          boxShadow: state.isFocused ? '0 0 0 2px #2563eb33' : '0 2px 8px 0 rgba(60,72,88,0.10)',
+                          minHeight: '44px',
+                          fontSize: '1rem',
+                          background: '#f9fafb',
+                          transition: 'border-color 0.2s, box-shadow 0.2s',
+                        }),
+                        option: (base, state) => ({
+                          ...base,
+                          backgroundColor: state.isSelected
+                            ? '#2563eb22'
+                            : state.isFocused
+                            ? '#eff6ff'
+                            : '#fff',
+                          color: state.isSelected ? '#1d4ed8' : '#222',
+                          fontWeight: state.isSelected ? 600 : 400,
+                          borderRadius: '8px',
+                          margin: '2px 4px',
+                          padding: '10px 16px',
+                          cursor: 'pointer',
+                        }),
+                        multiValue: (base) => ({
+                          ...base,
+                          backgroundColor: '#dbeafe',
+                          borderRadius: '8px',
+                          color: '#1d4ed8',
+                          fontWeight: 500,
+                        }),
+                        multiValueLabel: (base) => ({
+                          ...base,
+                          color: '#1d4ed8',
+                          fontWeight: 500,
+                        }),
+                        multiValueRemove: (base) => ({
+                          ...base,
+                          color: '#1d4ed8',
+                          ':hover': {
+                            backgroundColor: '#1d4ed8',
+                            color: 'white',
+                          },
+                        }),
+                        menu: (base) => ({
+                          ...base,
+                          borderRadius: '12px',
+                          boxShadow: '0 8px 32px 0 rgba(60,72,88,0.18)',
+                          zIndex: 9999,
+                        }),
+                        placeholder: (base) => ({
+                          ...base,
+                          color: '#9ca3af',
+                        }),
+                        input: (base) => ({
+                          ...base,
+                          color: '#222',
+                        }),
+                      }}
+                      autoFocus
+                      menuPortalTarget={document.body}
+                      menuPosition="fixed"
+                    />
+                  </div>
+                )}
               </th>
               <th 
-                className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                className="relative px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('uploaded_at')}
               >
                 <div className="flex items-center space-x-1">
                   <span>Upload Date</span>
                   {getSortIcon('uploaded_at')}
+                  <button
+                    type="button"
+                    className="ml-1 focus:outline-none"
+                    onClick={e => {
+                      e.stopPropagation();
+                      setShowFileFilter(false);
+                      setShowDescriptionFilter(false);
+                      setShowAddedByFilter(false);
+                      setShowSearchBox(false);
+                      setShowDateFilter(prev => !prev);
+                    }}
+                    title="Filter Upload Date"
+                  >
+                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </button>
                 </div>
+                {showDateFilter && (
+                  <div style={{ position: 'relative' }}>
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowDateFilter(false)} title="Close">✖</button>
+                    <Select
+                      isSearchable
+                      options={dateOptions}
+                      value={selectedDateFilter ? [{ value: selectedDateFilter, label: selectedDateFilter }] : []}
+                      onChange={selectedOption => setSelectedDateFilter(selectedOption ? selectedOption.value : null)}
+                      classNamePrefix="react-select"
+                      placeholder="Filter Upload Date..."
+                      styles={{
+                        control: (base, state) => ({
+                          ...base,
+                          borderRadius: '12px',
+                          borderColor: state.isFocused ? '#2563eb' : '#e5e7eb',
+                          boxShadow: state.isFocused ? '0 0 0 2px #2563eb33' : '0 2px 8px 0 rgba(60,72,88,0.10)',
+                          minHeight: '44px',
+                          fontSize: '1rem',
+                          background: '#f9fafb',
+                          transition: 'border-color 0.2s, box-shadow 0.2s',
+                        }),
+                        option: (base, state) => ({
+                          ...base,
+                          backgroundColor: state.isSelected
+                            ? '#2563eb22'
+                            : state.isFocused
+                            ? '#eff6ff'
+                            : '#fff',
+                          color: state.isSelected ? '#1d4ed8' : '#222',
+                          fontWeight: state.isSelected ? 600 : 400,
+                          borderRadius: '8px',
+                          margin: '2px 4px',
+                          padding: '10px 16px',
+                          cursor: 'pointer',
+                        }),
+                        multiValue: (base) => ({
+                          ...base,
+                          backgroundColor: '#dbeafe',
+                          borderRadius: '8px',
+                          color: '#1d4ed8',
+                          fontWeight: 500,
+                        }),
+                        multiValueLabel: (base) => ({
+                          ...base,
+                          color: '#1d4ed8',
+                          fontWeight: 500,
+                        }),
+                        multiValueRemove: (base) => ({
+                          ...base,
+                          color: '#1d4ed8',
+                          ':hover': {
+                            backgroundColor: '#1d4ed8',
+                            color: 'white',
+                          },
+                        }),
+                        menu: (base) => ({
+                          ...base,
+                          borderRadius: '12px',
+                          boxShadow: '0 8px 32px 0 rgba(60,72,88,0.18)',
+                          zIndex: 9999,
+                        }),
+                        placeholder: (base) => ({
+                          ...base,
+                          color: '#9ca3af',
+                        }),
+                        input: (base) => ({
+                          ...base,
+                          color: '#222',
+                        }),
+                      }}
+                      autoFocus
+                      menuPortalTarget={document.body}
+                      menuPosition="fixed"
+                    />
+                  </div>
+                )}
               </th>
               <th className="px-4 py-3 text-left font-semibold text-gray-700">Actions</th>
             </tr>
@@ -382,7 +951,7 @@ const FileListTab = ({ uploadedFiles, renderTable, fileModalOpen, setFileModalOp
       </div>
       {/* File Upload Modal */}
       {fileModalOpen && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50" onClick={() => setFileModalOpen(false)}>
+        <div key={knowledgeBases.length} className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50" onClick={() => setFileModalOpen(false)}>
           {isLoading && (
             <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-60">
               <Loader />
@@ -413,20 +982,30 @@ const FileListTab = ({ uploadedFiles, renderTable, fileModalOpen, setFileModalOp
               </div>
               <div>
                 <label className="block mb-1 font-medium">Knowledge Base</label>
-                <select
-                  multiple
-                  value={fileForm.knowledge_bases}
-                  onChange={e => {
-                    const options = Array.from(e.target.selectedOptions, option => option.value);
-                    setFileForm({ ...fileForm, knowledge_bases: options });
-                  }}
-                  className="w-full p-2 border rounded"
-                >
-                  {knowledgeBases.map((kb) => (
-                    <option key={kb.id} value={String(kb.id)}>{kb.name}</option>
-                  ))}
-                </select>
-                <span className="text-xs text-gray-500">Hold Ctrl (Windows) or Cmd (Mac) to select multiple</span>
+                {knowledgeBases.length === 0 ? (
+                  <div className="flex justify-center items-center py-4">
+                    <Loader /> {/* Ya koi simple 'Loading...' text */}
+                  </div>
+                ) : (
+                  <Select
+                    key={knowledgeBases.length}
+                    isMulti
+                    isSearchable
+                    options={knowledgeBases.map(kb => ({ value: String(kb.id), label: kb.name }))}
+                    value={knowledgeBases.filter(kb => fileForm.knowledge_bases.includes(String(kb.id))).map(kb => ({ value: String(kb.id), label: kb.name }))}
+                    onChange={selectedOptions => {
+                      setFileForm({
+                        ...fileForm,
+                        knowledge_bases: selectedOptions ? selectedOptions.map(opt => opt.value) : []
+                      });
+                    }}
+                    classNamePrefix="react-select"
+                    placeholder="Select knowledge bases..."
+                    menuPortalTarget={document.body}
+                    menuPosition="fixed"
+                  />
+                )}
+                <span className="text-xs text-gray-500">You can search and select multiple. Searched/selected will show on top.</span>
               </div>
               {fileFormError && <div className="text-red-500 text-xs">{fileFormError}</div>}
               <div className="flex justify-end space-x-2">
