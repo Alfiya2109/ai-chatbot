@@ -29,17 +29,20 @@ const TextListTab = ({
   const [sortDirection, setSortDirection] = useState('asc');
   const [showSearchBox, setShowSearchBox] = useState(false);
   const [knowledgeBaseSearch, setKnowledgeBaseSearch] = useState('');
+  // Change single value filter states to arrays
+  const [selectedContentFilter, setSelectedContentFilter] = useState([]);
+  const [selectedDescriptionFilter, setSelectedDescriptionFilter] = useState([]);
+  const [selectedAddedByFilter, setSelectedAddedByFilter] = useState([]);
+  const [selectedDateFilter, setSelectedDateFilter] = useState([]);
   const [selectedKBFilters, setSelectedKBFilters] = useState([]);
 
   // Add filter popover state for each column
   const [showContentFilter, setShowContentFilter] = useState(false);
-  const [selectedContentFilter, setSelectedContentFilter] = useState(null);
   const [showDescriptionFilter, setShowDescriptionFilter] = useState(false);
-  const [selectedDescriptionFilter, setSelectedDescriptionFilter] = useState(null);
   const [showAddedByFilter, setShowAddedByFilter] = useState(false);
-  const [selectedAddedByFilter, setSelectedAddedByFilter] = useState(null);
   const [showDateFilter, setShowDateFilter] = useState(false);
-  const [selectedDateFilter, setSelectedDateFilter] = useState(null);
+  // Add state for Knowledge Bases filter popover
+  const [showKBFilter, setShowKBFilter] = useState(false);
 
   // Unique options for each filter
   const contentOptions = useMemo(() => {
@@ -63,24 +66,35 @@ const TextListTab = ({
   const filteredAndSortedTexts = useMemo(() => {
     let filtered = uploadedTexts;
     
-    // Content filter
-    if (selectedContentFilter) {
+    // Content filter (multi)
+    if (selectedContentFilter && selectedContentFilter.length > 0) {
       filtered = filtered.filter(t => {
         const content = t.content ? t.content.substring(0, 50) + (t.content.length > 50 ? '...' : '') : 'No content';
-        return content === selectedContentFilter;
+        return selectedContentFilter.includes(content);
       });
     }
-    // Description filter
-    if (selectedDescriptionFilter) {
-      filtered = filtered.filter(t => (t.description || '-') === selectedDescriptionFilter);
+    // Description filter (multi)
+    if (selectedDescriptionFilter && selectedDescriptionFilter.length > 0) {
+      filtered = filtered.filter(t => selectedDescriptionFilter.includes(t.description || '-'));
     }
-    // Added By filter
-    if (selectedAddedByFilter) {
-      filtered = filtered.filter(t => (t.added_by || '-') === selectedAddedByFilter);
+    // Added By filter (multi)
+    if (selectedAddedByFilter && selectedAddedByFilter.length > 0) {
+      filtered = filtered.filter(t => selectedAddedByFilter.includes(t.added_by || '-'));
     }
-    // Date filter
-    if (selectedDateFilter) {
-      filtered = filtered.filter(t => (t.uploaded_at ? new Date(t.uploaded_at).toLocaleDateString() : '-') === selectedDateFilter);
+    // Date filter (multi)
+    if (selectedDateFilter && selectedDateFilter.length > 0) {
+      filtered = filtered.filter(t => selectedDateFilter.includes(t.uploaded_at ? new Date(t.uploaded_at).toLocaleDateString() : '-'));
+    }
+    // Knowledge Bases filter (multi)
+    if (selectedKBFilters && selectedKBFilters.length > 0) {
+      filtered = filtered.filter(t =>
+        t.knowledge_bases &&
+        t.knowledge_bases.some(kb =>
+          typeof kb === 'string'
+            ? selectedKBFilters.includes(kb)
+            : (kb.name && selectedKBFilters.includes(kb.name))
+        )
+      );
     }
     
     // Apply search filter
@@ -144,7 +158,7 @@ const TextListTab = ({
     }
     
     return filtered;
-  }, [uploadedTexts, searchTerm, sortField, sortDirection, selectedContentFilter, selectedDescriptionFilter, selectedAddedByFilter, selectedDateFilter]);
+  }, [uploadedTexts, searchTerm, sortField, sortDirection, selectedContentFilter, selectedDescriptionFilter, selectedAddedByFilter, selectedDateFilter, selectedKBFilters]);
 
   const filteredAndSortedFiles = useMemo(() => {
     let filtered = uploadedTexts;
@@ -420,12 +434,13 @@ const TextListTab = ({
                 </div>
                 {showContentFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowContentFilter(false)} title="Close">✖</button>
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50 bg-white" style={{ padding: '2px', borderRadius: '50%' }} onClick={() => setShowContentFilter(false)} title="Close">✖</button>
                     <Select
+                      isMulti
                       isSearchable
                       options={contentOptions}
-                      value={selectedContentFilter ? [{ value: selectedContentFilter, label: selectedContentFilter }] : []}
-                      onChange={selectedOption => setSelectedContentFilter(selectedOption ? selectedOption.value : null)}
+                      value={contentOptions.filter(opt => selectedContentFilter.includes(opt.value))}
+                      onChange={selectedOptions => setSelectedContentFilter(selectedOptions ? selectedOptions.map(opt => opt.value) : [])}
                       classNamePrefix="react-select"
                       placeholder="Filter Content..."
                       styles={{
@@ -522,12 +537,13 @@ const TextListTab = ({
                 </div>
                 {showDescriptionFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowDescriptionFilter(false)} title="Close">✖</button>
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50 bg-white" style={{ padding: '2px', borderRadius: '50%' }} onClick={() => setShowDescriptionFilter(false)} title="Close">✖</button>
                     <Select
+                      isMulti
                       isSearchable
                       options={descriptionOptions}
-                      value={selectedDescriptionFilter ? [{ value: selectedDescriptionFilter, label: selectedDescriptionFilter }] : []}
-                      onChange={selectedOption => setSelectedDescriptionFilter(selectedOption ? selectedOption.value : null)}
+                      value={descriptionOptions.filter(opt => selectedDescriptionFilter.includes(opt.value))}
+                      onChange={selectedOptions => setSelectedDescriptionFilter(selectedOptions ? selectedOptions.map(opt => opt.value) : [])}
                       classNamePrefix="react-select"
                       placeholder="Filter Description..."
                       styles={{
@@ -598,7 +614,7 @@ const TextListTab = ({
                 )}
               </th>
               <th 
-                className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors relative"
+                className="relative px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('knowledge_bases')}
               >
                 <div className="flex items-center space-x-1">
@@ -609,31 +625,30 @@ const TextListTab = ({
                     className="ml-1 focus:outline-none"
                     onClick={e => {
                       e.stopPropagation();
-                      setShowSearchBox(prev => {
-                        const next = !prev;
-                        if (next && fetchKnowledgeBases) fetchKnowledgeBases();
-                        return next;
-                      });
+                      setShowContentFilter(false);
+                      setShowDescriptionFilter(false);
+                      setShowAddedByFilter(false);
+                      setShowDateFilter(false);
+                      setShowKBFilter(prev => !prev);
                     }}
-                    title="Search Knowledge Base"
+                    title="Filter Knowledge Bases"
                   >
                     <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
                 </div>
-                {showSearchBox && (
-                  <div className="absolute z-40 left-1/2 -translate-x-1/2 top-full mt-2 w-80 min-w-[260px] bg-white border border-gray-200 rounded-2xl shadow-2xl flex flex-col p-4 animate-fadeIn" style={{ minWidth: '260px', boxShadow: '0 8px 32px 0 rgba(60,72,88,0.18)' }} onClick={e => e.stopPropagation()}>
+                {showKBFilter && (
+                  <div style={{ position: 'relative' }}>
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50 bg-white" style={{ padding: '2px', borderRadius: '50%' }} onClick={() => setShowKBFilter(false)} title="Close">✖</button>
                     <Select
                       isMulti
                       isSearchable
-                      options={knowledgeBases.map(kb => ({ value: String(kb.id), label: kb.name }))}
-                      value={knowledgeBases.filter(kb => selectedKBFilters.includes(kb.name)).map(kb => ({ value: String(kb.id), label: kb.name }))}
-                      onChange={selectedOptions => {
-                        setSelectedKBFilters(selectedOptions ? selectedOptions.map(opt => opt.label) : []);
-                      }}
+                      options={knowledgeBases.map(kb => ({ value: kb.name, label: kb.name }))}
+                      value={knowledgeBases.filter(kb => selectedKBFilters.includes(kb.name)).map(kb => ({ value: kb.name, label: kb.name }))}
+                      onChange={selectedOptions => setSelectedKBFilters(selectedOptions ? selectedOptions.map(opt => opt.value) : [])}
                       classNamePrefix="react-select"
-                      placeholder="Search Knowledge Base..."
+                      placeholder="Filter Knowledge Bases..."
                       styles={{
                         control: (base, state) => ({
                           ...base,
@@ -684,8 +699,6 @@ const TextListTab = ({
                           borderRadius: '12px',
                           boxShadow: '0 8px 32px 0 rgba(60,72,88,0.18)',
                           zIndex: 9999,
-                          maxHeight: 250,
-                          overflowY: 'auto',
                         }),
                         placeholder: (base) => ({
                           ...base,
@@ -696,18 +709,10 @@ const TextListTab = ({
                           color: '#222',
                         }),
                       }}
-                        autoFocus
-                      />
-                        <button
-                          type="button"
-                      className="mt-2 text-gray-400 hover:text-gray-600 self-end"
-                        onClick={() => setShowSearchBox(false)}
-                        title="Close"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
+                      autoFocus
+                      menuPortalTarget={document.body}
+                      menuPosition="fixed"
+                    />
                   </div>
                 )}
               </th>
@@ -738,12 +743,13 @@ const TextListTab = ({
                 </div>
                 {showAddedByFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowAddedByFilter(false)} title="Close">✖</button>
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50 bg-white" style={{ padding: '2px', borderRadius: '50%' }} onClick={() => setShowAddedByFilter(false)} title="Close">✖</button>
                     <Select
+                      isMulti
                       isSearchable
                       options={addedByOptions}
-                      value={selectedAddedByFilter ? [{ value: selectedAddedByFilter, label: selectedAddedByFilter }] : []}
-                      onChange={selectedOption => setSelectedAddedByFilter(selectedOption ? selectedOption.value : null)}
+                      value={addedByOptions.filter(opt => selectedAddedByFilter.includes(opt.value))}
+                      onChange={selectedOptions => setSelectedAddedByFilter(selectedOptions ? selectedOptions.map(opt => opt.value) : [])}
                       classNamePrefix="react-select"
                       placeholder="Filter Added By..."
                       styles={{
@@ -840,12 +846,13 @@ const TextListTab = ({
                 </div>
                 {showDateFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowDateFilter(false)} title="Close">✖</button>
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50 bg-white" style={{ padding: '2px', borderRadius: '50%' }} onClick={() => setShowDateFilter(false)} title="Close">✖</button>
                     <Select
+                      isMulti
                       isSearchable
                       options={dateOptions}
-                      value={selectedDateFilter ? [{ value: selectedDateFilter, label: selectedDateFilter }] : []}
-                      onChange={selectedOption => setSelectedDateFilter(selectedOption ? selectedOption.value : null)}
+                      value={dateOptions.filter(opt => selectedDateFilter.includes(opt.value))}
+                      onChange={selectedOptions => setSelectedDateFilter(selectedOptions ? selectedOptions.map(opt => opt.value) : [])}
                       classNamePrefix="react-select"
                       placeholder="Filter Upload Date..."
                       styles={{

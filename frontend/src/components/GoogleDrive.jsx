@@ -111,19 +111,19 @@ const GoogleDrive = () => {
   // Filter drive files based on search term and KB filter
   const filteredDriveFiles = useMemo(() => {
     let filtered = driveFiles;
-    // Folder Name filter
+    // Folder Name filter (multi)
     if (selectedFolderNameFilter.length > 0) {
       filtered = filtered.filter(f => selectedFolderNameFilter.includes(f.folder_name || f.file_name || 'Unknown Folder'));
     }
-    // Path filter
+    // Path filter (multi)
     if (selectedPathFilter.length > 0) {
       filtered = filtered.filter(f => selectedPathFilter.includes(f.relative_path || '-'));
     }
-    // Description filter
+    // Description filter (multi)
     if (selectedDescriptionFilter.length > 0) {
       filtered = filtered.filter(f => selectedDescriptionFilter.includes(f.description || '-'));
     }
-    // Knowledge Base filter
+    // Knowledge Base filter (multi)
     if (selectedKBFilter.length > 0) {
       filtered = filtered.filter(f =>
         f.knowledge_bases && f.knowledge_bases.some(kb =>
@@ -131,11 +131,11 @@ const GoogleDrive = () => {
         )
       );
     }
-    // Added By filter
+    // Added By filter (multi)
     if (selectedAddedByFilter.length > 0) {
       filtered = filtered.filter(f => selectedAddedByFilter.includes(f.added_by || '-'));
     }
-    // Date filter
+    // Date filter (multi)
     if (selectedDateFilter.length > 0) {
       filtered = filtered.filter(f => selectedDateFilter.includes(f.uploaded_at ? new Date(f.uploaded_at).toLocaleDateString() : '-'));
     }
@@ -492,7 +492,9 @@ const GoogleDrive = () => {
                 </div>
                 {showFolderNameFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowFolderNameFilter(false)} title="Close">✖</button>
+                    <button type="button" className="absolute top-2 right-2 z-50"
+                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                      onClick={() => setShowFolderNameFilter(false)} title="Close">✖</button>
                     <Select
                       isMulti
                       isSearchable
@@ -528,7 +530,9 @@ const GoogleDrive = () => {
                 </div>
                 {showPathFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowPathFilter(false)} title="Close">✖</button>
+                    <button type="button" className="absolute top-2 right-2 z-50"
+                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                      onClick={() => setShowPathFilter(false)} title="Close">✖</button>
                     <Select
                       isMulti
                       isSearchable
@@ -564,7 +568,9 @@ const GoogleDrive = () => {
                 </div>
                 {showDescriptionFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowDescriptionFilter(false)} title="Close">✖</button>
+                    <button type="button" className="absolute top-2 right-2 z-50"
+                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                      onClick={() => setShowDescriptionFilter(false)} title="Close">✖</button>
                     <Select
                       isMulti
                       isSearchable
@@ -600,7 +606,9 @@ const GoogleDrive = () => {
                 </div>
                 {showKBFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowKBFilter(false)} title="Close">✖</button>
+                    <button type="button" className="absolute top-2 right-2 z-50"
+                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                      onClick={() => setShowKBFilter(false)} title="Close">✖</button>
                     <Select
                       isMulti
                       isSearchable
@@ -636,7 +644,9 @@ const GoogleDrive = () => {
                 </div>
                 {showAddedByFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowAddedByFilter(false)} title="Close">✖</button>
+                    <button type="button" className="absolute top-2 right-2 z-50"
+                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                      onClick={() => setShowAddedByFilter(false)} title="Close">✖</button>
                     <Select
                       isMulti
                       isSearchable
@@ -672,7 +682,9 @@ const GoogleDrive = () => {
                 </div>
                 {showDateFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowDateFilter(false)} title="Close">✖</button>
+                    <button type="button" className="absolute top-2 right-2 z-50"
+                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                      onClick={() => setShowDateFilter(false)} title="Close">✖</button>
                     <Select
                       isMulti
                       isSearchable

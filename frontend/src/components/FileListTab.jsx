@@ -14,13 +14,15 @@ const FileListTab = ({ uploadedFiles, renderTable, fileModalOpen, setFileModalOp
 
   // Add filter popover state for each column
   const [showFileFilter, setShowFileFilter] = useState(false);
-  const [selectedFileFilter, setSelectedFileFilter] = useState(null);
   const [showDescriptionFilter, setShowDescriptionFilter] = useState(false);
-  const [selectedDescriptionFilter, setSelectedDescriptionFilter] = useState(null);
   const [showAddedByFilter, setShowAddedByFilter] = useState(false);
-  const [selectedAddedByFilter, setSelectedAddedByFilter] = useState(null);
   const [showDateFilter, setShowDateFilter] = useState(false);
-  const [selectedDateFilter, setSelectedDateFilter] = useState(null);
+  // Change single value filter states to arrays
+  const [selectedFileFilter, setSelectedFileFilter] = useState([]);
+  const [selectedDescriptionFilter, setSelectedDescriptionFilter] = useState([]);
+  const [selectedAddedByFilter, setSelectedAddedByFilter] = useState([]);
+  const [selectedDateFilter, setSelectedDateFilter] = useState([]);
+  const [selectedKnowledgeBaseFilter, setSelectedKnowledgeBaseFilter] = useState([]);
 
   // Unique options for each filter
   const fileNameOptions = useMemo(() => {
@@ -40,6 +42,22 @@ const FileListTab = ({ uploadedFiles, renderTable, fileModalOpen, setFileModalOp
     return dates.map(date => ({ value: date, label: date }));
   }, [uploadedFiles]);
 
+  const knowledgeBaseOptions = useMemo(() => {
+    const allKBs = [];
+    uploadedFiles.forEach(file => {
+      if (file.knowledge_bases && Array.isArray(file.knowledge_bases)) {
+        file.knowledge_bases.forEach(kb => {
+          if (typeof kb === 'object' && kb !== null && kb.name) {
+            allKBs.push(kb.name);
+          } else if (typeof kb === 'string') {
+            allKBs.push(kb);
+          }
+        });
+      }
+    });
+    return Array.from(new Set(allKBs)).map(name => ({ value: name, label: name }));
+  }, [uploadedFiles]);
+
   // Add local knowledgeBases state for modal
   const [knowledgeBases, setKnowledgeBases] = useState([]);
 
@@ -55,7 +73,7 @@ const FileListTab = ({ uploadedFiles, renderTable, fileModalOpen, setFileModalOp
       if (res.ok) {
         const data = await res.json();
         console.log('Fetched KBs data:', data);
-        setKnowledgeBases(Array.isArray(data) ? data : (data.results || []));
+        setKnowledgeBases(data);
       } else {
         console.log('Fetch not ok:', res.status);
         setKnowledgeBases([]);
@@ -70,9 +88,6 @@ const FileListTab = ({ uploadedFiles, renderTable, fileModalOpen, setFileModalOp
   useEffect(() => {
     if (fileModalOpen) {
       fetchKnowledgeBases();
-      setTimeout(() => {
-        console.log('knowledgeBases (modal open):', knowledgeBases);
-      }, 1000);
     }
   }, [fileModalOpen]);
 
@@ -80,21 +95,21 @@ const FileListTab = ({ uploadedFiles, renderTable, fileModalOpen, setFileModalOp
   const filteredAndSortedFiles = useMemo(() => {
     let filtered = uploadedFiles;
 
-    // File Name filter
-    if (selectedFileFilter) {
-      filtered = filtered.filter(f => (f.file ? f.file.split('/').pop() : 'Unknown File') === selectedFileFilter);
+    // File Name filter (multi)
+    if (selectedFileFilter && selectedFileFilter.length > 0) {
+      filtered = filtered.filter(f => selectedFileFilter.includes(f.file ? f.file.split('/').pop() : 'Unknown File'));
     }
-    // Description filter
-    if (selectedDescriptionFilter) {
-      filtered = filtered.filter(f => (f.description || '-') === selectedDescriptionFilter);
+    // Description filter (multi)
+    if (selectedDescriptionFilter && selectedDescriptionFilter.length > 0) {
+      filtered = filtered.filter(f => selectedDescriptionFilter.includes(f.description || '-'));
     }
-    // Added By filter
-    if (selectedAddedByFilter) {
-      filtered = filtered.filter(f => (f.added_by || '-') === selectedAddedByFilter);
+    // Added By filter (multi)
+    if (selectedAddedByFilter && selectedAddedByFilter.length > 0) {
+      filtered = filtered.filter(f => selectedAddedByFilter.includes(f.added_by || '-'));
     }
-    // Date filter
-    if (selectedDateFilter) {
-      filtered = filtered.filter(f => (f.uploaded_at ? new Date(f.uploaded_at).toLocaleDateString() : '-') === selectedDateFilter);
+    // Date filter (multi)
+    if (selectedDateFilter && selectedDateFilter.length > 0) {
+      filtered = filtered.filter(f => selectedDateFilter.includes(f.uploaded_at ? new Date(f.uploaded_at).toLocaleDateString() : '-'));
     }
 
     // Knowledge base dropdown filter
@@ -121,6 +136,17 @@ const FileListTab = ({ uploadedFiles, renderTable, fileModalOpen, setFileModalOp
           (file.added_by && file.added_by.toLowerCase().includes(term))
         );
       });
+    }
+
+    if (selectedKnowledgeBaseFilter.length > 0) {
+      filtered = filtered.filter(file =>
+        file.knowledge_bases &&
+        file.knowledge_bases.some(kb =>
+          typeof kb === 'object'
+            ? selectedKnowledgeBaseFilter.includes(kb.name)
+            : selectedKnowledgeBaseFilter.includes(kb)
+        )
+      );
     }
     
     // Apply sorting
@@ -167,7 +193,34 @@ const FileListTab = ({ uploadedFiles, renderTable, fileModalOpen, setFileModalOp
     }
     
     return filtered;
-  }, [uploadedFiles, searchTerm, knowledgeBaseSearch, showSearchBox, sortField, sortDirection, selectedFileFilter, selectedDescriptionFilter, selectedAddedByFilter, selectedDateFilter]);
+  }, [uploadedFiles, searchTerm, knowledgeBaseSearch, showSearchBox, sortField, sortDirection, selectedFileFilter, selectedDescriptionFilter, selectedAddedByFilter, selectedDateFilter, selectedKnowledgeBaseFilter]);
+
+  const filteredKnowledgeBases = useMemo(() => {
+    let allKBs = [];
+    filteredAndSortedFiles.forEach(file => {
+      if (file.knowledge_bases && Array.isArray(file.knowledge_bases)) {
+        file.knowledge_bases.forEach(kb => {
+          if (typeof kb === 'object' && kb !== null && kb.id && kb.name) {
+            allKBs.push({ id: String(kb.id), name: kb.name });
+          } else if (typeof kb === 'string') {
+            allKBs.push({ id: kb, name: kb });
+          }
+        });
+
+      }
+    });
+    // Unique by id+name
+    const unique = [];
+    const map = {};
+    allKBs.forEach(kb => {
+      const key = kb.id + '|' + kb.name;
+      if (!map[key]) {
+        map[key] = true;
+        unique.push(kb);
+      }
+    });
+    return unique;
+  }, [filteredAndSortedFiles]);
 
   const handleSort = (field) => {
     if (sortField === field) {
@@ -318,6 +371,8 @@ const FileListTab = ({ uploadedFiles, renderTable, fileModalOpen, setFileModalOp
             Showing {filteredAndSortedFiles.length} of {uploadedFiles.length} files
           </p>
         )}
+        {/* Knowledge Base Filter Dropdown */}
+        {/* This filter is now moved into the Knowledge Bases column filter popover */}
       </div>
 
       {/* Files Table */}
@@ -362,12 +417,13 @@ const FileListTab = ({ uploadedFiles, renderTable, fileModalOpen, setFileModalOp
                 </div>
                 {showFileFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowFileFilter(false)} title="Close">✖</button>
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50 bg-white" style={{ padding: '2px', borderRadius: '50%' }} onClick={() => setShowFileFilter(false)} title="Close">✖</button>
                     <Select
+                      isMulti
                       isSearchable
                       options={fileNameOptions}
-                      value={selectedFileFilter ? [{ value: selectedFileFilter, label: selectedFileFilter }] : []}
-                      onChange={selectedOption => setSelectedFileFilter(selectedOption ? selectedOption.value : null)}
+                      value={fileNameOptions.filter(opt => selectedFileFilter.includes(opt.value))}
+                      onChange={selectedOptions => setSelectedFileFilter(selectedOptions ? selectedOptions.map(opt => opt.value) : [])}
                       classNamePrefix="react-select"
                       placeholder="Filter File Name..."
                       styles={{
@@ -464,12 +520,13 @@ const FileListTab = ({ uploadedFiles, renderTable, fileModalOpen, setFileModalOp
                 </div>
                 {showDescriptionFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowDescriptionFilter(false)} title="Close">✖</button>
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50 bg-white" style={{ padding: '2px', borderRadius: '50%' }} onClick={() => setShowDescriptionFilter(false)} title="Close">✖</button>
                     <Select
+                      isMulti
                       isSearchable
                       options={descriptionOptions}
-                      value={selectedDescriptionFilter ? [{ value: selectedDescriptionFilter, label: selectedDescriptionFilter }] : []}
-                      onChange={selectedOption => setSelectedDescriptionFilter(selectedOption ? selectedOption.value : null)}
+                      value={descriptionOptions.filter(opt => selectedDescriptionFilter.includes(opt.value))}
+                      onChange={selectedOptions => setSelectedDescriptionFilter(selectedOptions ? selectedOptions.map(opt => opt.value) : [])}
                       classNamePrefix="react-select"
                       placeholder="Filter Description..."
                       styles={{
@@ -534,7 +591,7 @@ const FileListTab = ({ uploadedFiles, renderTable, fileModalOpen, setFileModalOp
                       }}
                       autoFocus
                       menuPortalTarget={document.body}
-                      menuPosition="fixed"
+                      // menuPosition="fixed"
                     />
                   </div>
                 )}
@@ -566,24 +623,15 @@ const FileListTab = ({ uploadedFiles, renderTable, fileModalOpen, setFileModalOp
                 </div>
                 {showSearchBox && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowSearchBox(false)} title="Close">✖</button>
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50 bg-white" style={{ padding: '2px', borderRadius: '50%' }} onClick={() => setShowSearchBox(false)} title="Close">✖</button>
                     <Select
                       isMulti
                       isSearchable
-                      options={
-                        knowledgeBases.length > 0
-                          ? knowledgeBases.map(kb => ({ value: String(kb.id), label: kb.name }))
-                          : [{ value: '', label: 'No knowledge bases found.' }]
-                      }
-                      value={knowledgeBases.filter(kb => fileForm.knowledge_bases.includes(String(kb.id))).map(kb => ({ value: String(kb.id), label: kb.name }))}
-                      onChange={selectedOptions => {
-                        setFileForm({
-                          ...fileForm,
-                          knowledge_bases: selectedOptions ? selectedOptions.map(opt => opt.value) : []
-                        });
-                      }}
+                      options={knowledgeBaseOptions}
+                      value={knowledgeBaseOptions.filter(opt => selectedKnowledgeBaseFilter.includes(opt.value))}
+                      onChange={selectedOptions => setSelectedKnowledgeBaseFilter(selectedOptions ? selectedOptions.map(opt => opt.value) : [])}
                       classNamePrefix="react-select"
-                      placeholder="Search Knowledge Base..."
+                      placeholder="Filter Knowledge Bases..."
                       styles={{
                         control: (base, state) => ({
                           ...base,
@@ -678,12 +726,13 @@ const FileListTab = ({ uploadedFiles, renderTable, fileModalOpen, setFileModalOp
                 </div>
                 {showAddedByFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowAddedByFilter(false)} title="Close">✖</button>
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50 bg-white" style={{ padding: '2px', borderRadius: '50%' }} onClick={() => setShowAddedByFilter(false)} title="Close">✖</button>
                     <Select
+                      isMulti
                       isSearchable
                       options={addedByOptions}
-                      value={selectedAddedByFilter ? [{ value: selectedAddedByFilter, label: selectedAddedByFilter }] : []}
-                      onChange={selectedOption => setSelectedAddedByFilter(selectedOption ? selectedOption.value : null)}
+                      value={addedByOptions.filter(opt => selectedAddedByFilter.includes(opt.value))}
+                      onChange={selectedOptions => setSelectedAddedByFilter(selectedOptions ? selectedOptions.map(opt => opt.value) : [])}
                       classNamePrefix="react-select"
                       placeholder="Filter Added By..."
                       styles={{
@@ -780,12 +829,13 @@ const FileListTab = ({ uploadedFiles, renderTable, fileModalOpen, setFileModalOp
                 </div>
                 {showDateFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50" onClick={() => setShowDateFilter(false)} title="Close">✖</button>
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50 bg-white" style={{ padding: '2px', borderRadius: '50%' }} onClick={() => setShowDateFilter(false)} title="Close">✖</button>
                     <Select
+                      isMulti
                       isSearchable
                       options={dateOptions}
-                      value={selectedDateFilter ? [{ value: selectedDateFilter, label: selectedDateFilter }] : []}
-                      onChange={selectedOption => setSelectedDateFilter(selectedOption ? selectedOption.value : null)}
+                      value={dateOptions.filter(opt => selectedDateFilter.includes(opt.value))}
+                      onChange={selectedOptions => setSelectedDateFilter(selectedOptions ? selectedOptions.map(opt => opt.value) : [])}
                       classNamePrefix="react-select"
                       placeholder="Filter Upload Date..."
                       styles={{
@@ -982,9 +1032,10 @@ const FileListTab = ({ uploadedFiles, renderTable, fileModalOpen, setFileModalOp
               </div>
               <div>
                 <label className="block mb-1 font-medium">Knowledge Base</label>
+                {console.log(knowledgeBases)}
                 {knowledgeBases.length === 0 ? (
-                  <div className="flex justify-center items-center py-4">
-                    <Loader /> {/* Ya koi simple 'Loading...' text */}
+                  <div className="flex justify-center items-center py-4 text-gray-500">
+                    No knowledge bases found.
                   </div>
                 ) : (
                   <Select
@@ -996,12 +1047,73 @@ const FileListTab = ({ uploadedFiles, renderTable, fileModalOpen, setFileModalOp
                     onChange={selectedOptions => {
                       setFileForm({
                         ...fileForm,
-                        knowledge_bases: selectedOptions ? selectedOptions.map(opt => opt.value) : []
+                        knowledge_bases: selectedOptions ? selectedOptions.map(opt => String(opt.value)) : []
                       });
                     }}
                     classNamePrefix="react-select"
                     placeholder="Select knowledge bases..."
-                    menuPortalTarget={document.body}
+                    styles={{
+                      control: (base, state) => ({
+                        ...base,
+                        borderRadius: '12px',
+                        borderColor: state.isFocused ? '#2563eb' : '#e5e7eb',
+                        boxShadow: state.isFocused ? '0 0 0 2px #2563eb33' : '0 2px 8px 0 rgba(60,72,88,0.10)',
+                        minHeight: '44px',
+                        fontSize: '1rem',
+                        background: '#f9fafb',
+                        transition: 'border-color 0.2s, box-shadow 0.2s',
+                      }),
+                      option: (base, state) => ({
+                        ...base,
+                        backgroundColor: state.isSelected
+                          ? '#2563eb22'
+                          : state.isFocused
+                          ? '#eff6ff'
+                          : '#fff',
+                        color: state.isSelected ? '#1d4ed8' : '#222',
+                        fontWeight: state.isSelected ? 600 : 400,
+                        borderRadius: '8px',
+                        margin: '2px 4px',
+                        padding: '10px 16px',
+                        cursor: 'pointer',
+                      }),
+                      multiValue: (base) => ({
+                        ...base,
+                        backgroundColor: '#dbeafe',
+                        borderRadius: '8px',
+                        color: '#1d4ed8',
+                        fontWeight: 500,
+                      }),
+                      multiValueLabel: (base) => ({
+                        ...base,
+                        color: '#1d4ed8',
+                        fontWeight: 500,
+                      }),
+                      multiValueRemove: (base) => ({
+                        ...base,
+                        color: '#1d4ed8',
+                        ':hover': {
+                          backgroundColor: '#1d4ed8',
+                          color: 'white',
+                        },
+                      }),
+                      menu: (base) => ({
+                        ...base,
+                        borderRadius: '12px',
+                        boxShadow: '0 8px 32px 0 rgba(60,72,88,0.18)',
+                        zIndex: 9999,
+                      }),
+                      placeholder: (base) => ({
+                        ...base,
+                        color: '#9ca3af',
+                      }),
+                      input: (base) => ({
+                        ...base,
+                        color: '#222',
+                      }),
+                    }}
+                    autoFocus
+                    // menuPortalTarget={document.body}
                     menuPosition="fixed"
                   />
                 )}
@@ -1021,3 +1133,4 @@ const FileListTab = ({ uploadedFiles, renderTable, fileModalOpen, setFileModalOp
 };
 
 export default FileListTab;
+
