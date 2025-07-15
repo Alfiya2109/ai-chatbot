@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import Loader from './Loader';
 import Select from 'react-select';
+import { FaPlus } from 'react-icons/fa';
 
 const URLListTab = ({ urlList, renderTable, urlModalOpen, setUrlModalOpen, urlForm, setUrlForm, knowledgeBases, urlFormError, handleUrlModalSubmit, onBulkDelete, isLoading }) => {
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
@@ -149,13 +150,13 @@ const URLListTab = ({ urlList, renderTable, urlModalOpen, setUrlModalOpen, urlFo
     }
     if (sortDirection === 'asc') {
       return (
-        <svg className="w-4 h-4 text-blue-600 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4 text-gray-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
         </svg>
       );
     } else {
       return (
-        <svg className="w-4 h-4 text-blue-600 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4 text-gray-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       );
@@ -232,12 +233,12 @@ const URLListTab = ({ urlList, renderTable, urlModalOpen, setUrlModalOpen, urlFo
                 Delete All
               </button>
               <button
-                className="bg-gray-500 hover:bg-gray-700 text-white rounded-full w-10 h-10 flex items-center justify-center text-2xl shadow"
+                className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow flex items-center justify-center"
                 title="Add URL"
                 aria-label="Add URL"
                 onClick={() => setUrlModalOpen(true)}
               >
-                <span>+</span>
+                <FaPlus />
               </button>
             </>
           ) : (
@@ -287,20 +288,20 @@ const URLListTab = ({ urlList, renderTable, urlModalOpen, setUrlModalOpen, urlFo
       {/* Table with sortable headers */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="min-w-full text-sm">
-          <thead className="bg-gray-50">
+          <thead className="bg-gray-600 text-white ">
             <tr>
               {isMultiSelectMode && (
                 <th className="px-4 py-3 text-left">
                   <input
                     type="checkbox"
-                    onChange={(e) => handleSelectAll(e.target.checked)}
+                    onChange={e => handleSelectAll(e.target.checked)}
                     checked={selectedItems.length === filteredURLs.length && filteredURLs.length > 0}
                     className="rounded border-gray-300"
                   />
                 </th>
               )}
               <th 
-                className="relative px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('url')}
               >
                 <div className="flex items-center space-x-1">
@@ -319,17 +320,14 @@ const URLListTab = ({ urlList, renderTable, urlModalOpen, setUrlModalOpen, urlFo
                     }}
                     title="Filter URL"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
                 </div>
                 {showURLFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button"
-                      className="absolute top-2 right-2 z-50"
-                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
-                      onClick={() => setShowURLFilter(false)} title="Close">✖</button>
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50 bg-white" style={{ padding: '2px', borderRadius: '50%' }} onClick={() => setShowURLFilter(false)} title="Close">✖</button>
                     <Select
                       isMulti
                       isSearchable
@@ -406,7 +404,7 @@ const URLListTab = ({ urlList, renderTable, urlModalOpen, setUrlModalOpen, urlFo
                 )}
               </th>
               <th 
-                className="relative px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('description')}
               >
                 <div className="flex items-center space-x-1">
@@ -425,17 +423,14 @@ const URLListTab = ({ urlList, renderTable, urlModalOpen, setUrlModalOpen, urlFo
                     }}
                     title="Filter Description"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
                 </div>
                 {showDescriptionFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button"
-                      className="absolute top-2 right-2 z-50"
-                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
-                      onClick={() => setShowDescriptionFilter(false)} title="Close">✖</button>
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50 bg-white" style={{ padding: '2px', borderRadius: '50%' }} onClick={() => setShowDescriptionFilter(false)} title="Close">✖</button>
                     <Select
                       isMulti
                       isSearchable
@@ -512,7 +507,7 @@ const URLListTab = ({ urlList, renderTable, urlModalOpen, setUrlModalOpen, urlFo
                 )}
               </th>
               <th 
-                className="px-3 py-2 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors relative"
+                className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('knowledge_bases')}
               >
                 <div className="flex items-center space-x-1">
@@ -531,17 +526,14 @@ const URLListTab = ({ urlList, renderTable, urlModalOpen, setUrlModalOpen, urlFo
                     }}
                     title="Filter Knowledge Bases"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
                 </div>
                 {showKBFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button"
-                      className="absolute top-2 right-2 z-50"
-                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
-                      onClick={() => setShowKBFilter(false)} title="Close">✖</button>
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50 bg-white" style={{ padding: '2px', borderRadius: '50%' }} onClick={() => setShowKBFilter(false)} title="Close">✖</button>
                     <Select
                       isMulti
                       isSearchable
@@ -618,7 +610,7 @@ const URLListTab = ({ urlList, renderTable, urlModalOpen, setUrlModalOpen, urlFo
                 )}
               </th>
               <th 
-                className="relative px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('added_by')}
               >
                 <div className="flex items-center space-x-1">
@@ -637,17 +629,14 @@ const URLListTab = ({ urlList, renderTable, urlModalOpen, setUrlModalOpen, urlFo
                     }}
                     title="Filter Added By"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
                 </div>
                 {showAddedByFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button"
-                      className="absolute top-2 right-2 z-50"
-                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
-                      onClick={() => setShowAddedByFilter(false)} title="Close">✖</button>
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50 bg-white" style={{ padding: '2px', borderRadius: '50%' }} onClick={() => setShowAddedByFilter(false)} title="Close">✖</button>
                     <Select
                       isMulti
                       isSearchable
@@ -724,7 +713,7 @@ const URLListTab = ({ urlList, renderTable, urlModalOpen, setUrlModalOpen, urlFo
                 )}
               </th>
               <th 
-                className="relative px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('uploaded_at')}
               >
                 <div className="flex items-center space-x-1">
@@ -743,17 +732,14 @@ const URLListTab = ({ urlList, renderTable, urlModalOpen, setUrlModalOpen, urlFo
                     }}
                     title="Filter Uploaded Date"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
                 </div>
                 {showDateFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button"
-                      className="absolute top-2 right-2 z-50"
-                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
-                      onClick={() => setShowDateFilter(false)} title="Close">✖</button>
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50 bg-white" style={{ padding: '2px', borderRadius: '50%' }} onClick={() => setShowDateFilter(false)} title="Close">✖</button>
                     <Select
                       isMulti
                       isSearchable
@@ -829,11 +815,10 @@ const URLListTab = ({ urlList, renderTable, urlModalOpen, setUrlModalOpen, urlFo
                   </div>
                 )}
               </th>
-              <th className="px-4 py-3 text-left font-semibold text-gray-700">Actions</th>
+              <th className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {/* Render table rows using filteredURLs */}
             {isLoading ? (
               <tr>
                 <td colSpan={isMultiSelectMode ? 7 : 6} className="px-4 py-8 text-center text-gray-500">
@@ -856,7 +841,7 @@ const URLListTab = ({ urlList, renderTable, urlModalOpen, setUrlModalOpen, urlFo
                       <input
                         type="checkbox"
                         checked={selectedItems.includes(url.id)}
-                        onChange={(e) => handleItemSelect(url.id, e.target.checked)}
+                        onChange={e => handleItemSelect(url.id, e.target.checked)}
                         className="rounded border-gray-300"
                       />
                     </td>

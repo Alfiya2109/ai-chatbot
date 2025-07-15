@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import Select from 'react-select';
+import { FaPlus } from 'react-icons/fa';
 
 const ProfileTab = ({ profiles, handleEditProfile, handleDeleteProfile, handleCreateProfile, profileModalOpen, setProfileModalOpen, editingProfile, profileForm, setProfileForm, handleProfileFormSubmit }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -128,13 +129,13 @@ const ProfileTab = ({ profiles, handleEditProfile, handleDeleteProfile, handleCr
     }
     if (sortDirection === 'asc') {
       return (
-        <svg className="w-4 h-4 text-blue-600 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4 text-gray-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
         </svg>
       );
     } else {
       return (
-        <svg className="w-4 h-4 text-blue-600 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4 text-gray-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       );
@@ -146,12 +147,12 @@ const ProfileTab = ({ profiles, handleEditProfile, handleDeleteProfile, handleCr
     <div className="flex items-center justify-between mb-4">
       <h3 className="text-lg font-semibold">Profile Access Table</h3>
       <button
-        className="bg-gray-500 hover:bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center text-xl"
+        className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow flex items-center justify-center"
         onClick={handleCreateProfile}
         title="Create New Profile"
         aria-label="Create New Profile"
       >
-        +
+        <FaPlus />
       </button>
     </div>
     
@@ -178,11 +179,11 @@ const ProfileTab = ({ profiles, handleEditProfile, handleDeleteProfile, handleCr
       )}
     </div>
 
-    <div className="bg-white rounded-lg shadow p-4">
+    <div className="bg-white rounded-lg shadow overflow-hidden">
       <table className="min-w-full text-sm">
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="relative px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('name')}>
+        <thead className="bg-gray-600 text-white ">
+          <tr>
+            <th className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('name')}>
               <div className="flex items-center space-x-1">
                 <span>Profile</span>
                 {getSortIcon('name')}
@@ -192,7 +193,7 @@ const ProfileTab = ({ profiles, handleEditProfile, handleDeleteProfile, handleCr
                   onClick={e => {e.stopPropagation(); setShowPermFilter(false); setShowProfileFilter(prev => !prev);}}
                   title="Filter Profile Name"
                 >
-                  <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                 </button>
@@ -200,8 +201,8 @@ const ProfileTab = ({ profiles, handleEditProfile, handleDeleteProfile, handleCr
               {showProfileFilter && (
                 <div style={{ position: 'relative', zIndex: 9999 }}>
                   <button type="button"
-                    className="absolute top-2 right-2 z-50"
-                    style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                    className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50 bg-white"
+                    style={{ padding: '2px', borderRadius: '50%' }}
                     onClick={() => setShowProfileFilter(false)} title="Close">✖</button>
                   <Select
                     isMulti
@@ -278,7 +279,7 @@ const ProfileTab = ({ profiles, handleEditProfile, handleDeleteProfile, handleCr
                 </div>
               )}
             </th>
-            <th className="relative px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('permissions')}>
+            <th className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('permissions')}>
               <div className="flex items-center space-x-1">
                 <span>Access Permissions</span>
                 {getSortIcon('permissions')}
@@ -288,7 +289,7 @@ const ProfileTab = ({ profiles, handleEditProfile, handleDeleteProfile, handleCr
                   onClick={e => {e.stopPropagation(); setShowProfileFilter(false); setShowPermFilter(prev => !prev);}}
                   title="Filter Access Permissions"
                 >
-                  <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                 </button>
@@ -296,8 +297,8 @@ const ProfileTab = ({ profiles, handleEditProfile, handleDeleteProfile, handleCr
               {showPermFilter && (
                 <div style={{ position: 'relative', zIndex: 9999 }}>
                   <button type="button"
-                    className="absolute top-2 right-2 z-50"
-                    style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                    className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50 bg-white"
+                    style={{ padding: '2px', borderRadius: '50%' }}
                     onClick={() => setShowPermFilter(false)} title="Close">✖</button>
                   <Select
                     isMulti
@@ -374,7 +375,7 @@ const ProfileTab = ({ profiles, handleEditProfile, handleDeleteProfile, handleCr
                 </div>
               )}
             </th>
-            <th className="px-3 py-2 text-left">Actions</th>
+            <th className="px-4 py-3 text-left">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -392,9 +393,9 @@ const ProfileTab = ({ profiles, handleEditProfile, handleDeleteProfile, handleCr
               ].filter(perm => profile[perm.key]).map(perm => perm.label);
 
               return (
-                <tr key={profile.id} className="border-b">
-                  <td className="px-3 py-2 font-medium">{profile.name}</td>
-                  <td className="px-3 py-2">
+                <tr key={profile.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-3 font-medium">{profile.name}</td>
+                  <td className="px-4 py-3">
                     {permissions.length > 0 ? (
                       <div className="flex flex-wrap gap-1">
                         {permissions.map((perm, index) => (
@@ -410,7 +411,7 @@ const ProfileTab = ({ profiles, handleEditProfile, handleDeleteProfile, handleCr
                       '-'
                     )}
                   </td>
-                  <td className="px-3 py-2 flex gap-2">
+                  <td className="px-4 py-3 flex gap-2">
                     <button
                       className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-xs"
                       onClick={() => handleEditProfile(profile)}

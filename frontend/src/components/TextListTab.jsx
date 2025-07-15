@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import Loader from './Loader';
 import Select from 'react-select';
+import { FaPlus } from 'react-icons/fa';
 
 const TextListTab = ({
   uploadedTexts,
@@ -255,13 +256,13 @@ const TextListTab = ({
     
     if (sortDirection === 'asc') {
       return (
-        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
         </svg>
       );
     } else {
       return (
-        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       );
@@ -338,12 +339,12 @@ const TextListTab = ({
                 Delete All
               </button>
               <button
-                className="bg-gray-500 hover:bg-gray-700 text-white rounded-full w-10 h-10 flex items-center justify-center text-2xl shadow"
+                className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow flex items-center justify-center"
                 title="Add Text"
                 aria-label="Add Text"
                 onClick={() => { fetchKnowledgeBases && fetchKnowledgeBases(); setTextModalOpen(true); }}
               >
-                <span>+</span>
+                <FaPlus />
               </button>
             </>
           ) : (
@@ -395,10 +396,10 @@ const TextListTab = ({
       {/* Text Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="min-w-full text-sm">
-          <thead className="bg-gray-50">
+          <thead className="bg-gray-600 text-white">
             <tr>
               {isMultiSelectMode && (
-                <th className="px-4 py-3 text-left">
+                <th className="px-4 py-3 text-left text-white">
                   <input
                     type="checkbox"
                     onChange={(e) => handleSelectAll(e.target.checked)}
@@ -408,7 +409,7 @@ const TextListTab = ({
                 </th>
               )}
               <th 
-                className="relative px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('content')}
               >
                 <div className="flex items-center space-x-1">
@@ -427,7 +428,7 @@ const TextListTab = ({
                     }}
                     title="Filter Content"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
@@ -511,7 +512,7 @@ const TextListTab = ({
                 )}
               </th>
               <th 
-                className="relative px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('description')}
               >
                 <div className="flex items-center space-x-1">
@@ -530,7 +531,7 @@ const TextListTab = ({
                     }}
                     title="Filter Description"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
@@ -614,7 +615,7 @@ const TextListTab = ({
                 )}
               </th>
               <th 
-                className="relative px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('knowledge_bases')}
               >
                 <div className="flex items-center space-x-1">
@@ -633,7 +634,7 @@ const TextListTab = ({
                     }}
                     title="Filter Knowledge Bases"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
@@ -717,7 +718,7 @@ const TextListTab = ({
                 )}
               </th>
               <th 
-                className="relative px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('added_by')}
               >
                 <div className="flex items-center space-x-1">
@@ -736,7 +737,7 @@ const TextListTab = ({
                     }}
                     title="Filter Added By"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
@@ -820,7 +821,7 @@ const TextListTab = ({
                 )}
               </th>
               <th 
-                className="relative px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('uploaded_at')}
               >
                 <div className="flex items-center space-x-1">
@@ -839,7 +840,7 @@ const TextListTab = ({
                     }}
                     title="Filter Upload Date"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
@@ -922,7 +923,7 @@ const TextListTab = ({
                   </div>
                 )}
               </th>
-              <th className="px-4 py-3 text-left font-semibold text-gray-700">Actions</th>
+              <th className="px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { FaTrash, FaPlus } from 'react-icons/fa';
 import { BASE_URL } from '../base_url';
 import Select from 'react-select';
+import Loader from './Loader'; // Added Loader import
 
 const FolderListTab = ({ onBulkDelete }) => {
   const [folders, setFolders] = useState([]);
@@ -165,13 +166,13 @@ const FolderListTab = ({ onBulkDelete }) => {
     
     if (sortDirection === 'asc') {
       return (
-        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
         </svg>
       );
     } else {
       return (
-        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       );
@@ -404,22 +405,22 @@ const FolderListTab = ({ onBulkDelete }) => {
         )}
       </div>
 
-      <div className="bg-white rounded-lg shadow p-4">
+      <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="min-w-full text-sm">
-          <thead>
-            <tr className="bg-gray-100">
+          <thead className="bg-gray-600 text-white ">
+            <tr>
               {isMultiSelectMode && (
-                <th className="px-3 py-2 text-left">
+                <th className="px-4 py-3 text-left">
                   <input
                     type="checkbox"
                     onChange={e => handleSelectAll(e.target.checked)}
-                    className="form-checkbox h-4 w-4 text-blue-600"
                     checked={selectedItems.length === filteredAndSortedFolders.length && filteredAndSortedFolders.length > 0}
+                    className="rounded border-gray-300"
                   />
                 </th>
               )}
               <th 
-                className="relative px-3 py-2 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors"
+                className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('folder_name')}
               >
                 <div className="flex items-center space-x-1">
@@ -438,7 +439,7 @@ const FolderListTab = ({ onBulkDelete }) => {
                     }}
                     title="Filter Folder Name"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
@@ -522,7 +523,7 @@ const FolderListTab = ({ onBulkDelete }) => {
                 )}
               </th>
               <th 
-                className="px-3 py-2 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors"
+                className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('description')}
               >
                 <div className="flex items-center space-x-1">
@@ -541,7 +542,7 @@ const FolderListTab = ({ onBulkDelete }) => {
                     }}
                     title="Filter Description"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
@@ -625,7 +626,7 @@ const FolderListTab = ({ onBulkDelete }) => {
                 )}
               </th>
               <th 
-                className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors relative"
+                className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('knowledge_bases')}
               >
                 <div className="flex items-center space-x-1">
@@ -644,7 +645,7 @@ const FolderListTab = ({ onBulkDelete }) => {
                     }}
                     title="Filter Knowledge Bases"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
@@ -728,7 +729,7 @@ const FolderListTab = ({ onBulkDelete }) => {
                 )}
               </th>
               <th 
-                className="px-3 py-2 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors"
+                className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('added_by')}
               >
                 <div className="flex items-center space-x-1">
@@ -747,7 +748,7 @@ const FolderListTab = ({ onBulkDelete }) => {
                     }}
                     title="Filter Added By"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
@@ -831,7 +832,7 @@ const FolderListTab = ({ onBulkDelete }) => {
                 )}
               </th>
               <th 
-                className="px-3 py-2 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors"
+                className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('created_at')}
               >
                 <div className="flex items-center space-x-1">
@@ -850,7 +851,7 @@ const FolderListTab = ({ onBulkDelete }) => {
                     }}
                     title="Filter Uploaded Date"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
@@ -934,35 +935,39 @@ const FolderListTab = ({ onBulkDelete }) => {
                 )}
               </th>
               {!isMultiSelectMode && (
-                <th className="px-3 py-2 text-left font-semibold text-gray-700">Actions</th>
+                <th className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors">Actions</th>
               )}
             </tr>
           </thead>
-          <tbody>
+          <tbody className="bg-white divide-y divide-gray-200">
             {loading ? (
-              <tr><td colSpan={isMultiSelectMode ? 7 : 6} className="text-center py-4">Loading...</td></tr>
+              <tr><td colSpan={isMultiSelectMode ? 7 : 6} className="px-4 py-8 text-center text-gray-500">
+                <div className="flex items-center justify-center">
+                  <Loader />
+                </div>
+              </td></tr>
             ) : filteredAndSortedFolders.length === 0 ? (
               <tr>
-                <td colSpan={isMultiSelectMode ? 7 : 6} className="text-center py-4 text-gray-500">
+                <td colSpan={isMultiSelectMode ? 7 : 6} className="px-4 py-8 text-center text-gray-500">
                   {searchTerm || selectedKBFilters.length > 0 ? 'No folders found matching your search.' : 'No folders uploaded yet.'}
                 </td>
               </tr>
             ) : (
               filteredAndSortedFolders.map(folder => (
-                <tr key={folder.id} className="border-b hover:bg-gray-50 transition-colors">
+                <tr key={folder.id} className="hover:bg-gray-50 transition-colors">
                   {isMultiSelectMode && (
-                    <td className="px-3 py-2">
+                    <td className="px-4 py-3">
                       <input
                         type="checkbox"
                         onChange={e => handleItemSelect(folder.id, e.target.checked)}
-                        className="form-checkbox h-4 w-4 text-blue-600"
+                        className="rounded border-gray-300"
                         checked={selectedItems.includes(folder.id)}
                       />
                     </td>
                   )}
-                  <td className="px-3 py-2 font-medium text-gray-900">{folder.title || folder.folder_name || '-'}</td>
-                  <td className="px-3 py-2 text-gray-700">{folder.description || '-'}</td>
-                  <td className="px-3 py-2">
+                  <td className="px-4 py-3 font-medium text-gray-900">{folder.title || folder.folder_name || '-'}</td>
+                  <td className="px-4 py-3 text-gray-700">{folder.description || '-'}</td>
+                  <td className="px-4 py-3">
                     {folder.knowledge_bases_info && folder.knowledge_bases_info.length > 0 ? (
                       <div className="flex flex-wrap gap-1">
                         {folder.knowledge_bases_info.map((kb, index) => (
@@ -978,16 +983,16 @@ const FolderListTab = ({ onBulkDelete }) => {
                       <span className="text-gray-500">-</span>
                     )}
                   </td>
-                  <td className="px-3 py-2 text-gray-700">{folder.added_by || '-'}</td>
-                  <td className="px-3 py-2 text-gray-700">{folder.created_at ? new Date(folder.created_at).toLocaleDateString() : '-'}</td>
+                  <td className="px-4 py-3 text-gray-700">{folder.added_by || '-'}</td>
+                  <td className="px-4 py-3 text-gray-700">{folder.created_at ? new Date(folder.created_at).toLocaleDateString() : '-'}</td>
                   {!isMultiSelectMode && (
-                    <td className="px-3 py-2">
+                    <td className="px-4 py-3">
                       <button
                         onClick={() => handleDelete(folder.id)}
-                        className="text-red-600 hover:text-red-800"
-                        title="Delete"
+                        className="text-red-600 hover:text-red-800 text-sm font-medium"
+                        title="Delete folder"
                       >
-                        <FaTrash />
+                        Delete
                       </button>
                     </td>
                   )}
@@ -996,22 +1001,6 @@ const FolderListTab = ({ onBulkDelete }) => {
             )}
           </tbody>
         </table>
-        {isMultiSelectMode && (
-          <div className="mt-4 flex justify-end gap-2">
-            <button
-              onClick={handleConfirmDelete}
-              className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700"
-            >
-              Delete Selected
-            </button>
-            <button
-              onClick={handleCancelMultiSelect}
-              className="px-4 py-2 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
-            >
-              Cancel
-            </button>
-          </div>
-        )}
       </div>
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-600 bg-opacity-70">

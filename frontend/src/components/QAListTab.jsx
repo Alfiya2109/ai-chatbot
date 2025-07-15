@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import Loader from './Loader';
 import Select from 'react-select';
+import { FaPlus } from 'react-icons/fa';
 
 
 const QAListTab = ({
@@ -340,13 +341,13 @@ const QAListTab = ({
     }
     if (sortDirection === 'asc') {
       return (
-        <svg className="w-4 h-4 text-blue-600 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4 text-gray-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
         </svg>
       );
     } else {
       return (
-        <svg className="w-4 h-4 text-blue-600 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4 text-gray-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       );
@@ -374,12 +375,12 @@ const QAListTab = ({
                 Delete All
               </button>
               <button
-                className="bg-gray-500 hover:bg-gray-700 text-white rounded-full w-10 h-10 flex items-center justify-center text-2xl shadow"
+                className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow flex items-center justify-center"
                 title="Add Q&A"
                 aria-label="Add Q&A"
                 onClick={() => setQaModalOpen(true)}
               >
-                <span>+</span>
+                <FaPlus />
               </button>
             </>
           ) : (
@@ -431,7 +432,7 @@ const QAListTab = ({
       {/* Replace renderTable with a custom table for Q&A */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="min-w-full text-sm">
-          <thead className="bg-gray-50">
+          <thead className="bg-gray-600 text-white ">
             <tr>
               {isMultiSelectMode && (
                 <th className="px-4 py-3 text-left">
@@ -444,7 +445,7 @@ const QAListTab = ({
                 </th>
               )}
               <th 
-                className="relative px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('question')}
               >
                 <div className="flex items-center space-x-1">
@@ -466,17 +467,14 @@ const QAListTab = ({
                     }}
                     title="Filter Question"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
                 </div>
                 {showQuestionFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button"
-                      className="absolute top-2 right-2 z-50"
-                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
-                      onClick={() => setShowQuestionFilter(false)} title="Close">✖</button>
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50 bg-white" style={{ padding: '2px', borderRadius: '50%' }} onClick={() => setShowQuestionFilter(false)} title="Close">✖</button>
                     <Select
                       isMulti
                       isSearchable
@@ -553,7 +551,7 @@ const QAListTab = ({
                 )}
               </th>
               <th 
-                className="relative px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('answer')}
               >
                 <div className="flex items-center space-x-1">
@@ -575,7 +573,7 @@ const QAListTab = ({
                     }}
                     title="Filter Answer"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
@@ -662,7 +660,7 @@ const QAListTab = ({
                 )}
               </th>
               <th 
-                className="relative px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('description')}
               >
                 <div className="flex items-center space-x-1">
@@ -684,7 +682,7 @@ const QAListTab = ({
                     }}
                     title="Filter Description"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
@@ -771,7 +769,7 @@ const QAListTab = ({
                 )}
               </th>
               <th 
-                className="relative px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('category')}
               >
                 <div className="flex items-center space-x-1">
@@ -793,7 +791,7 @@ const QAListTab = ({
                     }}
                     title="Filter Category"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
@@ -880,7 +878,7 @@ const QAListTab = ({
                 )}
               </th>
               <th 
-                className="relative px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('subcategory')}
               >
                 <div className="flex items-center space-x-1">
@@ -902,7 +900,7 @@ const QAListTab = ({
                     }}
                     title="Filter Subcategory"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
@@ -989,7 +987,7 @@ const QAListTab = ({
                 )}
               </th>
               <th 
-                className="px-3 py-2 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors relative"
+                className="px-3 py-2 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors relative"
                 onClick={() => handleSort('knowledge_bases')}
               >
                 <div className="flex items-center space-x-1">
@@ -1011,7 +1009,7 @@ const QAListTab = ({
                     }}
                     title="Filter Knowledge Bases"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
@@ -1098,7 +1096,7 @@ const QAListTab = ({
                 )}
               </th>
               <th 
-                className="relative px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('added_by')}
               >
                 <div className="flex items-center space-x-1">
@@ -1120,7 +1118,7 @@ const QAListTab = ({
                     }}
                     title="Filter Added By"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
@@ -1207,7 +1205,7 @@ const QAListTab = ({
                 )}
               </th>
               <th 
-                className="relative px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors min-w-[120px]"
+                className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors min-w-[120px]"
                 onClick={() => handleSort('uploaded_at')}
               >
                 <div className="flex items-center space-x-1">
@@ -1229,7 +1227,7 @@ const QAListTab = ({
                     }}
                     title="Filter Upload Date"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
@@ -1315,7 +1313,7 @@ const QAListTab = ({
                   </div>
                 )}
               </th>
-              <th className="px-4 py-3 text-left font-semibold text-gray-700 min-w-[110px]">Actions</th>
+              <th className="px-4 py-3 text-left font-semibold text-white min-w-[110px]">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">

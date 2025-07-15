@@ -428,13 +428,13 @@ const GoogleDrive = () => {
     }
     if (sortDirection === 'asc') {
       return (
-        <svg className="w-4 h-4 text-blue-600 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4 text-gray-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
         </svg>
       );
     } else {
       return (
-        <svg className="w-4 h-4 text-blue-600 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4 text-gray-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       );
@@ -478,22 +478,22 @@ const GoogleDrive = () => {
         )}
       </div>
 
-      <div className="bg-white rounded-lg shadow p-4">
+      <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="min-w-full text-sm">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200 relative" onClick={() => handleSort('folder_name')}>
+          <thead className="bg-gray-600 text-white">
+            <tr>
+              <th className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('folder_name')}>
                 <div className="flex items-center space-x-1">
                   <span>Folder Name</span>
                   {getSortIcon('folder_name')}
                   <button type="button" className="ml-1 focus:outline-none" onClick={e => {e.stopPropagation(); setShowPathFilter(false); setShowDescriptionFilter(false); setShowKBFilter(false); setShowAddedByFilter(false); setShowDateFilter(false); setShowFolderNameFilter(prev => !prev);}} title="Filter Folder Name">
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                   </button>
                 </div>
                 {showFolderNameFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button" className="absolute top-2 right-2 z-50"
-                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50 bg-white"
+                      style={{ padding: '2px', borderRadius: '50%' }}
                       onClick={() => setShowFolderNameFilter(false)} title="Close">✖</button>
                     <Select
                       isMulti
@@ -503,7 +503,7 @@ const GoogleDrive = () => {
                       onChange={opts => setSelectedFolderNameFilter(opts ? opts.map(o => o.value) : [])}
                       classNamePrefix="react-select"
                       placeholder="Filter Folder Name..."
-                      styles={/* FileListTab styles */{
+                      styles={{
                         control: (base, state) => ({...base, borderRadius: '12px', borderColor: state.isFocused ? '#2563eb' : '#e5e7eb', boxShadow: state.isFocused ? '0 0 0 2px #2563eb33' : '0 2px 8px 0 rgba(60,72,88,0.10)', minHeight: '44px', fontSize: '1rem', background: '#f9fafb', transition: 'border-color 0.2s, box-shadow 0.2s',}),
                         option: (base, state) => ({...base, backgroundColor: state.isSelected ? '#2563eb22' : state.isFocused ? '#eff6ff' : '#fff', color: state.isSelected ? '#1d4ed8' : '#222', fontWeight: state.isSelected ? 600 : 400, borderRadius: '8px', margin: '2px 4px', padding: '10px 16px', cursor: 'pointer',}),
                         multiValue: (base) => ({...base, backgroundColor: '#dbeafe', borderRadius: '8px', color: '#1d4ed8', fontWeight: 500,}),
@@ -520,18 +520,18 @@ const GoogleDrive = () => {
                   </div>
                 )}
               </th>
-              <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200 relative" onClick={() => handleSort('relative_path')}>
+              <th className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('relative_path')}>
                 <div className="flex items-center space-x-1">
                   <span>Path</span>
                   {getSortIcon('relative_path')}
                   <button type="button" className="ml-1 focus:outline-none" onClick={e => {e.stopPropagation(); setShowFolderNameFilter(false); setShowDescriptionFilter(false); setShowKBFilter(false); setShowAddedByFilter(false); setShowDateFilter(false); setShowPathFilter(prev => !prev);}} title="Filter Path">
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                   </button>
                 </div>
                 {showPathFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button" className="absolute top-2 right-2 z-50"
-                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50 bg-white"
+                      style={{ padding: '2px', borderRadius: '50%' }}
                       onClick={() => setShowPathFilter(false)} title="Close">✖</button>
                     <Select
                       isMulti
@@ -541,7 +541,7 @@ const GoogleDrive = () => {
                       onChange={opts => setSelectedPathFilter(opts ? opts.map(o => o.value) : [])}
                       classNamePrefix="react-select"
                       placeholder="Filter Path..."
-                      styles={/* FileListTab styles */{
+                      styles={{
                         control: (base, state) => ({...base, borderRadius: '12px', borderColor: state.isFocused ? '#2563eb' : '#e5e7eb', boxShadow: state.isFocused ? '0 0 0 2px #2563eb33' : '0 2px 8px 0 rgba(60,72,88,0.10)', minHeight: '44px', fontSize: '1rem', background: '#f9fafb', transition: 'border-color 0.2s, box-shadow 0.2s',}),
                         option: (base, state) => ({...base, backgroundColor: state.isSelected ? '#2563eb22' : state.isFocused ? '#eff6ff' : '#fff', color: state.isSelected ? '#1d4ed8' : '#222', fontWeight: state.isSelected ? 600 : 400, borderRadius: '8px', margin: '2px 4px', padding: '10px 16px', cursor: 'pointer',}),
                         multiValue: (base) => ({...base, backgroundColor: '#dbeafe', borderRadius: '8px', color: '#1d4ed8', fontWeight: 500,}),
@@ -558,18 +558,18 @@ const GoogleDrive = () => {
                   </div>
                 )}
               </th>
-              <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200 relative" onClick={() => handleSort('description')}>
+              <th className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('description')}>
                 <div className="flex items-center space-x-1">
                   <span>Description</span>
                   {getSortIcon('description')}
                   <button type="button" className="ml-1 focus:outline-none" onClick={e => {e.stopPropagation(); setShowFolderNameFilter(false); setShowPathFilter(false); setShowKBFilter(false); setShowAddedByFilter(false); setShowDateFilter(false); setShowDescriptionFilter(prev => !prev);}} title="Filter Description">
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                   </button>
                 </div>
                 {showDescriptionFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button" className="absolute top-2 right-2 z-50"
-                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50 bg-white"
+                      style={{ padding: '2px', borderRadius: '50%' }}
                       onClick={() => setShowDescriptionFilter(false)} title="Close">✖</button>
                     <Select
                       isMulti
@@ -579,7 +579,7 @@ const GoogleDrive = () => {
                       onChange={opts => setSelectedDescriptionFilter(opts ? opts.map(o => o.value) : [])}
                       classNamePrefix="react-select"
                       placeholder="Filter Description..."
-                      styles={/* FileListTab styles */{
+                      styles={{
                         control: (base, state) => ({...base, borderRadius: '12px', borderColor: state.isFocused ? '#2563eb' : '#e5e7eb', boxShadow: state.isFocused ? '0 0 0 2px #2563eb33' : '0 2px 8px 0 rgba(60,72,88,0.10)', minHeight: '44px', fontSize: '1rem', background: '#f9fafb', transition: 'border-color 0.2s, box-shadow 0.2s',}),
                         option: (base, state) => ({...base, backgroundColor: state.isSelected ? '#2563eb22' : state.isFocused ? '#eff6ff' : '#fff', color: state.isSelected ? '#1d4ed8' : '#222', fontWeight: state.isSelected ? 600 : 400, borderRadius: '8px', margin: '2px 4px', padding: '10px 16px', cursor: 'pointer',}),
                         multiValue: (base) => ({...base, backgroundColor: '#dbeafe', borderRadius: '8px', color: '#1d4ed8', fontWeight: 500,}),
@@ -596,18 +596,18 @@ const GoogleDrive = () => {
                   </div>
                 )}
               </th>
-              <th className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors relative" onClick={() => handleSort('knowledge_bases')}>
+              <th className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('knowledge_bases')}>
                 <div className="flex items-center space-x-1">
                   <span>Knowledge Bases</span>
                   {getSortIcon('knowledge_bases')}
                   <button type="button" className="ml-1 focus:outline-none" onClick={e => {e.stopPropagation(); setShowFolderNameFilter(false); setShowPathFilter(false); setShowDescriptionFilter(false); setShowAddedByFilter(false); setShowDateFilter(false); setShowKBFilter(prev => !prev);}} title="Filter Knowledge Base">
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                   </button>
                 </div>
                 {showKBFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button" className="absolute top-2 right-2 z-50"
-                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50 bg-white"
+                      style={{ padding: '2px', borderRadius: '50%' }}
                       onClick={() => setShowKBFilter(false)} title="Close">✖</button>
                     <Select
                       isMulti
@@ -617,7 +617,7 @@ const GoogleDrive = () => {
                       onChange={opts => setSelectedKBFilter(opts ? opts.map(o => o.value) : [])}
                       classNamePrefix="react-select"
                       placeholder="Filter Knowledge Base..."
-                      styles={/* FileListTab styles */{
+                      styles={{
                         control: (base, state) => ({...base, borderRadius: '12px', borderColor: state.isFocused ? '#2563eb' : '#e5e7eb', boxShadow: state.isFocused ? '0 0 0 2px #2563eb33' : '0 2px 8px 0 rgba(60,72,88,0.10)', minHeight: '44px', fontSize: '1rem', background: '#f9fafb', transition: 'border-color 0.2s, box-shadow 0.2s',}),
                         option: (base, state) => ({...base, backgroundColor: state.isSelected ? '#2563eb22' : state.isFocused ? '#eff6ff' : '#fff', color: state.isSelected ? '#1d4ed8' : '#222', fontWeight: state.isSelected ? 600 : 400, borderRadius: '8px', margin: '2px 4px', padding: '10px 16px', cursor: 'pointer',}),
                         multiValue: (base) => ({...base, backgroundColor: '#dbeafe', borderRadius: '8px', color: '#1d4ed8', fontWeight: 500,}),
@@ -634,18 +634,18 @@ const GoogleDrive = () => {
                   </div>
                 )}
               </th>
-              <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200 relative" onClick={() => handleSort('added_by')}>
+              <th className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('added_by')}>
                 <div className="flex items-center space-x-1">
                   <span>Added By</span>
                   {getSortIcon('added_by')}
                   <button type="button" className="ml-1 focus:outline-none" onClick={e => {e.stopPropagation(); setShowFolderNameFilter(false); setShowPathFilter(false); setShowDescriptionFilter(false); setShowKBFilter(false); setShowDateFilter(false); setShowAddedByFilter(prev => !prev);}} title="Filter Added By">
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                   </button>
                 </div>
                 {showAddedByFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button" className="absolute top-2 right-2 z-50"
-                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50 bg-white"
+                      style={{ padding: '2px', borderRadius: '50%' }}
                       onClick={() => setShowAddedByFilter(false)} title="Close">✖</button>
                     <Select
                       isMulti
@@ -655,7 +655,7 @@ const GoogleDrive = () => {
                       onChange={opts => setSelectedAddedByFilter(opts ? opts.map(o => o.value) : [])}
                       classNamePrefix="react-select"
                       placeholder="Filter Added By..."
-                      styles={/* FileListTab styles */{
+                      styles={{
                         control: (base, state) => ({...base, borderRadius: '12px', borderColor: state.isFocused ? '#2563eb' : '#e5e7eb', boxShadow: state.isFocused ? '0 0 0 2px #2563eb33' : '0 2px 8px 0 rgba(60,72,88,0.10)', minHeight: '44px', fontSize: '1rem', background: '#f9fafb', transition: 'border-color 0.2s, box-shadow 0.2s',}),
                         option: (base, state) => ({...base, backgroundColor: state.isSelected ? '#2563eb22' : state.isFocused ? '#eff6ff' : '#fff', color: state.isSelected ? '#1d4ed8' : '#222', fontWeight: state.isSelected ? 600 : 400, borderRadius: '8px', margin: '2px 4px', padding: '10px 16px', cursor: 'pointer',}),
                         multiValue: (base) => ({...base, backgroundColor: '#dbeafe', borderRadius: '8px', color: '#1d4ed8', fontWeight: 500,}),
@@ -672,18 +672,18 @@ const GoogleDrive = () => {
                   </div>
                 )}
               </th>
-              <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-200 relative" onClick={() => handleSort('uploaded_at')}>
+              <th className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('uploaded_at')}>
                 <div className="flex items-center space-x-1">
                   <span>Uploaded Date</span>
                   {getSortIcon('uploaded_at')}
                   <button type="button" className="ml-1 focus:outline-none" onClick={e => {e.stopPropagation(); setShowFolderNameFilter(false); setShowPathFilter(false); setShowDescriptionFilter(false); setShowKBFilter(false); setShowAddedByFilter(false); setShowDateFilter(prev => !prev);}} title="Filter Uploaded Date">
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                   </button>
                 </div>
                 {showDateFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button" className="absolute top-2 right-2 z-50"
-                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50 bg-white"
+                      style={{ padding: '2px', borderRadius: '50%' }}
                       onClick={() => setShowDateFilter(false)} title="Close">✖</button>
                     <Select
                       isMulti
@@ -693,7 +693,7 @@ const GoogleDrive = () => {
                       onChange={opts => setSelectedDateFilter(opts ? opts.map(o => o.value) : [])}
                       classNamePrefix="react-select"
                       placeholder="Filter Uploaded Date..."
-                      styles={/* FileListTab styles */{
+                      styles={{
                         control: (base, state) => ({...base, borderRadius: '12px', borderColor: state.isFocused ? '#2563eb' : '#e5e7eb', boxShadow: state.isFocused ? '0 0 0 2px #2563eb33' : '0 2px 8px 0 rgba(60,72,88,0.10)', minHeight: '44px', fontSize: '1rem', background: '#f9fafb', transition: 'border-color 0.2s, box-shadow 0.2s',}),
                         option: (base, state) => ({...base, backgroundColor: state.isSelected ? '#2563eb22' : state.isFocused ? '#eff6ff' : '#fff', color: state.isSelected ? '#1d4ed8' : '#222', fontWeight: state.isSelected ? 600 : 400, borderRadius: '8px', margin: '2px 4px', padding: '10px 16px', cursor: 'pointer',}),
                         multiValue: (base) => ({...base, backgroundColor: '#dbeafe', borderRadius: '8px', color: '#1d4ed8', fontWeight: 500,}),
@@ -710,25 +710,25 @@ const GoogleDrive = () => {
                   </div>
                 )}
               </th>
-              <th className="px-3 py-2 text-left">Actions</th>
+              <th className="px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors">Actions</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="bg-white divide-y divide-gray-200">
             {loading ? (
-              <tr><td colSpan={7} className="text-center py-4">Loading...</td></tr>
+              <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-500">Loading...</td></tr>
             ) : sortedDriveFiles.length === 0 ? (
               <tr>
-                <td colSpan={7} className="text-center py-4 text-gray-500">
+                <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
                   {searchTerm ? 'No Google Drive files found matching your search.' : 'No Google Drive files uploaded yet.'}
                 </td>
               </tr>
             ) : (
               sortedDriveFiles.map((item, idx) => (
-                <tr key={item.id || idx} className="border-b">
-                  <td className="px-3 py-2 font-medium">{item.folder_name || item.file_name}</td>
-                  <td className="px-3 py-2">{item.relative_path || '-'}</td> {/* New column */}
-                  <td className="px-3 py-2">{item.description || '-'}</td>
-                  <td className="px-3 py-2">
+                <tr key={item.id || idx} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-3 font-medium">{item.folder_name || item.file_name}</td>
+                  <td className="px-4 py-3">{item.relative_path || '-'}</td>
+                  <td className="px-4 py-3">{item.description || '-'}</td>
+                  <td className="px-4 py-3">
                     {item.knowledge_bases && item.knowledge_bases.length > 0 ? (
                       <div className="flex flex-wrap gap-1">
                         {item.knowledge_bases.map((kb, kbIdx) => (
@@ -744,9 +744,9 @@ const GoogleDrive = () => {
                       '-'
                     )}
                   </td>
-                  <td className="px-3 py-2">{item.added_by || '-'}</td>
-                  <td className="px-3 py-2">{item.uploaded_at ? new Date(item.uploaded_at).toLocaleDateString() : '-'}</td>
-                  <td className="px-3 py-2 flex gap-2">
+                  <td className="px-4 py-3">{item.added_by || '-'}</td>
+                  <td className="px-4 py-3">{item.uploaded_at ? new Date(item.uploaded_at).toLocaleDateString() : '-'}</td>
+                  <td className="px-4 py-3 flex gap-2">
                     <a href={`https://drive.google.com/file/d/${item.file_id}/view`} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">View</a>
                     <button
                       onClick={() => handleDelete(item.id)}
