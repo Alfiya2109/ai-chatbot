@@ -120,6 +120,10 @@ const FolderListTab = ({ onBulkDelete }) => {
             aValue = a.created_at ? new Date(a.created_at).getTime() : 0;
             bValue = b.created_at ? new Date(b.created_at).getTime() : 0;
             break;
+          case 'file_count':
+            aValue = a.file_count || 0;
+            bValue = b.file_count || 0;
+            break;
           default:
             return 0;
         }
@@ -933,6 +937,14 @@ const FolderListTab = ({ onBulkDelete }) => {
                   </div>
                 )}
               </th>
+              <th className="px-3 py-2 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors"
+                onClick={() => handleSort('file_count')}
+              >
+                <div className="flex items-center space-x-1">
+                  <span>File Count</span>
+                  {getSortIcon('file_count')}
+                </div>
+              </th>
               {!isMultiSelectMode && (
                 <th className="px-3 py-2 text-left font-semibold text-gray-700">Actions</th>
               )}
@@ -980,6 +992,7 @@ const FolderListTab = ({ onBulkDelete }) => {
                   </td>
                   <td className="px-3 py-2 text-gray-700">{folder.added_by || '-'}</td>
                   <td className="px-3 py-2 text-gray-700">{folder.created_at ? new Date(folder.created_at).toLocaleDateString() : '-'}</td>
+                  <td className="px-3 py-2 text-gray-700">{folder.file_count ?? '-'}</td>
                   {!isMultiSelectMode && (
                     <td className="px-3 py-2">
                       <button
@@ -996,6 +1009,15 @@ const FolderListTab = ({ onBulkDelete }) => {
             )}
           </tbody>
         </table>
+        <div className="mt-2 flex justify-between">
+          <div className="text-sm text-gray-700">
+            <strong>
+              Total Files: {
+                filteredAndSortedFolders.reduce((sum, folder) => sum + (folder.file_count || 0), 0)
+              }
+            </strong>
+          </div>
+        </div>
         {isMultiSelectMode && (
           <div className="mt-4 flex justify-end gap-2">
             <button

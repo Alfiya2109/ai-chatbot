@@ -31,17 +31,17 @@ def prepare_pages(data):
     """
 
     pages = []
-
+    description = data.get("description", "")
     if data["type"] == "file":
         # File upload case
         uploaded_file = data["file"]
         content = read_uploaded_file(uploaded_file)
-        pages.append((uploaded_file.name, content))
+        pages.append((uploaded_file.name, content, description))
 
     elif data["type"] == "text":
         # Plain text upload case
         raw_text = data["text"]
-        pages.append(("manual_input", raw_text))
+        pages.append(("manual_input", raw_text, description))
 
     elif data["type"] == "qna":
         # Question-Answer upload case
@@ -134,7 +134,7 @@ def query_vector_db(question, knowledge_bases=None, namespace="web_scraped"):
         )
 
         # Fetch more docs and filter in Python for KB match (OR logic)
-        all_docs = vector_store.similarity_search(question, k=10)  # Fetch more to allow filtering
+        all_docs = vector_store.similarity_search(question, k=100)  # Fetch more to allow filtering
         if knowledge_bases:
             relevant_docs = [doc for doc in all_docs if any(
                 kb in (doc.metadata.get("knowledge_base") or []) for kb in knowledge_bases
@@ -189,7 +189,7 @@ def remove_from_vector_db(identifier, namespace="web_scraped"):
         vector_store.delete_by_metadata_filter({"row_id": identifier})
 
         # Clear cache or ensure no stale data remains
-        vector_store.clear()  # Clear the entire table to ensure no stale data
+        # vector_store.clear()  # Clear the entire table to ensure no stale data
 
         print(f"✅ Document '{identifier}' and associated data successfully removed from vector DB, and cache cleared.")
 

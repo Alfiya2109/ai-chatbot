@@ -358,6 +358,7 @@ class EmbedWebsiteAPIView(APIView):
         
         try:
             description = request.data.get("description", "")
+            print(f'[DEBUG] Embedding website: {url} with description: {description}')
             pages = [(page_url, text, description) for page_url, text in scrape_entire_website(url)]
             from chatbot.models import KnowledgeBase
             # Try to convert all to int, if fail, treat as name
@@ -633,6 +634,7 @@ class JogetFileUploadAPIView(APIView):
 
 class UploadAndTrainAPIView(APIView):
     def post(self, request):
+        print(f"[DEBUG] Received data: {request.data}")
         input_type = request.data.get("type")  # "file", "text", "qna"
         pages = []
         # Get the selected knowledge base (assume single selection for simplicity)
@@ -669,6 +671,7 @@ class UploadAndTrainAPIView(APIView):
                 pages = [("qna_input", content , request.data.get("description", ""))]
             else:
                 return Response({"error": "Invalid type."}, status=400)
+            print(f"[DEBUG] Description: {request.data.get('description', '')}")
             # Store in vector DB with knowledge base metadata
             print(f"[DEBUG] Calling store_in_vector_db with kb_names: {kb_names}")
             store_in_vector_db(pages, knowledge_base=kb_names)
@@ -1543,7 +1546,7 @@ class FileDataViewSet(viewsets.ModelViewSet):
                         temp_file = SimpleUploadedFile(file.name, f.read())
                         content = read_uploaded_file(temp_file)
                         if content.strip():  # Only add if content is not empty
-                            vector_pages.append((f"doc_{doc_file_data.id}", content, description))
+                            vector_pages.append((f"doc_{doc_file_data.id}_{file.name}", content, description))
                 except Exception as e:
                     vector_db_errors.append(f"Error processing {file.name}: {str(e)}")
                     print(f"❌ Error processing document {file.name} for vector DB: {str(e)}")
@@ -1561,7 +1564,7 @@ class FileDataViewSet(viewsets.ModelViewSet):
                         temp_file = SimpleUploadedFile(file.name, f.read())
                         content = read_uploaded_file(temp_file)
                         if content.strip():  # Only add if content is not empty
-                            vector_pages.append((f"excel_{excel_file_data.id}", content, description))
+                            vector_pages.append((f"excel_{excel_file_data.id}_{file.name}", content, description))
                 except Exception as e:
                     vector_db_errors.append(f"Error processing {file.name}: {str(e)}")
                     print(f"❌ Error processing Excel file {file.name} for vector DB: {str(e)}")
@@ -1605,13 +1608,13 @@ class FileDataViewSet(viewsets.ModelViewSet):
         for doc in instance.document_files.all():
             try:
                 # Use the same identifier format as in create method
-                remove_from_vector_db(f"doc_{doc.id}")
+                remove_from_vector_db(f"doc_{doc.id}_{doc.file.name}")
             except Exception as e:
                 errors.append(f"DocumentFileData {doc.id}: {str(e)}")
         for excel in instance.excel_files.all():
             try:
                 # Use the same identifier format as in create method
-                remove_from_vector_db(f"excel_{excel.id}")
+                remove_from_vector_db(f"excel_{excel.id}_{excel.file.name}")
             except Exception as e:
                 errors.append(f"ExcelFileData {excel.id}: {str(e)}")
         response = super().destroy(request, *args, **kwargs)
@@ -2244,7 +2247,7 @@ class PPTFileView(APIView):
                     # Store in vector DB if knowledge_bases are set
                     kb_names = list(ppt_file.knowledge_bases.values_list('name', flat=True))
                     if content and kb_names:
-                        pages = [(ppt_file.description, content)]
+                        pages = [(ppt_file.file.name if ppt_file.file else "ppt_file", content, ppt_file.description or "")]
                         store_in_vector_db(pages, knowledge_base=kb_names)
             except Exception as e:
                 print(f"[VECTOR DB] PPT vector storage error: {e}")
