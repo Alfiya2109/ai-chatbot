@@ -182,7 +182,7 @@ function Login() {
             </button>
           </div>
 
-          <div className="text-sm text-center">
+          <div className="text-sm text-center flex flex-col gap-2">
             <p className="font-medium text-gray-700 hover:text-gray-500">
               Don't have an account?{' '}
               <button 
@@ -192,6 +192,14 @@ function Login() {
               >
                 Register here
               </button>
+            </p>
+            <p>
+              <a
+                href="/forgot-password"
+                className="underline text-purple-600 hover:text-purple-800"
+              >
+                Forgot password?
+              </a>
             </p>
           </div>
         </form>

@@ -7,6 +7,8 @@ import Config from './components/Config'
 import FeedbackDashboard from './components/FeedbackDashboard'
 import { AuthProvider } from './context/AuthContext'
 import CreateAgent from './components/CreateAgent'
+import ForgotPassword from './components/ForgotPassword'
+import ResetPassword from './components/ResetPassword'
 import './index.css'
  
 function App() {
@@ -50,6 +52,8 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/dashboard" element={<FeedbackDashboard />} />
           <Route
             path="/chatbot"
