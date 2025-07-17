@@ -75,5 +75,8 @@ urlpatterns = [
     path('token/username/', TokenByUsernameView.as_view(), name='token_by_username'),
     path('chatbot/google-drive/upload-folder/', GoogleDriveUploadAPIView.as_view(), name='google-drive-upload-folder'),
     path("jogetfileupload/", JogetFileUploadAPIView.as_view(), name="joget_file_upload"),
+    # Forgot password endpoints
+    path('forgot-password/', ForgotPasswordAPIView.as_view(), name='forgot-password'),
+    path('reset-password/', ResetPasswordAPIView.as_view(), name='reset-password'),
 ]
 

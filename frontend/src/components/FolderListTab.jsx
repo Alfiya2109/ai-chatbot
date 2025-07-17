@@ -122,6 +122,10 @@ const FolderListTab = ({ onBulkDelete }) => {
             aValue = a.created_at ? new Date(a.created_at).getTime() : 0;
             bValue = b.created_at ? new Date(b.created_at).getTime() : 0;
             break;
+          case 'file_count':
+            aValue = a.file_count || 0;
+            bValue = b.file_count || 0;
+            break;
           default:
             return 0;
         }
@@ -966,6 +970,14 @@ const FolderListTab = ({ onBulkDelete }) => {
                   </div>
                 )}
               </th>
+              <th className="px-3 py-2 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors"
+                onClick={() => handleSort('file_count')}
+              >
+                <div className="flex items-center space-x-1">
+                  <span>File Count</span>
+                  {getSortIcon('file_count')}
+                </div>
+              </th>
               {!isMultiSelectMode && (
                 <th className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors">Actions</th>
               )}
@@ -1015,8 +1027,11 @@ const FolderListTab = ({ onBulkDelete }) => {
                       <span className="text-gray-500">-</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-gray-700">{folder.added_by || '-'}</td>
-                  <td className="px-4 py-3 text-gray-700">{folder.created_at ? new Date(folder.created_at).toLocaleDateString() : '-'}</td>
+
+                  <td className="px-3 py-2 text-gray-700">{folder.added_by || '-'}</td>
+                  <td className="px-3 py-2 text-gray-700">{folder.created_at ? new Date(folder.created_at).toLocaleDateString() : '-'}</td>
+                  <td className="px-3 py-2 text-gray-700">{folder.file_count ?? '-'}</td>
+
                   {!isMultiSelectMode && (
                     <td className="px-4 py-3">
                       <button
