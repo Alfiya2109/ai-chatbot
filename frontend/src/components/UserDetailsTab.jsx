@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { BASE_URL } from '../base_url';
 import Select from 'react-select';
-import { FaPlus } from 'react-icons/fa';
+import { FaPlus, FaDownload } from 'react-icons/fa';
+import * as XLSX from 'xlsx';
 
 const isValidUser = (user) => {
   return (
@@ -186,18 +187,45 @@ const UserDetailsTab = ({
     }
   };
 
+  // Download Excel logic (same as FileListTab)
+  const handleDownloadExcel = () => {
+    const data = filteredUsers.map(user => ({
+      'First Name': user.first_name || '-',
+      'Last Name': user.last_name || '-',
+      'Phone': user.phone_number || '-',
+      'Email': user.email || '-',
+      'Created Date': user.created_at ? new Date(user.created_at).toLocaleDateString() : '-',
+      'Profile': user.profile_name || '-',
+      'Knowledge Bases': Array.isArray(user.knowledge_bases) ? user.knowledge_bases.map(kb => typeof kb === 'string' ? kb : kb.name).join(', ') : '-'
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Users');
+    XLSX.writeFile(workbook, 'user_details.xlsx');
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-lg p-6 mt-4 w-full mx-auto">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold">User Details</h3>
-        <button
-          className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow flex items-center justify-center"
-          title="Add Sales User"
-          aria-label="Add Sales User"
-          onClick={() => setModalOpen(true)}
-        >
-          <FaPlus />
-        </button>
+        <div className="flex items-center space-x-2">
+          <button
+            className="p-2 rounded-full bg-green-600 text-white hover:bg-green-700 shadow flex items-center justify-center"
+            title="Download Excel"
+            aria-label="Download Excel"
+            onClick={handleDownloadExcel}
+          >
+            <FaDownload />
+          </button>
+          <button
+            className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow flex items-center justify-center"
+            title="Add Sales User"
+            aria-label="Add Sales User"
+            onClick={() => setModalOpen(true)}
+          >
+            <FaPlus />
+          </button>
+        </div>
       </div>
       <div className="flex flex-wrap gap-2 mb-4">
         <input
@@ -207,6 +235,12 @@ const UserDetailsTab = ({
           onChange={(e) => setUserSearch(e.target.value)}
           className="p-2 border border-gray-300 rounded-md w-full max-w-xs"
         />
+      </div>
+      {/* Row Count Display */}
+      <div className="mb-4 text-sm text-gray-700">
+        {filteredUsers.length === users.length
+          ? `Total users: ${users.length}`
+          : `Showing ${filteredUsers.length} of ${users.length} users`}
       </div>
       
       <div className="bg-white rounded-lg shadow overflow-hidden">

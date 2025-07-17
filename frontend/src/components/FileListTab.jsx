@@ -2,7 +2,8 @@ import React, { useState, useMemo, useEffect } from 'react';
 import Loader from './Loader';
 import Select from 'react-select';
 import { BASE_URL } from '../base_url';
-import { FaPlus } from 'react-icons/fa';
+import * as XLSX from 'xlsx';
+import { FaPlus, FaDownload } from 'react-icons/fa';
 
 const FileListTab = ({ uploadedFiles, renderTable, fileModalOpen, setFileModalOpen, fileForm, setFileForm, fileFormError, handleFileModalSubmit, onBulkDelete, isLoading }) => {
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
@@ -305,11 +306,40 @@ const FileListTab = ({ uploadedFiles, renderTable, fileModalOpen, setFileModalOp
     setSelectedItems([]);
   };
 
+  const handleDownloadExcel = () => {
+    // Table me jo files dikh rahi hain, unka data le lo
+    const data = filteredAndSortedFiles.map(file => ({
+      'File Name': file.file ? file.file.split('/').pop() : 'Unknown File',
+      'Description': file.description || '-',
+      'Knowledge Bases': file.knowledge_bases ? file.knowledge_bases.map(kb => typeof kb === 'string' ? kb : kb.name).join(', ') : '-',
+      'Added By': file.added_by || '-',
+      'Upload Date': file.uploaded_at ? new Date(file.uploaded_at).toLocaleDateString() : '-'
+    }));
+
+    // Excel sheet banao
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Files');
+
+    // Excel file download karao
+    XLSX.writeFile(workbook, 'uploaded_files.xlsx');
+  };
+
   return (
     <div className="mt-6 w-full">
-      <div className="flex items-center justify-between mb-4">
+      {/* Sticky Top Bar */}
+      <div
+        className=" top-0 z-40 shadow-md rounded-b-lg px-6 py-4 flex items-center justify-between mt-6 backdrop-blur-md"
+        style={{
+          minHeight: 80,
+          // background: "rgba(255,255,255,0.85)", // semi-transparent white
+          WebkitBackdropFilter: "blur(8px)", // for Safari
+          backdropFilter: "blur(8px)", // for Chrome/Edge
+          borderBottom: "1px solid #e5e7eb"
+        }}
+      >
         <h3 className="text-2xl font-bold text-gray-800">Uploaded Files</h3>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-5 flex-wrap">
           {!isMultiSelectMode ? (
             <>
               <button
@@ -318,6 +348,14 @@ const FileListTab = ({ uploadedFiles, renderTable, fileModalOpen, setFileModalOp
                 onClick={handleDeleteAll}
               >
                 Delete All
+              </button>
+              <button
+                className="p-2 rounded-full bg-green-600 text-white hover:bg-green-700 shadow flex items-center justify-center"
+                title="Download Excel"
+                aria-label="Download Excel"
+                onClick={handleDownloadExcel}
+              >
+                <FaDownload />
               </button>
               <button
                 className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow flex items-center justify-center"
@@ -350,9 +388,8 @@ const FileListTab = ({ uploadedFiles, renderTable, fileModalOpen, setFileModalOp
           )}
         </div>
       </div>
-      
-      {/* Search Filter */}
-      <div className="mb-4">
+      {/* Add more gap below top bar */}
+      <div className="mt-4 mb-5">
         <div className="relative">
           <input
             type="text"
@@ -367,15 +404,19 @@ const FileListTab = ({ uploadedFiles, renderTable, fileModalOpen, setFileModalOp
             </svg>
           </div>
         </div>
+        {/* Row Count Display */}
+        <div className="mt-2 text-sm text-gray-700">
+          {filteredAndSortedFiles.length === uploadedFiles.length
+            ? `Total files: ${uploadedFiles.length}`
+            : `Showing ${filteredAndSortedFiles.length} of ${uploadedFiles.length} files`}
+        </div>
         {searchTerm && (
           <p className="mt-2 text-sm text-gray-600">
             Showing {filteredAndSortedFiles.length} of {uploadedFiles.length} files
           </p>
         )}
-        {/* Knowledge Base Filter Dropdown */}
-        {/* This filter is now moved into the Knowledge Bases column filter popover */}
       </div>
-
+      {/* Add more gap below search filter */}
       {/* Files Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="min-w-full text-sm">

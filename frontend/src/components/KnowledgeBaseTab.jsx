@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import Select from 'react-select';
-import { FaPlus } from 'react-icons/fa';
+import { FaPlus, FaDownload } from 'react-icons/fa';
+import * as XLSX from 'xlsx';
 
 const KnowledgeBaseTab = ({ knowledgeBases, handleEditKb, handleDeleteKb, handleCreateKb, kbModalOpen, setKbModalOpen, editingKb, kbForm, setKbForm, handleKbFormSubmit }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -82,18 +83,39 @@ const KnowledgeBaseTab = ({ knowledgeBases, handleEditKb, handleDeleteKb, handle
 
   const nameOptions = useMemo(() => Array.from(new Set(knowledgeBases.map(kb => kb.name))).map(name => ({ value: name, label: name })), [knowledgeBases]);
 
+  // Download Excel logic (same as FileListTab)
+  const handleDownloadExcel = () => {
+    const data = filteredKnowledgeBases.map(kb => ({
+      'Knowledge Base Name': kb.name || '-',
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'KnowledgeBases');
+    XLSX.writeFile(workbook, 'knowledge_bases.xlsx');
+  };
+
   return (
   <div className="bg-white rounded-xl shadow-lg p-6 mt-4 w-full mx-auto">
     <div className="flex items-center justify-between mb-4">
       <h3 className="text-lg font-semibold">Knowledge Base List</h3>
-      <button
-        className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow flex items-center justify-center"
-        title="Add Knowledge Base"
-        aria-label="Add Knowledge Base"
-        onClick={handleCreateKb}
-      >
-        <FaPlus />
-      </button>
+      <div className="flex items-center gap-4">
+        <button
+          className="p-2 rounded-full bg-green-600 text-white hover:bg-green-700 shadow flex items-center justify-center"
+          title="Download Excel"
+          aria-label="Download Excel"
+          onClick={handleDownloadExcel}
+        >
+          <FaDownload />
+        </button>
+        <button
+          className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow flex items-center justify-center"
+          title="Add Knowledge Base"
+          aria-label="Add Knowledge Base"
+          onClick={handleCreateKb}
+        >
+          <FaPlus />
+        </button>
+      </div>
     </div>
     
     {/* Search Filter */}
@@ -111,6 +133,12 @@ const KnowledgeBaseTab = ({ knowledgeBases, handleEditKb, handleDeleteKb, handle
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </div>
+      </div>
+      {/* Row Count Display */}
+      <div className="mt-2 text-sm text-gray-700">
+        {filteredKnowledgeBases.length === knowledgeBases.length
+          ? `Total knowledge bases: ${knowledgeBases.length}`
+          : `Showing ${filteredKnowledgeBases.length} of ${knowledgeBases.length} knowledge bases`}
       </div>
       {searchTerm && (
         <p className="mt-2 text-sm text-gray-600">

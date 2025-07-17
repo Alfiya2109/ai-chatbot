@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import Loader from './Loader';
 import Select from 'react-select';
-import { FaPlus } from 'react-icons/fa';
+import { FaPlus, FaDownload } from 'react-icons/fa';
+import * as XLSX from 'xlsx';
 
 const PPTListTab = ({ uploadedPPTs, renderTable, pptModalOpen, setPptModalOpen, pptForm, setPptForm, knowledgeBases, pptFormError, handlePptModalSubmit, fetchKnowledgeBases, onBulkDelete, isLoading }) => {
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
@@ -203,6 +204,21 @@ const PPTListTab = ({ uploadedPPTs, renderTable, pptModalOpen, setPptModalOpen, 
     setSelectedItems([]);
   };
 
+  // Download Excel logic (same as FileListTab)
+  const handleDownloadExcel = () => {
+    const data = filteredAndSortedPPTs.map(ppt => ({
+      'PPT File Name': ppt.file ? ppt.file.split('/').pop() : 'Unknown File',
+      'Description': ppt.description || '-',
+      'Knowledge Bases': ppt.knowledge_bases ? ppt.knowledge_bases.map(kb => typeof kb === 'string' ? kb : kb.name).join(', ') : '-',
+      'Added By': ppt.added_by || '-',
+      'Upload Date': ppt.uploaded_at ? new Date(ppt.uploaded_at).toLocaleDateString() : '-'
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'PPT Files');
+    XLSX.writeFile(workbook, 'uploaded_ppt_files.xlsx');
+  };
+
   return (
     <div className="mt-6 w-full">
       <div className="flex items-center justify-between mb-4">
@@ -216,6 +232,14 @@ const PPTListTab = ({ uploadedPPTs, renderTable, pptModalOpen, setPptModalOpen, 
                 onClick={handleDeleteAll}
               >
                 Delete All
+              </button>
+              <button
+                className="p-2 rounded-full bg-green-600 text-white hover:bg-green-700 shadow flex items-center justify-center"
+                title="Download Excel"
+                aria-label="Download Excel"
+                onClick={handleDownloadExcel}
+              >
+                <FaDownload />
               </button>
               <button
                 className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow flex items-center justify-center"
@@ -263,6 +287,12 @@ const PPTListTab = ({ uploadedPPTs, renderTable, pptModalOpen, setPptModalOpen, 
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
+        </div>
+        {/* Row Count Display */}
+        <div className="mt-2 text-sm text-gray-700">
+          {filteredAndSortedPPTs.length === uploadedPPTs.length
+            ? `Total PPT files: ${uploadedPPTs.length}`
+            : `Showing ${filteredAndSortedPPTs.length} of ${uploadedPPTs.length} PPT files`}
         </div>
         {searchTerm && (
           <p className="mt-2 text-sm text-gray-600">

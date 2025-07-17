@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import Select from 'react-select';
-import { FaPlus } from 'react-icons/fa';
+import { FaPlus, FaDownload } from 'react-icons/fa';
+import * as XLSX from 'xlsx';
 
 const SubcategoriesTable = ({ subCategories, categories, onAddSubcategory, onEditSubcategory }) => {
   const [modalOpen, setModalOpen] = useState(false);
@@ -142,18 +143,40 @@ const SubcategoriesTable = ({ subCategories, categories, onAddSubcategory, onEdi
     }
   };
 
+  // Download Excel logic (same as FileListTab)
+  const handleDownloadExcel = () => {
+    const data = filteredData.map(row => ({
+      'Category Name': row.categoryName || '-',
+      'Subcategory Name': row.subcategoryName || '-',
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Subcategories');
+    XLSX.writeFile(workbook, 'subcategories.xlsx');
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-lg p-6 mt-4 w-full mx-auto">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold">Subcategories List</h3>
-        <button
-          className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow flex items-center justify-center"
-          title="Add Subcategory"
-          aria-label="Add Subcategory"
-          onClick={() => { setModalOpen(true); setEditMode(false); setSelectedCategory(''); setSubcategoryName(''); setEditId(null); }}
-        >
-          <FaPlus />
-        </button>
+        <div className="flex items-center gap-4">
+          <button
+            className="p-2 rounded-full bg-green-600 text-white hover:bg-green-700 shadow flex items-center justify-center"
+            title="Download Excel"
+            aria-label="Download Excel"
+            onClick={handleDownloadExcel}
+          >
+            <FaDownload />
+          </button>
+          <button
+            className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow flex items-center justify-center"
+            title="Add Subcategory"
+            aria-label="Add Subcategory"
+            onClick={() => { setModalOpen(true); setEditMode(false); setSelectedCategory(''); setSubcategoryName(''); setEditId(null); }}
+          >
+            <FaPlus />
+          </button>
+        </div>
       </div>
       
       {/* Search Filter */}
@@ -171,6 +194,12 @@ const SubcategoriesTable = ({ subCategories, categories, onAddSubcategory, onEdi
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
+        </div>
+        {/* Row Count Display */}
+        <div className="mt-2 text-sm text-gray-700">
+          {filteredData.length === data.length
+            ? `Total subcategories: ${data.length}`
+            : `Showing ${filteredData.length} of ${data.length} subcategories`}
         </div>
         {searchTerm && (
           <p className="mt-2 text-sm text-gray-600">

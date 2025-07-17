@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import Select from 'react-select';
 import { BASE_URL } from '../base_url';
-import { FaPlus } from 'react-icons/fa';
+import { FaPlus, FaDownload } from 'react-icons/fa';
+import * as XLSX from 'xlsx';
 
 const CategoriesTab = ({ categoriesList, handleEditCategory, handleDeleteCategory, handleCreateCategory, categoryModalOpen, setCategoryModalOpen, editingCategory, categoryForm, setCategoryForm, categoryFormError, handleCategoryFormSubmit }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -119,18 +120,40 @@ const CategoriesTab = ({ categoriesList, handleEditCategory, handleDeleteCategor
     }
   };
 
+  // Download Excel logic (same as FileListTab)
+  const handleDownloadExcel = () => {
+    const data = filteredCategories.map(cat => ({
+      'Category Name': cat.name || '-',
+      'Knowledge Bases': cat.knowledge_bases ? cat.knowledge_bases.map(kb => typeof kb === 'string' ? kb : kb.name).join(', ') : '-',
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Categories');
+    XLSX.writeFile(workbook, 'categories.xlsx');
+  };
+
   return (
   <div className="bg-white rounded-xl shadow-lg p-6 mt-4 w-full mx-auto">
     <div className="flex items-center justify-between mb-4">
       <h3 className="text-lg font-semibold">Categories List</h3>
-      <button
-        className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow flex items-center justify-center"
-        title="Add Category"
-        aria-label="Add Category"
-        onClick={handleCreateCategory}
-      >
-        <FaPlus />
-      </button>
+      <div className="flex items-center gap-4">
+        <button
+          className="p-2 rounded-full bg-green-600 text-white hover:bg-green-700 shadow flex items-center justify-center"
+          title="Download Excel"
+          aria-label="Download Excel"
+          onClick={handleDownloadExcel}
+        >
+          <FaDownload />
+        </button>
+        <button
+          className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow flex items-center justify-center"
+          title="Add Category"
+          aria-label="Add Category"
+          onClick={handleCreateCategory}
+        >
+          <FaPlus />
+        </button>
+      </div>
     </div>
     {/* Search Filter */}
     <div className="mb-4">
@@ -147,6 +170,12 @@ const CategoriesTab = ({ categoriesList, handleEditCategory, handleDeleteCategor
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </div>
+      </div>
+      {/* Row Count Display */}
+      <div className="mt-2 text-sm text-gray-700">
+        {filteredCategories.length === categoriesList.length
+          ? `Total categories: ${categoriesList.length}`
+          : `Showing ${filteredCategories.length} of ${categoriesList.length} categories`}
       </div>
       {searchTerm && (
         <p className="mt-2 text-sm text-gray-600">

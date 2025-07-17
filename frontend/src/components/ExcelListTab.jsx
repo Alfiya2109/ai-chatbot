@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import Loader from './Loader';
 import Select from 'react-select';
-import { FaPlus } from 'react-icons/fa';
+import { FaPlus, FaDownload } from 'react-icons/fa';
+import * as XLSX from 'xlsx';
 
 const ExcelListTab = ({ uploadedFiles, renderTable, excelModalOpen, setExcelModalOpen, excelForm, setExcelForm, knowledgeBases, excelFormError, handleExcelModalSubmit, fetchKnowledgeBases, onBulkDelete, isLoading }) => {
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
@@ -215,6 +216,21 @@ const ExcelListTab = ({ uploadedFiles, renderTable, excelModalOpen, setExcelModa
     setSelectedItems([]);
   };
 
+  // Download Excel logic (same as FileListTab)
+  const handleDownloadExcel = () => {
+    const data = filteredAndSortedFiles.map(file => ({
+      'File Name': file.file ? file.file.split('/').pop() : 'Unknown File',
+      'Description': file.description || '-',
+      'Knowledge Bases': file.knowledge_bases ? file.knowledge_bases.map(kb => typeof kb === 'string' ? kb : kb.name).join(', ') : '-',
+      'Added By': file.added_by || '-',
+      'Upload Date': file.uploaded_at ? new Date(file.uploaded_at).toLocaleDateString() : '-'
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'ExcelFiles');
+    XLSX.writeFile(workbook, 'uploaded_excel_files.xlsx');
+  };
+
   return (
     <div className="mt-6 w-11/12">
       {/* Loader overlay */}
@@ -224,7 +240,7 @@ const ExcelListTab = ({ uploadedFiles, renderTable, excelModalOpen, setExcelModa
         </div>
       )}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold mb-4">Uploaded Excel/CSV Files</h3>
+        <h3 className="text-2xl font-bold text-gray-800">Uploaded Excel/CSV Files</h3>
         <div className="flex items-center space-x-2">
           {!isMultiSelectMode ? (
             <>
@@ -234,6 +250,15 @@ const ExcelListTab = ({ uploadedFiles, renderTable, excelModalOpen, setExcelModa
                 onClick={handleDeleteAll}
               >
                 Delete All
+              </button>
+              {/* Download Excel Button */}
+              <button
+                className="p-2 rounded-full bg-green-600 text-white hover:bg-green-700 shadow flex items-center justify-center"
+                title="Download Excel"
+                aria-label="Download Excel"
+                onClick={handleDownloadExcel}
+              >
+                <FaDownload />
               </button>
               <button
                 className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow flex items-center justify-center"
@@ -282,6 +307,12 @@ const ExcelListTab = ({ uploadedFiles, renderTable, excelModalOpen, setExcelModa
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
+        </div>
+        {/* Row Count Display */}
+        <div className="mt-2 text-sm text-gray-700">
+          {filteredAndSortedFiles.length === uploadedFiles.length
+            ? `Total Excel/CSV files: ${uploadedFiles.length}`
+            : `Showing ${filteredAndSortedFiles.length} of ${uploadedFiles.length} Excel/CSV files`}
         </div>
         {searchTerm && (
           <p className="mt-2 text-sm text-gray-600">

@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FaTrash, FaPlus } from 'react-icons/fa';
+import { FaTrash, FaPlus, FaDownload } from 'react-icons/fa';
+import * as XLSX from 'xlsx';
 import { BASE_URL } from '../base_url';
 import Select from 'react-select';
-import Loader from './Loader'; // Added Loader import
+// import Loader from './Loader'; // Added Loader import
 
 const FolderListTab = ({ onBulkDelete }) => {
   const [folders, setFolders] = useState([]);
@@ -337,10 +338,25 @@ const FolderListTab = ({ onBulkDelete }) => {
     setSelectedItems([]);
   };
 
+  // Download Excel logic (same as FileListTab)
+  const handleDownloadExcel = () => {
+    const data = filteredAndSortedFolders.map(folder => ({
+      'Folder Name': folder.title || folder.folder_name || '-',
+      'Description': folder.description || '-',
+      'Knowledge Bases': folder.knowledge_bases_info ? folder.knowledge_bases_info.map(kb => kb.name).join(', ') : '-',
+      'Added By': folder.added_by || '-',
+      'Upload Date': folder.created_at ? new Date(folder.created_at).toLocaleDateString() : '-'
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Folders');
+    XLSX.writeFile(workbook, 'uploaded_folders.xlsx');
+  };
+
   return (
     <div className="w-full">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">Uploaded Folders</h2>
+        <h2 className="text-2xl font-bold text-gray-800">Uploaded Folders</h2>
         <div className="flex items-center space-x-2">
           {!isMultiSelectMode ? (
             <>
@@ -350,6 +366,15 @@ const FolderListTab = ({ onBulkDelete }) => {
                 onClick={handleDeleteAll}
               >
                 Delete All
+              </button>
+              {/* Download Excel Button */}
+              <button
+                className="p-2 rounded-full bg-green-600 text-white hover:bg-green-700 shadow flex items-center justify-center"
+                title="Download Excel"
+                aria-label="Download Excel"
+                onClick={handleDownloadExcel}
+              >
+                <FaDownload />
               </button>
               <button
                 onClick={() => setShowModal(true)}
@@ -392,11 +417,18 @@ const FolderListTab = ({ onBulkDelete }) => {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
+          
           <div className="absolute inset-y-0 right-0 flex items-center pr-3">
             <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
+        </div>
+        {/* Row Count Display */}
+        <div className="mt-2 text-sm text-gray-700">
+          {filteredAndSortedFolders.length === folders.length
+            ? `Total folders: ${folders.length}`
+            : `Showing ${filteredAndSortedFolders.length} of ${folders.length} folders`}
         </div>
         {searchTerm && (
           <p className="mt-2 text-sm text-gray-600">
@@ -943,7 +975,7 @@ const FolderListTab = ({ onBulkDelete }) => {
             {loading ? (
               <tr><td colSpan={isMultiSelectMode ? 7 : 6} className="px-4 py-8 text-center text-gray-500">
                 <div className="flex items-center justify-center">
-                  <Loader />
+                  {/* <Loader /> */}
                 </div>
               </td></tr>
             ) : filteredAndSortedFolders.length === 0 ? (

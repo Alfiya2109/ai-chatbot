@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import Select from 'react-select';
-import { FaPlus } from 'react-icons/fa';
+import { FaPlus, FaDownload } from 'react-icons/fa';
+import * as XLSX from 'xlsx';
 
 const ProfileTab = ({ profiles, handleEditProfile, handleDeleteProfile, handleCreateProfile, profileModalOpen, setProfileModalOpen, editingProfile, profileForm, setProfileForm, handleProfileFormSubmit }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -142,18 +143,49 @@ const ProfileTab = ({ profiles, handleEditProfile, handleDeleteProfile, handleCr
     }
   };
 
+  // Download Excel logic (same as FileListTab)
+  const handleDownloadExcel = () => {
+    const data = filteredProfiles.map(profile => ({
+      'Profile Name': profile.name || '-',
+      'Access Permissions': [
+        profile.files_access ? 'Files' : null,
+        profile.text_access ? 'Text' : null,
+        profile.excel_access ? 'Excel' : null,
+        profile.qna_access ? 'Q&A' : null,
+        profile.url_access ? 'URL' : null,
+        profile.chat_history_access ? 'Chat History' : null,
+        profile.user_profile_access ? 'Profile' : null,
+        profile.user_details_access ? 'User Details' : null
+      ].filter(Boolean).join(', ')
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Profiles');
+    XLSX.writeFile(workbook, 'profile_access.xlsx');
+  };
+
   return (
   <div className="bg-white rounded-xl shadow-lg p-6 mt-4 w-full mx-auto">
     <div className="flex items-center justify-between mb-4">
       <h3 className="text-lg font-semibold">Profile Access Table</h3>
-      <button
-        className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow flex items-center justify-center"
-        onClick={handleCreateProfile}
-        title="Create New Profile"
-        aria-label="Create New Profile"
-      >
-        <FaPlus />
-      </button>
+      <div className="flex items-center space-x-2">
+        <button
+          className="p-2 rounded-full bg-green-600 text-white hover:bg-green-700 shadow flex items-center justify-center"
+          title="Download Excel"
+          aria-label="Download Excel"
+          onClick={handleDownloadExcel}
+        >
+          <FaDownload />
+        </button>
+        <button
+          className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow flex items-center justify-center"
+          onClick={handleCreateProfile}
+          title="Create New Profile"
+          aria-label="Create New Profile"
+        >
+          <FaPlus />
+        </button>
+      </div>
     </div>
     
     {/* Search Filter */}
@@ -171,6 +203,12 @@ const ProfileTab = ({ profiles, handleEditProfile, handleDeleteProfile, handleCr
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </div>
+      </div>
+      {/* Row Count Display */}
+      <div className="mt-2 text-sm text-gray-700">
+        {filteredProfiles.length === profiles.length
+          ? `Total profiles: ${profiles.length}`
+          : `Showing ${filteredProfiles.length} of ${profiles.length} profiles`}
       </div>
       {searchTerm && (
         <p className="mt-2 text-sm text-gray-600">

@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import Loader from './Loader';
 import Select from 'react-select';
-import { FaPlus } from 'react-icons/fa';
+import { FaPlus, FaDownload } from 'react-icons/fa';
+import * as XLSX from 'xlsx';
 
 const TextListTab = ({
   uploadedTexts,
@@ -318,6 +319,21 @@ const TextListTab = ({
     setSelectedItems([]);
   };
 
+  // Download Excel logic (same as FileListTab)
+  const handleDownloadExcel = () => {
+    const data = filteredAndSortedTexts.map(text => ({
+      'Content': text.content || 'No content',
+      'Description': text.description || '-',
+      'Knowledge Bases': text.knowledge_bases ? text.knowledge_bases.map(kb => typeof kb === 'string' ? kb : kb.name).join(', ') : '-',
+      'Added By': text.added_by || '-',
+      'Upload Date': text.uploaded_at ? new Date(text.uploaded_at).toLocaleDateString() : '-'
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Texts');
+    XLSX.writeFile(workbook, 'uploaded_texts.xlsx');
+  };
+
   return (
     <div className="mt-6 w-11/12">
       {/* Loader overlay */}
@@ -327,7 +343,7 @@ const TextListTab = ({
         </div>
       )}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold mb-4">Uploaded Text</h3>
+        <h3 className="text-2xl font-bold text-gray-800">Uploaded Text</h3>
         <div className="flex items-center space-x-2">
           {!isMultiSelectMode ? (
             <>
@@ -337,6 +353,15 @@ const TextListTab = ({
                 onClick={handleDeleteAll}
               >
                 Delete All
+              </button>
+              {/* Download Excel Button */}
+              <button
+                className="p-2 rounded-full bg-green-600 text-white hover:bg-green-700 shadow flex items-center justify-center"
+                title="Download Excel"
+                aria-label="Download Excel"
+                onClick={handleDownloadExcel}
+              >
+                <FaDownload />
               </button>
               <button
                 className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow flex items-center justify-center"
@@ -385,6 +410,12 @@ const TextListTab = ({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
+        </div>
+        {/* Row Count Display */}
+        <div className="mt-2 text-sm text-gray-700">
+          {filteredAndSortedTexts.length === uploadedTexts.length
+            ? `Total texts: ${uploadedTexts.length}`
+            : `Showing ${filteredAndSortedTexts.length} of ${uploadedTexts.length} texts`}
         </div>
         {searchTerm && (
           <p className="mt-2 text-sm text-gray-600">

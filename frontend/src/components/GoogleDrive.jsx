@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FaPlus, FaTrash } from 'react-icons/fa';
+import { FaPlus, FaTrash, FaDownload } from 'react-icons/fa';
+import * as XLSX from 'xlsx';
 import {BASE_URL} from '../base_url';
 import Select from 'react-select';
 
@@ -441,18 +442,44 @@ const GoogleDrive = () => {
     }
   };
 
+  // Download Excel logic (same as FileListTab)
+  const handleDownloadExcel = () => {
+    const data = filteredDriveFiles.map(file => ({
+      'Folder Name': file.folder_name || file.file_name || '-',
+      'Path': file.relative_path || '-',
+      'Description': file.description || '-',
+      'Knowledge Bases': file.knowledge_bases ? file.knowledge_bases.map(kb => typeof kb === 'string' ? kb : kb.name).join(', ') : '-',
+      'Added By': file.added_by || '-',
+      'Upload Date': file.uploaded_at ? new Date(file.uploaded_at).toLocaleDateString() : '-'
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'GoogleDriveFiles');
+    XLSX.writeFile(workbook, 'google_drive_files.xlsx');
+  };
+
   return (
     <div className="w-full">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">Uploaded Google Drive Folders/Files</h2>
-        <button
-          onClick={handleGoogleDriveClick}
-          className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow flex items-center justify-center"
-          title="Upload from Google Drive"
-          disabled={uploading}
-        >
-          <FaPlus />
-        </button>
+        <div className="flex items-center gap-4">
+          <button
+            className="p-2 rounded-full bg-green-600 text-white hover:bg-green-700 shadow flex items-center justify-center"
+            title="Download Excel"
+            aria-label="Download Excel"
+            onClick={handleDownloadExcel}
+          >
+            <FaDownload />
+          </button>
+          <button
+            onClick={handleGoogleDriveClick}
+            className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow flex items-center justify-center"
+            title="Upload from Google Drive"
+            disabled={uploading}
+          >
+            <FaPlus />
+          </button>
+        </div>
       </div>
       
       {/* Search Filter */}
@@ -471,9 +498,15 @@ const GoogleDrive = () => {
             </svg>
           </div>
         </div>
+        {/* Row Count Display */}
+        <div className="mt-2 text-sm text-gray-700">
+          {filteredDriveFiles.length === driveFiles.length
+            ? `Total Google Drive files: ${driveFiles.length}`
+            : `Showing ${filteredDriveFiles.length} of ${driveFiles.length} Google Drive files`}
+        </div>
         {searchTerm && (
           <p className="mt-2 text-sm text-gray-600">
-            Showing {filteredDriveFiles.length} of {driveFiles.length} files
+            Showing {filteredDriveFiles.length} of {driveFiles.length} Google Drive files
           </p>
         )}
       </div>

@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import Loader from './Loader';
 import Select from 'react-select';
-import { FaPlus } from 'react-icons/fa';
+import { FaPlus, FaDownload } from 'react-icons/fa';
+import * as XLSX from 'xlsx';
 
 
 const QAListTab = ({
@@ -354,6 +355,24 @@ const QAListTab = ({
     }
   };
 
+  // Download Excel logic (same as FileListTab)
+  const handleDownloadExcel = () => {
+    const data = filteredAndSortedQAData.map(qa => ({
+      'Question': qa.question || '-',
+      'Answer': qa.answer || '-',
+      'Description': qa.description || '-',
+      'Category': qa.category ? qa.category.map(cat => typeof cat === 'string' ? cat : cat.name).join(', ') : '-',
+      'Subcategory': qa.subcategory ? qa.subcategory.map(subcat => typeof subcat === 'string' ? subcat : subcat.name).join(', ') : '-',
+      'Knowledge Bases': qa.knowledge_bases ? qa.knowledge_bases.map(kb => typeof kb === 'string' ? kb : kb.name).join(', ') : '-',
+      'Added By': qa.added_by || '-',
+      'Upload Date': qa.uploaded_at ? new Date(qa.uploaded_at).toLocaleDateString() : '-'
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Q&A');
+    XLSX.writeFile(workbook, 'uploaded_qa.xlsx');
+  };
+
   return (
     <div className="mt-6 w-11/12">
       {/* Loader overlay */}
@@ -373,6 +392,14 @@ const QAListTab = ({
                 onClick={handleDeleteAll}
               >
                 Delete All
+              </button>
+              <button
+                className="p-2 rounded-full bg-green-600 text-white hover:bg-green-700 shadow flex items-center justify-center"
+                title="Download Excel"
+                aria-label="Download Excel"
+                onClick={handleDownloadExcel}
+              >
+                <FaDownload />
               </button>
               <button
                 className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow flex items-center justify-center"
@@ -421,6 +448,12 @@ const QAListTab = ({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
+        </div>
+        {/* Row Count Display */}
+        <div className="mt-2 text-sm text-gray-700">
+          {filteredAndSortedQAData.length === qaData.length
+            ? `Total Q&A items: ${qaData.length}`
+            : `Showing ${filteredAndSortedQAData.length} of ${qaData.length} Q&A items`}
         </div>
         {searchTerm && (
           <p className="mt-2 text-sm text-gray-600">
