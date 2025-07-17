@@ -1,5 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import Select from 'react-select';
+import { FaPlus, FaDownload } from 'react-icons/fa';
+import * as XLSX from 'xlsx';
 
 const KnowledgeBaseTab = ({ knowledgeBases, handleEditKb, handleDeleteKb, handleCreateKb, kbModalOpen, setKbModalOpen, editingKb, kbForm, setKbForm, handleKbFormSubmit }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -66,13 +68,13 @@ const KnowledgeBaseTab = ({ knowledgeBases, handleEditKb, handleDeleteKb, handle
     }
     if (sortDirection === 'asc') {
       return (
-        <svg className="w-4 h-4 text-blue-600 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4 text-gray-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
         </svg>
       );
     } else {
       return (
-        <svg className="w-4 h-4 text-blue-600 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4 text-gray-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       );
@@ -81,18 +83,39 @@ const KnowledgeBaseTab = ({ knowledgeBases, handleEditKb, handleDeleteKb, handle
 
   const nameOptions = useMemo(() => Array.from(new Set(knowledgeBases.map(kb => kb.name))).map(name => ({ value: name, label: name })), [knowledgeBases]);
 
+  // Download Excel logic (same as FileListTab)
+  const handleDownloadExcel = () => {
+    const data = filteredKnowledgeBases.map(kb => ({
+      'Knowledge Base Name': kb.name || '-',
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'KnowledgeBases');
+    XLSX.writeFile(workbook, 'knowledge_bases.xlsx');
+  };
+
   return (
   <div className="bg-white rounded-xl shadow-lg p-6 mt-4 w-full mx-auto">
     <div className="flex items-center justify-between mb-4">
       <h3 className="text-lg font-semibold">Knowledge Base List</h3>
-      <button
-        className="bg-gray-500 hover:bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center text-xl"
-        title="Add Knowledge Base"
-        aria-label="Add Knowledge Base"
-        onClick={handleCreateKb}
-      >
-        +
-      </button>
+      <div className="flex items-center gap-4">
+        <button
+          className="p-2 rounded-full bg-green-600 text-white hover:bg-green-700 shadow flex items-center justify-center"
+          title="Download Excel"
+          aria-label="Download Excel"
+          onClick={handleDownloadExcel}
+        >
+          <FaDownload />
+        </button>
+        <button
+          className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow flex items-center justify-center"
+          title="Add Knowledge Base"
+          aria-label="Add Knowledge Base"
+          onClick={handleCreateKb}
+        >
+          <FaPlus />
+        </button>
+      </div>
     </div>
     
     {/* Search Filter */}
@@ -111,6 +134,12 @@ const KnowledgeBaseTab = ({ knowledgeBases, handleEditKb, handleDeleteKb, handle
           </svg>
         </div>
       </div>
+      {/* Row Count Display */}
+      <div className="mt-2 text-sm text-gray-700">
+        {filteredKnowledgeBases.length === knowledgeBases.length
+          ? `Total knowledge bases: ${knowledgeBases.length}`
+          : `Showing ${filteredKnowledgeBases.length} of ${knowledgeBases.length} knowledge bases`}
+      </div>
       {searchTerm && (
         <p className="mt-2 text-sm text-gray-600">
           Showing {filteredKnowledgeBases.length} of {knowledgeBases.length} knowledge bases
@@ -118,11 +147,11 @@ const KnowledgeBaseTab = ({ knowledgeBases, handleEditKb, handleDeleteKb, handle
       )}
     </div>
 
-    <div className="bg-white rounded-lg shadow p-4">
+    <div className="bg-white rounded-lg shadow overflow-hidden">
       <table className="min-w-full text-sm">
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="relative px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('name')}>
+        <thead className="bg-gray-600 text-white ">
+          <tr>
+            <th className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('name')}>
               <div className="flex items-center space-x-1">
                 <span>Name</span>
                 {getSortIcon('name')}
@@ -132,7 +161,7 @@ const KnowledgeBaseTab = ({ knowledgeBases, handleEditKb, handleDeleteKb, handle
                   onClick={e => {e.stopPropagation(); setShowNameFilter(prev => !prev);}}
                   title="Filter Name"
                 >
-                  <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                 </button>
@@ -140,8 +169,8 @@ const KnowledgeBaseTab = ({ knowledgeBases, handleEditKb, handleDeleteKb, handle
               {showNameFilter && (
                 <div style={{ position: 'relative', zIndex: 9999 }}>
                   <button type="button"
-                    className="absolute top-2 right-2 z-50"
-                    style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                    className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50 bg-white"
+                    style={{ padding: '2px', borderRadius: '50%' }}
                     onClick={() => setShowNameFilter(false)} title="Close">✖</button>
                   <Select
                     isMulti
@@ -218,15 +247,15 @@ const KnowledgeBaseTab = ({ knowledgeBases, handleEditKb, handleDeleteKb, handle
                 </div>
               )}
             </th>
-            <th className="px-3 py-2 text-left">Actions</th>
+            <th className="px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors">Actions</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className="bg-white divide-y divide-gray-200">
           {sortedKnowledgeBases.length > 0 ? (
             sortedKnowledgeBases.map((kb, idx) => (
-              <tr key={kb.id} className="border-b">
-                <td className="px-3 py-2 font-medium">{kb.name}</td>
-                <td className="px-3 py-2 flex gap-2">
+              <tr key={kb.id} className="hover:bg-gray-50 transition-colors">
+                <td className="px-4 py-3 font-medium">{kb.name}</td>
+                <td className="px-4 py-3 flex gap-2">
                   <button 
                     className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-xs"
                     onClick={() => handleEditKb(kb)}
@@ -244,7 +273,7 @@ const KnowledgeBaseTab = ({ knowledgeBases, handleEditKb, handleDeleteKb, handle
             ))
           ) : (
             <tr>
-              <td colSpan="2" className="text-center py-4 text-gray-500">
+              <td colSpan="2" className="px-4 py-8 text-center text-gray-500">
                 {searchTerm ? 'No knowledge bases found matching your search.' : 'No knowledge bases available.'}
               </td>
             </tr>

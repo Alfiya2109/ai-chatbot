@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import Select from 'react-select';
 import { BASE_URL } from '../base_url';
+import { FaPlus, FaDownload } from 'react-icons/fa';
+import * as XLSX from 'xlsx';
 
 const CategoriesTab = ({ categoriesList, handleEditCategory, handleDeleteCategory, handleCreateCategory, categoryModalOpen, setCategoryModalOpen, editingCategory, categoryForm, setCategoryForm, categoryFormError, handleCategoryFormSubmit }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -105,31 +107,53 @@ const CategoriesTab = ({ categoriesList, handleEditCategory, handleDeleteCategor
     }
     if (sortDirection === 'asc') {
       return (
-        <svg className="w-4 h-4 text-blue-600 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4 text-gray-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
         </svg>
       );
     } else {
       return (
-        <svg className="w-4 h-4 text-blue-600 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4 text-gray-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       );
     }
   };
 
+  // Download Excel logic (same as FileListTab)
+  const handleDownloadExcel = () => {
+    const data = filteredCategories.map(cat => ({
+      'Category Name': cat.name || '-',
+      'Knowledge Bases': cat.knowledge_bases ? cat.knowledge_bases.map(kb => typeof kb === 'string' ? kb : kb.name).join(', ') : '-',
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Categories');
+    XLSX.writeFile(workbook, 'categories.xlsx');
+  };
+
   return (
   <div className="bg-white rounded-xl shadow-lg p-6 mt-4 w-full mx-auto">
     <div className="flex items-center justify-between mb-4">
       <h3 className="text-lg font-semibold">Categories List</h3>
-      <button
-        className="bg-gray-500 hover:bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center text-xl"
-        title="Add Category"
-        aria-label="Add Category"
-        onClick={handleCreateCategory}
-      >
-        +
-      </button>
+      <div className="flex items-center gap-4">
+        <button
+          className="p-2 rounded-full bg-green-600 text-white hover:bg-green-700 shadow flex items-center justify-center"
+          title="Download Excel"
+          aria-label="Download Excel"
+          onClick={handleDownloadExcel}
+        >
+          <FaDownload />
+        </button>
+        <button
+          className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow flex items-center justify-center"
+          title="Add Category"
+          aria-label="Add Category"
+          onClick={handleCreateCategory}
+        >
+          <FaPlus />
+        </button>
+      </div>
     </div>
     {/* Search Filter */}
     <div className="mb-4">
@@ -147,17 +171,23 @@ const CategoriesTab = ({ categoriesList, handleEditCategory, handleDeleteCategor
           </svg>
         </div>
       </div>
+      {/* Row Count Display */}
+      <div className="mt-2 text-sm text-gray-700">
+        {filteredCategories.length === categoriesList.length
+          ? `Total categories: ${categoriesList.length}`
+          : `Showing ${filteredCategories.length} of ${categoriesList.length} categories`}
+      </div>
       {searchTerm && (
         <p className="mt-2 text-sm text-gray-600">
           Showing {filteredCategories.length} of {categoriesList.length} categories
         </p>
       )}
     </div>
-    <div className="bg-white rounded-lg shadow p-4">
+    <div className="bg-white rounded-lg shadow overflow-hidden">
       <table className="min-w-full text-sm">
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="relative px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('name')}>
+        <thead className="bg-gray-600 text-white ">
+          <tr>
+            <th className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('name')}>
               <div className="flex items-center space-x-1">
                 <span>Name</span>
                 {getSortIcon('name')}
@@ -167,7 +197,7 @@ const CategoriesTab = ({ categoriesList, handleEditCategory, handleDeleteCategor
                   onClick={e => {e.stopPropagation(); setShowNameFilter(prev => !prev);}}
                   title="Filter Name"
                 >
-                  <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                 </button>
@@ -175,8 +205,8 @@ const CategoriesTab = ({ categoriesList, handleEditCategory, handleDeleteCategor
               {showNameFilter && (
                 <div style={{ position: 'relative', zIndex: 9999 }}>
                   <button type="button"
-                    className="absolute top-2 right-2 z-50"
-                    style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                    className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50 bg-white"
+                    style={{ padding: '2px', borderRadius: '50%' }}
                     onClick={() => setShowNameFilter(false)} title="Close">✖</button>
                   <Select
                     isMulti
@@ -254,7 +284,7 @@ const CategoriesTab = ({ categoriesList, handleEditCategory, handleDeleteCategor
               )}
             </th>
             <th 
-              className="relative px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+              className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors"
               onClick={() => handleSort('knowledge_bases')}
             >
               <div className="flex items-center space-x-1">
@@ -273,7 +303,7 @@ const CategoriesTab = ({ categoriesList, handleEditCategory, handleDeleteCategor
                   }}
                   title="Search Knowledge Base"
                 >
-                  <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                 </button>
@@ -281,8 +311,8 @@ const CategoriesTab = ({ categoriesList, handleEditCategory, handleDeleteCategor
               {showSearchBox && (
                 <div style={{ position: 'relative', zIndex: 9999 }}>
                   <button type="button"
-                    className="absolute top-2 right-2 z-50"
-                    style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                    className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50 bg-white"
+                    style={{ padding: '2px', borderRadius: '50%' }}
                     onClick={() => setShowSearchBox(false)} title="Close">✖</button>
                   <Select
                     isMulti
@@ -361,15 +391,15 @@ const CategoriesTab = ({ categoriesList, handleEditCategory, handleDeleteCategor
                 </div>
               )}
             </th>
-            <th className="px-3 py-2 text-left">Actions</th>
+            <th className="px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors">Actions</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className="bg-white divide-y divide-gray-200">
           {sortedCategories.length > 0 ? (
             sortedCategories.map((cat, idx) => (
-              <tr key={cat.id} className="border-b">
-                <td className="px-3 py-2 font-medium">{cat.name}</td>
-                <td className="px-3 py-2">
+              <tr key={cat.id} className="hover:bg-gray-50 transition-colors">
+                <td className="px-4 py-3 font-medium">{cat.name}</td>
+                <td className="px-4 py-3">
                   {cat.knowledge_bases && cat.knowledge_bases.length > 0 ? (
                     <div className="flex flex-wrap gap-1">
                       {cat.knowledge_bases.map((kb, index) => (
@@ -385,7 +415,7 @@ const CategoriesTab = ({ categoriesList, handleEditCategory, handleDeleteCategor
                     <span className="text-gray-500">-</span>
                   )}
                 </td>
-                <td className="px-3 py-2 flex gap-2">
+                <td className="px-4 py-3 flex gap-2">
                   <button 
                     className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-xs"
                     onClick={() => handleEditCategory(cat)}
@@ -403,7 +433,7 @@ const CategoriesTab = ({ categoriesList, handleEditCategory, handleDeleteCategor
             ))
           ) : (
             <tr>
-              <td colSpan="3" className="text-center py-4 text-gray-500">
+              <td colSpan="3" className="px-4 py-8 text-center text-gray-500">
                 {searchTerm || selectedKBFilters.length > 0 ? 'No categories found matching your search.' : 'No categories available.'}
               </td>
             </tr>

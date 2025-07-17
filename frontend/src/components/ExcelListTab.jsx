@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import Loader from './Loader';
 import Select from 'react-select';
+import { FaPlus, FaDownload } from 'react-icons/fa';
+import * as XLSX from 'xlsx';
 
 const ExcelListTab = ({ uploadedFiles, renderTable, excelModalOpen, setExcelModalOpen, excelForm, setExcelForm, knowledgeBases, excelFormError, handleExcelModalSubmit, fetchKnowledgeBases, onBulkDelete, isLoading }) => {
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
@@ -152,13 +154,13 @@ const ExcelListTab = ({ uploadedFiles, renderTable, excelModalOpen, setExcelModa
     }
     if (sortDirection === 'asc') {
       return (
-        <svg className="w-4 h-4 text-blue-600 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4 text-gray-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
         </svg>
       );
     } else {
       return (
-        <svg className="w-4 h-4 text-blue-600 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4 text-gray-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       );
@@ -214,6 +216,21 @@ const ExcelListTab = ({ uploadedFiles, renderTable, excelModalOpen, setExcelModa
     setSelectedItems([]);
   };
 
+  // Download Excel logic (same as FileListTab)
+  const handleDownloadExcel = () => {
+    const data = filteredAndSortedFiles.map(file => ({
+      'File Name': file.file ? file.file.split('/').pop() : 'Unknown File',
+      'Description': file.description || '-',
+      'Knowledge Bases': file.knowledge_bases ? file.knowledge_bases.map(kb => typeof kb === 'string' ? kb : kb.name).join(', ') : '-',
+      'Added By': file.added_by || '-',
+      'Upload Date': file.uploaded_at ? new Date(file.uploaded_at).toLocaleDateString() : '-'
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'ExcelFiles');
+    XLSX.writeFile(workbook, 'uploaded_excel_files.xlsx');
+  };
+
   return (
     <div className="mt-6 w-11/12">
       {/* Loader overlay */}
@@ -223,7 +240,7 @@ const ExcelListTab = ({ uploadedFiles, renderTable, excelModalOpen, setExcelModa
         </div>
       )}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold mb-4">Uploaded Excel/CSV Files</h3>
+        <h3 className="text-2xl font-bold text-gray-800">Uploaded Excel/CSV Files</h3>
         <div className="flex items-center space-x-2">
           {!isMultiSelectMode ? (
             <>
@@ -234,13 +251,22 @@ const ExcelListTab = ({ uploadedFiles, renderTable, excelModalOpen, setExcelModa
               >
                 Delete All
               </button>
+              {/* Download Excel Button */}
               <button
-                className="bg-gray-500 hover:bg-gray-700 text-white rounded-full w-10 h-10 flex items-center justify-center text-2xl shadow"
+                className="p-2 rounded-full bg-green-600 text-white hover:bg-green-700 shadow flex items-center justify-center"
+                title="Download Excel"
+                aria-label="Download Excel"
+                onClick={handleDownloadExcel}
+              >
+                <FaDownload />
+              </button>
+              <button
+                className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow flex items-center justify-center"
                 title="Add Excel/CSV File"
                 aria-label="Add Excel/CSV File"
                 onClick={() => { fetchKnowledgeBases && fetchKnowledgeBases(); setExcelModalOpen(true); }}
               >
-                <span>+</span>
+                <FaPlus />
               </button>
             </>
           ) : (
@@ -282,6 +308,12 @@ const ExcelListTab = ({ uploadedFiles, renderTable, excelModalOpen, setExcelModa
             </svg>
           </div>
         </div>
+        {/* Row Count Display */}
+        <div className="mt-2 text-sm text-gray-700">
+          {filteredAndSortedFiles.length === uploadedFiles.length
+            ? `Total Excel/CSV files: ${uploadedFiles.length}`
+            : `Showing ${filteredAndSortedFiles.length} of ${uploadedFiles.length} Excel/CSV files`}
+        </div>
         {searchTerm && (
           <p className="mt-2 text-sm text-gray-600">
             Showing {filteredAndSortedFiles.length} of {uploadedFiles.length} Excel/CSV files
@@ -292,10 +324,10 @@ const ExcelListTab = ({ uploadedFiles, renderTable, excelModalOpen, setExcelModa
       {/* Table with sortable headers */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="min-w-full text-sm">
-          <thead className="bg-gray-50">
+          <thead className="bg-gray-600 text-white">
             <tr>
               {isMultiSelectMode && (
-                <th className="px-4 py-3 text-left">
+                <th className="px-4 py-3 text-left text-white">
                   <input
                     type="checkbox"
                     onChange={(e) => handleSelectAll(e.target.checked)}
@@ -305,11 +337,11 @@ const ExcelListTab = ({ uploadedFiles, renderTable, excelModalOpen, setExcelModa
                 </th>
               )}
               <th 
-                className="relative px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('file')}
               >
                 <div className="flex items-center space-x-1">
-                  <span>Folder Name</span>
+                  <span>File Name</span>
                   {getSortIcon('file')}
                   <button
                     type="button"
@@ -324,7 +356,7 @@ const ExcelListTab = ({ uploadedFiles, renderTable, excelModalOpen, setExcelModa
                     }}
                     title="Filter File Name"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
@@ -408,7 +440,7 @@ const ExcelListTab = ({ uploadedFiles, renderTable, excelModalOpen, setExcelModa
                 )}
               </th>
               <th 
-                className="relative px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('description')}
               >
                 <div className="flex items-center space-x-1">
@@ -427,7 +459,7 @@ const ExcelListTab = ({ uploadedFiles, renderTable, excelModalOpen, setExcelModa
                     }}
                     title="Filter Description"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
@@ -511,7 +543,7 @@ const ExcelListTab = ({ uploadedFiles, renderTable, excelModalOpen, setExcelModa
                 )}
               </th>
               <th 
-                className="px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors relative"
+                className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('knowledge_bases')}
               >
                 <div className="flex items-center space-x-1">
@@ -530,7 +562,7 @@ const ExcelListTab = ({ uploadedFiles, renderTable, excelModalOpen, setExcelModa
                     }}
                     title="Filter Knowledge Bases"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
@@ -614,7 +646,7 @@ const ExcelListTab = ({ uploadedFiles, renderTable, excelModalOpen, setExcelModa
                 )}
               </th>
               <th 
-                className="relative px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('added_by')}
               >
                 <div className="flex items-center space-x-1">
@@ -633,7 +665,7 @@ const ExcelListTab = ({ uploadedFiles, renderTable, excelModalOpen, setExcelModa
                     }}
                     title="Filter Added By"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
@@ -717,7 +749,7 @@ const ExcelListTab = ({ uploadedFiles, renderTable, excelModalOpen, setExcelModa
                 )}
               </th>
               <th 
-                className="relative px-4 py-3 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('uploaded_at')}
               >
                 <div className="flex items-center space-x-1">
@@ -734,9 +766,9 @@ const ExcelListTab = ({ uploadedFiles, renderTable, excelModalOpen, setExcelModa
                       setShowSearchBox(false);
                       setShowDateFilter(prev => !prev);
                     }}
-                    title="Filter Upload Date"
+                    title="Filter Uploaded Date"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
@@ -751,7 +783,7 @@ const ExcelListTab = ({ uploadedFiles, renderTable, excelModalOpen, setExcelModa
                       value={dateOptions.filter(opt => selectedDateFilter.includes(opt.value))}
                       onChange={selectedOptions => setSelectedDateFilter(selectedOptions ? selectedOptions.map(opt => opt.value) : [])}
                       classNamePrefix="react-select"
-                      placeholder="Filter Upload Date..."
+                      placeholder="Filter Uploaded Date..."
                       styles={{
                         control: (base, state) => ({
                           ...base,
@@ -819,7 +851,7 @@ const ExcelListTab = ({ uploadedFiles, renderTable, excelModalOpen, setExcelModa
                   </div>
                 )}
               </th>
-              <th className="px-4 py-3 text-left font-semibold text-gray-700">Actions</th>
+              <th className="px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">

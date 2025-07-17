@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { BASE_URL } from '../base_url';
 import Select from 'react-select';
+import { FaPlus, FaDownload } from 'react-icons/fa';
+import * as XLSX from 'xlsx';
 
 const isValidUser = (user) => {
   return (
@@ -101,13 +103,13 @@ const UserDetailsTab = ({
     }
     if (sortDirection === 'asc') {
       return (
-        <svg className="w-4 h-4 text-blue-600 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4 text-gray-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
         </svg>
       );
     } else {
       return (
-        <svg className="w-4 h-4 text-blue-600 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4 text-gray-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       );
@@ -185,18 +187,45 @@ const UserDetailsTab = ({
     }
   };
 
+  // Download Excel logic (same as FileListTab)
+  const handleDownloadExcel = () => {
+    const data = filteredUsers.map(user => ({
+      'First Name': user.first_name || '-',
+      'Last Name': user.last_name || '-',
+      'Phone': user.phone_number || '-',
+      'Email': user.email || '-',
+      'Created Date': user.created_at ? new Date(user.created_at).toLocaleDateString() : '-',
+      'Profile': user.profile_name || '-',
+      'Knowledge Bases': Array.isArray(user.knowledge_bases) ? user.knowledge_bases.map(kb => typeof kb === 'string' ? kb : kb.name).join(', ') : '-'
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Users');
+    XLSX.writeFile(workbook, 'user_details.xlsx');
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-lg p-6 mt-4 w-full mx-auto">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold">User Details</h3>
-        <button
-          className="bg-gray-500 hover:bg-gray-700 text-white rounded-full w-8 h-8 flex items-center justify-center text-xl"
-          title="Add Sales User"
-          aria-label="Add Sales User"
-          onClick={() => setModalOpen(true)}
-        >
-          +
-        </button>
+        <div className="flex items-center space-x-2">
+          <button
+            className="p-2 rounded-full bg-green-600 text-white hover:bg-green-700 shadow flex items-center justify-center"
+            title="Download Excel"
+            aria-label="Download Excel"
+            onClick={handleDownloadExcel}
+          >
+            <FaDownload />
+          </button>
+          <button
+            className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow flex items-center justify-center"
+            title="Add Sales User"
+            aria-label="Add Sales User"
+            onClick={() => setModalOpen(true)}
+          >
+            <FaPlus />
+          </button>
+        </div>
       </div>
       <div className="flex flex-wrap gap-2 mb-4">
         <input
@@ -207,12 +236,18 @@ const UserDetailsTab = ({
           className="p-2 border border-gray-300 rounded-md w-full max-w-xs"
         />
       </div>
+      {/* Row Count Display */}
+      <div className="mb-4 text-sm text-gray-700">
+        {filteredUsers.length === users.length
+          ? `Total users: ${users.length}`
+          : `Showing ${filteredUsers.length} of ${users.length} users`}
+      </div>
       
-      <div className="bg-white rounded-lg shadow p-4">
+      <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="min-w-full text-sm">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="relative px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('first_name')}>
+          <thead className="bg-gray-600 text-white ">
+            <tr>
+              <th className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('first_name')}>
                 <div className="flex items-center space-x-1">
                   <span>First Name</span>
                   {getSortIcon('first_name')}
@@ -222,7 +257,7 @@ const UserDetailsTab = ({
                     onClick={e => {e.stopPropagation(); setShowLastNameFilter(false); setShowPhoneFilter(false); setShowEmailFilter(false); setShowDateFilter(false); setShowProfileFilter(false); setShowKBFilter(false); setShowFirstNameFilter(prev => !prev);}}
                     title="Filter First Name"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
@@ -230,8 +265,8 @@ const UserDetailsTab = ({
                 {showFirstNameFilter && (
                   <div style={{ position: 'relative', zIndex: 9999 }}>
                     <button type="button"
-                      className="absolute top-2 right-2 z-50"
-                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
+                      className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50 bg-white"
+                      style={{ padding: '2px', borderRadius: '50%' }}
                       onClick={() => setShowFirstNameFilter(false)} title="Close">✖</button>
                     <Select
                       isMulti
@@ -308,7 +343,7 @@ const UserDetailsTab = ({
                   </div>
                 )}
               </th>
-              <th className="relative px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('last_name')}>
+              <th className="relative px-3 py-2 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('last_name')}>
                 <div className="flex items-center space-x-1">
                   <span>Last Name</span>
                   {getSortIcon('last_name')}
@@ -318,7 +353,7 @@ const UserDetailsTab = ({
                     onClick={e => {e.stopPropagation(); setShowFirstNameFilter(false); setShowPhoneFilter(false); setShowEmailFilter(false); setShowDateFilter(false); setShowProfileFilter(false); setShowKBFilter(false); setShowLastNameFilter(prev => !prev);}}
                     title="Filter Last Name"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
@@ -404,7 +439,7 @@ const UserDetailsTab = ({
                   </div>
                 )}
               </th>
-              <th className="relative px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('phone_number')}>
+              <th className="relative px-3 py-2 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('phone_number')}>
                 <div className="flex items-center space-x-1">
                   <span>Phone</span>
                   {getSortIcon('phone_number')}
@@ -414,7 +449,7 @@ const UserDetailsTab = ({
                     onClick={e => {e.stopPropagation(); setShowFirstNameFilter(false); setShowLastNameFilter(false); setShowEmailFilter(false); setShowDateFilter(false); setShowProfileFilter(false); setShowKBFilter(false); setShowPhoneFilter(prev => !prev);}}
                     title="Filter Phone"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
@@ -500,7 +535,7 @@ const UserDetailsTab = ({
                   </div>
                 )}
               </th>
-              <th className="relative px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('email')}>
+              <th className="relative px-3 py-2 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('email')}>
                 <div className="flex items-center space-x-1">
                   <span>Email</span>
                   {getSortIcon('email')}
@@ -510,7 +545,7 @@ const UserDetailsTab = ({
                     onClick={e => {e.stopPropagation(); setShowFirstNameFilter(false); setShowLastNameFilter(false); setShowPhoneFilter(false); setShowDateFilter(false); setShowProfileFilter(false); setShowKBFilter(false); setShowEmailFilter(prev => !prev);}}
                     title="Filter Email"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
@@ -596,7 +631,7 @@ const UserDetailsTab = ({
                   </div>
                 )}
               </th>
-              <th className="relative px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('created_at')}>
+              <th className="relative px-3 py-2 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('created_at')}>
                 <div className="flex items-center space-x-1">
                   <span>Created Date</span>
                   {getSortIcon('created_at')}
@@ -606,7 +641,7 @@ const UserDetailsTab = ({
                     onClick={e => {e.stopPropagation(); setShowFirstNameFilter(false); setShowLastNameFilter(false); setShowPhoneFilter(false); setShowEmailFilter(false); setShowProfileFilter(false); setShowKBFilter(false); setShowDateFilter(prev => !prev);}}
                     title="Filter Created Date"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
@@ -692,7 +727,7 @@ const UserDetailsTab = ({
                   </div>
                 )}
               </th>
-              <th className="relative px-3 py-2 text-left cursor-pointer hover:bg-gray-200" onClick={() => handleSort('profile_name')}>
+              <th className="relative px-3 py-2 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('profile_name')}>
                 <div className="flex items-center space-x-1">
                   <span>Profile</span>
                   {getSortIcon('profile_name')}
@@ -702,7 +737,7 @@ const UserDetailsTab = ({
                     onClick={e => {e.stopPropagation(); setShowFirstNameFilter(false); setShowLastNameFilter(false); setShowPhoneFilter(false); setShowEmailFilter(false); setShowDateFilter(false); setShowKBFilter(false); setShowProfileFilter(prev => !prev);}}
                     title="Filter Profile"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
@@ -788,16 +823,17 @@ const UserDetailsTab = ({
                   </div>
                 )}
               </th>
-              <th className="relative px-3 py-2 text-left">
+              <th className="relative px-3 py-2 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('knowledge_bases')}>
                 <div className="flex items-center space-x-1">
                   <span>Knowledge Bases</span>
+                  {getSortIcon('knowledge_bases')}
                   <button
                     type="button"
                     className="ml-1 focus:outline-none"
                     onClick={e => {e.stopPropagation(); setShowFirstNameFilter(false); setShowLastNameFilter(false); setShowPhoneFilter(false); setShowEmailFilter(false); setShowDateFilter(false); setShowProfileFilter(false); setShowKBFilter(prev => !prev);}}
                     title="Filter Knowledge Bases"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>

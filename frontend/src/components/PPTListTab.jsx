@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import Loader from './Loader';
 import Select from 'react-select';
+import { FaPlus, FaDownload } from 'react-icons/fa';
+import * as XLSX from 'xlsx';
 
 const PPTListTab = ({ uploadedPPTs, renderTable, pptModalOpen, setPptModalOpen, pptForm, setPptForm, knowledgeBases, pptFormError, handlePptModalSubmit, fetchKnowledgeBases, onBulkDelete, isLoading }) => {
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
@@ -141,13 +143,13 @@ const PPTListTab = ({ uploadedPPTs, renderTable, pptModalOpen, setPptModalOpen, 
     }
     if (sortDirection === 'asc') {
       return (
-        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
         </svg>
       );
     } else {
       return (
-        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       );
@@ -202,6 +204,21 @@ const PPTListTab = ({ uploadedPPTs, renderTable, pptModalOpen, setPptModalOpen, 
     setSelectedItems([]);
   };
 
+  // Download Excel logic (same as FileListTab)
+  const handleDownloadExcel = () => {
+    const data = filteredAndSortedPPTs.map(ppt => ({
+      'PPT File Name': ppt.file ? ppt.file.split('/').pop() : 'Unknown File',
+      'Description': ppt.description || '-',
+      'Knowledge Bases': ppt.knowledge_bases ? ppt.knowledge_bases.map(kb => typeof kb === 'string' ? kb : kb.name).join(', ') : '-',
+      'Added By': ppt.added_by || '-',
+      'Upload Date': ppt.uploaded_at ? new Date(ppt.uploaded_at).toLocaleDateString() : '-'
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'PPT Files');
+    XLSX.writeFile(workbook, 'uploaded_ppt_files.xlsx');
+  };
+
   return (
     <div className="mt-6 w-full">
       <div className="flex items-center justify-between mb-4">
@@ -217,12 +234,20 @@ const PPTListTab = ({ uploadedPPTs, renderTable, pptModalOpen, setPptModalOpen, 
                 Delete All
               </button>
               <button
-                className="bg-gray-500 hover:bg-gray-700 text-white rounded-full w-10 h-10 flex items-center justify-center text-2xl shadow"
+                className="p-2 rounded-full bg-green-600 text-white hover:bg-green-700 shadow flex items-center justify-center"
+                title="Download Excel"
+                aria-label="Download Excel"
+                onClick={handleDownloadExcel}
+              >
+                <FaDownload />
+              </button>
+              <button
+                className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow flex items-center justify-center"
                 title="Add PPT File"
                 aria-label="Add PPT File"
                 onClick={() => { fetchKnowledgeBases && fetchKnowledgeBases(); setPptModalOpen(true); }}
               >
-                <span>+</span>
+                <FaPlus />
               </button>
             </>
           ) : (
@@ -263,6 +288,12 @@ const PPTListTab = ({ uploadedPPTs, renderTable, pptModalOpen, setPptModalOpen, 
             </svg>
           </div>
         </div>
+        {/* Row Count Display */}
+        <div className="mt-2 text-sm text-gray-700">
+          {filteredAndSortedPPTs.length === uploadedPPTs.length
+            ? `Total PPT files: ${uploadedPPTs.length}`
+            : `Showing ${filteredAndSortedPPTs.length} of ${uploadedPPTs.length} PPT files`}
+        </div>
         {searchTerm && (
           <p className="mt-2 text-sm text-gray-600">
             Showing {filteredAndSortedPPTs.length} of {uploadedPPTs.length} PPT files
@@ -272,20 +303,20 @@ const PPTListTab = ({ uploadedPPTs, renderTable, pptModalOpen, setPptModalOpen, 
       {/* PPT Files Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="min-w-full text-sm">
-          <thead className="bg-gray-50">
+          <thead className="bg-gray-600 text-white ">
             <tr>
               {isMultiSelectMode && (
                 <th className="px-4 py-3 text-left">
                   <input
                     type="checkbox"
-                    onChange={(e) => handleSelectAll(e.target.checked)}
+                    onChange={e => handleSelectAll(e.target.checked)}
                     checked={selectedItems.length === filteredAndSortedPPTs.length && filteredAndSortedPPTs.length > 0}
                     className="rounded border-gray-300"
                   />
                 </th>
               )}
               <th 
-                className="relative px-3 py-2 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('file')}
               >
                 <div className="flex items-center space-x-1">
@@ -304,17 +335,14 @@ const PPTListTab = ({ uploadedPPTs, renderTable, pptModalOpen, setPptModalOpen, 
                     }}
                     title="Filter File Name"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
                 </div>
                 {showFileNameFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button" 
-                      className="absolute top-2 right-2 z-50"
-                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
-                      onClick={() => setShowFileNameFilter(false)} title="Close">✖</button>
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50 bg-white" style={{ padding: '2px', borderRadius: '50%' }} onClick={() => setShowFileNameFilter(false)} title="Close">✖</button>
                     <Select
                       isMulti
                       isSearchable
@@ -391,7 +419,7 @@ const PPTListTab = ({ uploadedPPTs, renderTable, pptModalOpen, setPptModalOpen, 
                 )}
               </th>
               <th 
-                className="relative px-3 py-2 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('description')}
               >
                 <div className="flex items-center space-x-1">
@@ -410,17 +438,14 @@ const PPTListTab = ({ uploadedPPTs, renderTable, pptModalOpen, setPptModalOpen, 
                     }}
                     title="Filter Description"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
                 </div>
                 {showDescriptionFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button" 
-                      className="absolute top-2 right-2 z-50"
-                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
-                      onClick={() => setShowDescriptionFilter(false)} title="Close">✖</button>
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50 bg-white" style={{ padding: '2px', borderRadius: '50%' }} onClick={() => setShowDescriptionFilter(false)} title="Close">✖</button>
                     <Select
                       isMulti
                       isSearchable
@@ -497,7 +522,7 @@ const PPTListTab = ({ uploadedPPTs, renderTable, pptModalOpen, setPptModalOpen, 
                 )}
               </th>
               <th 
-                className="relative px-3 py-2 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('knowledge_bases')}
               >
                 <div className="flex items-center space-x-1">
@@ -516,17 +541,14 @@ const PPTListTab = ({ uploadedPPTs, renderTable, pptModalOpen, setPptModalOpen, 
                     }}
                     title="Filter Knowledge Bases"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
                 </div>
                 {showKBFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button" 
-                      className="absolute top-2 right-2 z-50"
-                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
-                      onClick={() => setShowKBFilter(false)} title="Close">✖</button>
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50 bg-white" style={{ padding: '2px', borderRadius: '50%' }} onClick={() => setShowKBFilter(false)} title="Close">✖</button>
                     <Select
                       isMulti
                       isSearchable
@@ -603,7 +625,7 @@ const PPTListTab = ({ uploadedPPTs, renderTable, pptModalOpen, setPptModalOpen, 
                 )}
               </th>
               <th 
-                className="relative px-3 py-2 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('added_by')}
               >
                 <div className="flex items-center space-x-1">
@@ -616,23 +638,20 @@ const PPTListTab = ({ uploadedPPTs, renderTable, pptModalOpen, setPptModalOpen, 
                       e.stopPropagation();
                       setShowFileNameFilter(false);
                       setShowDescriptionFilter(false);
-                      setShowDateFilter(false);
                       setShowSearchBox(false);
+                      setShowDateFilter(false);
                       setShowAddedByFilter(prev => !prev);
                     }}
                     title="Filter Added By"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
                 </div>
                 {showAddedByFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button" 
-                      className="absolute top-2 right-2 z-50"
-                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
-                      onClick={() => setShowAddedByFilter(false)} title="Close">✖</button>
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50 bg-white" style={{ padding: '2px', borderRadius: '50%' }} onClick={() => setShowAddedByFilter(false)} title="Close">✖</button>
                     <Select
                       isMulti
                       isSearchable
@@ -709,7 +728,7 @@ const PPTListTab = ({ uploadedPPTs, renderTable, pptModalOpen, setPptModalOpen, 
                 )}
               </th>
               <th 
-                className="relative px-3 py-2 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors"
+                className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => handleSort('uploaded_at')}
               >
                 <div className="flex items-center space-x-1">
@@ -728,17 +747,14 @@ const PPTListTab = ({ uploadedPPTs, renderTable, pptModalOpen, setPptModalOpen, 
                     }}
                     title="Filter Upload Date"
                   >
-                    <svg className="w-4 h-4 text-gray-500 hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                   </button>
                 </div>
                 {showDateFilter && (
                   <div style={{ position: 'relative' }}>
-                    <button type="button" 
-                      className="absolute top-2 right-2 z-50"
-                      style={{ background: '#fff', padding: '2px', borderRadius: '50%', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px 0 rgba(60,72,88,0.10)', cursor: 'pointer' }}
-                      onClick={() => setShowDateFilter(false)} title="Close">✖</button>
+                    <button type="button" className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50 bg-white" style={{ padding: '2px', borderRadius: '50%' }} onClick={() => setShowDateFilter(false)} title="Close">✖</button>
                     <Select
                       isMulti
                       isSearchable
@@ -814,7 +830,7 @@ const PPTListTab = ({ uploadedPPTs, renderTable, pptModalOpen, setPptModalOpen, 
                   </div>
                 )}
               </th>
-              <th className="px-3 py-2 text-left font-semibold text-gray-700">Actions</th>
+              <th className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -840,22 +856,22 @@ const PPTListTab = ({ uploadedPPTs, renderTable, pptModalOpen, setPptModalOpen, 
                       <input
                         type="checkbox"
                         checked={selectedItems.includes(ppt.id)}
-                        onChange={(e) => handleItemSelect(ppt.id, e.target.checked)}
+                        onChange={e => handleItemSelect(ppt.id, e.target.checked)}
                         className="rounded border-gray-300"
                       />
                     </td>
                   )}
-                  <td className="px-3 py-2">
+                  <td className="px-4 py-3">
                     <div className="font-medium text-gray-900">
                       {ppt.file ? ppt.file.split('/').pop() : 'Unknown File'}
                     </div>
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-4 py-3">
                     <div className="text-gray-700">
                       {ppt.description || '-'}
                     </div>
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-4 py-3">
                     {ppt.knowledge_bases && ppt.knowledge_bases.length > 0 ? (
                       <div className="flex flex-wrap gap-1">
                         {ppt.knowledge_bases.map((kb, index) => (
@@ -871,17 +887,17 @@ const PPTListTab = ({ uploadedPPTs, renderTable, pptModalOpen, setPptModalOpen, 
                       <span className="text-gray-500">-</span>
                     )}
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-4 py-3">
                     <div className="text-gray-700">
                       {ppt.added_by || '-'}
                     </div>
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-4 py-3">
                     <div className="text-gray-700">
                       {ppt.uploaded_at ? new Date(ppt.uploaded_at).toLocaleDateString() : '-'}
                     </div>
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-4 py-3">
                     <div className="flex items-center space-x-2">
                       {ppt.file && (
                         <a
