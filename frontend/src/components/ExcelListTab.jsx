@@ -232,16 +232,25 @@ const ExcelListTab = ({ uploadedFiles, renderTable, excelModalOpen, setExcelModa
   };
 
   return (
-    <div className="mt-6 w-11/12">
+    <div className="mt-6 w-full">
       {/* Loader overlay */}
       {isLoading && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-white bg-opacity-60">
           <Loader />
         </div>
       )}
-      <div className="flex items-center justify-between mb-4">
+      {/* Sticky Top Bar - same as FolderListTab and FileListTab */}
+      <div
+        className="top-0 z-40 shadow-md rounded-b-lg px-6 py-4 flex items-center justify-between mt-6 backdrop-blur-md"
+        style={{
+          minHeight: 80,
+          WebkitBackdropFilter: "blur(8px)",
+          backdropFilter: "blur(8px)",
+          borderBottom: "1px solid #e5e7eb"
+        }}
+      >
         <h3 className="text-2xl font-bold text-gray-800">Uploaded Excel/CSV Files</h3>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-5 flex-wrap">
           {!isMultiSelectMode ? (
             <>
               <button
@@ -251,7 +260,6 @@ const ExcelListTab = ({ uploadedFiles, renderTable, excelModalOpen, setExcelModa
               >
                 Delete All
               </button>
-              {/* Download Excel Button */}
               <button
                 className="p-2 rounded-full bg-green-600 text-white hover:bg-green-700 shadow flex items-center justify-center"
                 title="Download Excel"
@@ -291,9 +299,8 @@ const ExcelListTab = ({ uploadedFiles, renderTable, excelModalOpen, setExcelModa
           )}
         </div>
       </div>
-      
-      {/* Search Filter */}
-      <div className="mb-4">
+      {/* Add more gap below top bar */}
+      <div className="mt-4 mb-5">
         <div className="relative">
           <input
             type="text"
