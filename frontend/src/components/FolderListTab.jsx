@@ -358,10 +358,19 @@ const FolderListTab = ({ onBulkDelete }) => {
   };
 
   return (
-    <div className="w-full">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold text-gray-800">Uploaded Folders</h2>
-        <div className="flex items-center space-x-2">
+    <div className="mt-6 w-full">
+      {/* Sticky Top Bar - copied from FileListTab.jsx */}
+      <div
+        className="top-0 z-40 shadow-md rounded-b-lg px-6 py-4 flex items-center justify-between mt-6 backdrop-blur-md"
+        style={{
+          minHeight: 80,
+          WebkitBackdropFilter: "blur(8px)",
+          backdropFilter: "blur(8px)",
+          borderBottom: "1px solid #e5e7eb"
+        }}
+      >
+        <h3 className="text-2xl font-bold text-gray-800">Uploaded Folders</h3>
+        <div className="flex items-center gap-5 flex-wrap">
           {!isMultiSelectMode ? (
             <>
               <button
@@ -371,7 +380,6 @@ const FolderListTab = ({ onBulkDelete }) => {
               >
                 Delete All
               </button>
-              {/* Download Excel Button */}
               <button
                 className="p-2 rounded-full bg-green-600 text-white hover:bg-green-700 shadow flex items-center justify-center"
                 title="Download Excel"
@@ -381,9 +389,9 @@ const FolderListTab = ({ onBulkDelete }) => {
                 <FaDownload />
               </button>
               <button
-                onClick={() => setShowModal(true)}
                 className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow flex items-center justify-center"
                 title="Upload Folder"
+                onClick={() => setShowModal(true)}
               >
                 <FaPlus />
               </button>
@@ -412,7 +420,7 @@ const FolderListTab = ({ onBulkDelete }) => {
       </div>
       
       {/* Search Filter */}
-      <div className="mb-4">
+      <div className="mt-4 mb-5">
         <div className="relative">
           <input
             type="text"
@@ -970,14 +978,7 @@ const FolderListTab = ({ onBulkDelete }) => {
                   </div>
                 )}
               </th>
-              <th className="px-3 py-2 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-200 transition-colors"
-                onClick={() => handleSort('file_count')}
-              >
-                <div className="flex items-center space-x-1">
-                  <span>File Count</span>
-                  {getSortIcon('file_count')}
-                </div>
-              </th>
+              {/* File Count column removed */}
               {!isMultiSelectMode && (
                 <th className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors">Actions</th>
               )}
@@ -1030,7 +1031,7 @@ const FolderListTab = ({ onBulkDelete }) => {
 
                   <td className="px-3 py-2 text-gray-700">{folder.added_by || '-'}</td>
                   <td className="px-3 py-2 text-gray-700">{folder.created_at ? new Date(folder.created_at).toLocaleDateString() : '-'}</td>
-                  <td className="px-3 py-2 text-gray-700">{folder.file_count ?? '-'}</td>
+                  {/* File Count cell removed */}
 
                   {!isMultiSelectMode && (
                     <td className="px-4 py-3">

@@ -205,10 +205,19 @@ const UserDetailsTab = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6 mt-4 w-full mx-auto">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold">User Details</h3>
-        <div className="flex items-center space-x-2">
+    <div className="mt-6 w-full">
+      {/* Sticky Top Bar - same as FolderListTab and FileListTab */}
+      <div
+        className="top-0 z-40 shadow-md rounded-b-lg px-6 py-4 flex items-center justify-between mt-6 backdrop-blur-md"
+        style={{
+          minHeight: 80,
+          WebkitBackdropFilter: "blur(8px)",
+          backdropFilter: "blur(8px)",
+          borderBottom: "1px solid #e5e7eb"
+        }}
+      >
+        <h3 className="text-2xl font-bold text-gray-800">User Details</h3>
+        <div className="flex items-center gap-5 flex-wrap">
           <button
             className="p-2 rounded-full bg-green-600 text-white hover:bg-green-700 shadow flex items-center justify-center"
             title="Download Excel"
@@ -227,7 +236,8 @@ const UserDetailsTab = ({
           </button>
         </div>
       </div>
-      <div className="flex flex-wrap gap-2 mb-4">
+      {/* Add more gap below top bar */}
+      <div className="mt-4 mb-5 flex flex-wrap gap-2">
         <input
           type="text"
           placeholder="Filter by Name, Phone, Email, or Date..."

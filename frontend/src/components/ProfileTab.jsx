@@ -165,57 +165,65 @@ const ProfileTab = ({ profiles, handleEditProfile, handleDeleteProfile, handleCr
   };
 
   return (
-  <div className="bg-white rounded-xl shadow-lg p-6 mt-4 w-full mx-auto">
-    <div className="flex items-center justify-between mb-4">
-      <h3 className="text-lg font-semibold">Profile Access Table</h3>
-      <div className="flex items-center space-x-2">
-        <button
-          className="p-2 rounded-full bg-green-600 text-white hover:bg-green-700 shadow flex items-center justify-center"
-          title="Download Excel"
-          aria-label="Download Excel"
-          onClick={handleDownloadExcel}
-        >
-          <FaDownload />
-        </button>
-        <button
-          className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow flex items-center justify-center"
-          onClick={handleCreateProfile}
-          title="Create New Profile"
-          aria-label="Create New Profile"
-        >
-          <FaPlus />
-        </button>
-      </div>
-    </div>
-    
-    {/* Search Filter */}
-    <div className="mb-4">
-      <div className="relative">
-        <input
-          type="text"
-          placeholder="Search profiles by name or access permissions..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        />
-        <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
+    <div className="mt-6 w-full">
+      {/* Sticky Top Bar - same as FolderListTab and FileListTab */}
+      <div
+        className="top-0 z-40 shadow-md rounded-b-lg px-6 py-4 flex items-center justify-between mt-6 backdrop-blur-md"
+        style={{
+          minHeight: 80,
+          WebkitBackdropFilter: "blur(8px)",
+          backdropFilter: "blur(8px)",
+          borderBottom: "1px solid #e5e7eb"
+        }}
+      >
+        <h3 className="text-2xl font-bold text-gray-800">Profile Access Table</h3>
+        <div className="flex items-center gap-5 flex-wrap">
+          <button
+            className="p-2 rounded-full bg-green-600 text-white hover:bg-green-700 shadow flex items-center justify-center"
+            title="Download Excel"
+            aria-label="Download Excel"
+            onClick={handleDownloadExcel}
+          >
+            <FaDownload />
+          </button>
+          <button
+            className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow flex items-center justify-center"
+            onClick={handleCreateProfile}
+            title="Create New Profile"
+            aria-label="Create New Profile"
+          >
+            <FaPlus />
+          </button>
         </div>
       </div>
-      {/* Row Count Display */}
-      <div className="mt-2 text-sm text-gray-700">
-        {filteredProfiles.length === profiles.length
-          ? `Total profiles: ${profiles.length}`
-          : `Showing ${filteredProfiles.length} of ${profiles.length} profiles`}
+      {/* Add more gap below top bar */}
+      <div className="mt-4 mb-5">
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Search profiles by name or access permissions..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+        </div>
+        {/* Row Count Display */}
+        <div className="mt-2 text-sm text-gray-700">
+          {filteredProfiles.length === profiles.length
+            ? `Total profiles: ${profiles.length}`
+            : `Showing ${filteredProfiles.length} of ${profiles.length} profiles`}
+        </div>
+        {searchTerm && (
+          <p className="mt-2 text-sm text-gray-600">
+            Showing {filteredProfiles.length} of {profiles.length} profiles
+          </p>
+        )}
       </div>
-      {searchTerm && (
-        <p className="mt-2 text-sm text-gray-600">
-          Showing {filteredProfiles.length} of {profiles.length} profiles
-        </p>
-      )}
-    </div>
 
     <div className="bg-white rounded-lg shadow overflow-hidden">
       <table className="min-w-full text-sm">

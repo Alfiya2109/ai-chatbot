@@ -221,9 +221,18 @@ const PPTListTab = ({ uploadedPPTs, renderTable, pptModalOpen, setPptModalOpen, 
 
   return (
     <div className="mt-6 w-full">
-      <div className="flex items-center justify-between mb-4">
+      {/* Sticky Top Bar - same as FolderListTab and FileListTab */}
+      <div
+        className="top-0 z-40 shadow-md rounded-b-lg px-6 py-4 flex items-center justify-between mt-6 backdrop-blur-md"
+        style={{
+          minHeight: 80,
+          WebkitBackdropFilter: "blur(8px)",
+          backdropFilter: "blur(8px)",
+          borderBottom: "1px solid #e5e7eb"
+        }}
+      >
         <h3 className="text-2xl font-bold text-gray-800">Uploaded PPT Files</h3>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-5 flex-wrap">
           {!isMultiSelectMode ? (
             <>
               <button
@@ -272,8 +281,8 @@ const PPTListTab = ({ uploadedPPTs, renderTable, pptModalOpen, setPptModalOpen, 
           )}
         </div>
       </div>
-      {/* Search Filter */}
-      <div className="mb-4">
+      {/* Add more gap below top bar */}
+      <div className="mt-4 mb-5">
         <div className="relative">
           <input
             type="text"

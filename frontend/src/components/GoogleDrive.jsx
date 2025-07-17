@@ -459,10 +459,19 @@ const GoogleDrive = () => {
   };
 
   return (
-    <div className="w-full">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">Uploaded Google Drive Folders/Files</h2>
-        <div className="flex items-center gap-4">
+    <div className="mt-6 w-full">
+      {/* Sticky Top Bar - same as FolderListTab and FileListTab */}
+      <div
+        className="top-0 z-40 shadow-md rounded-b-lg px-6 py-4 flex items-center justify-between mt-6 backdrop-blur-md"
+        style={{
+          minHeight: 80,
+          WebkitBackdropFilter: "blur(8px)",
+          backdropFilter: "blur(8px)",
+          borderBottom: "1px solid #e5e7eb"
+        }}
+      >
+        <h2 className="text-2xl font-bold text-gray-800">Uploaded Google Drive Folders/Files</h2>
+        <div className="flex items-center gap-5 flex-wrap">
           <button
             className="p-2 rounded-full bg-green-600 text-white hover:bg-green-700 shadow flex items-center justify-center"
             title="Download Excel"
@@ -481,9 +490,8 @@ const GoogleDrive = () => {
           </button>
         </div>
       </div>
-      
-      {/* Search Filter */}
-      <div className="mb-4">
+      {/* Add more gap below top bar */}
+      <div className="mt-4 mb-5">
         <div className="relative">
           <input
             type="text"
