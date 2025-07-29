@@ -263,15 +263,15 @@ const KnowledgeBaseTab = ({ knowledgeBases, handleEditKb, handleDeleteKb, handle
             sortedKnowledgeBases.map((kb, idx) => (
               <tr key={kb.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-4 py-3 font-medium">{kb.name}</td>
-                <td className="px-4 py-3 flex gap-2">
-                  <button 
-                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-xs"
+                <td className="px-4 py-3">
+                  <button
+                    className="text-blue-600 hover:text-blue-800 text-sm font-medium mr-2"
                     onClick={() => handleEditKb(kb)}
                   >
                     Edit
                   </button>
-                  <button 
-                    className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded text-xs"
+                  <button
+                    className="text-red-600 hover:text-red-800 text-sm font-medium"
                     onClick={() => handleDeleteKb(kb.id)}
                   >
                     Delete

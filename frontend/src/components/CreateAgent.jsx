@@ -1563,7 +1563,7 @@ function CreateAgent() {
             onBulkDelete={handleBulkQADelete}
             qaEditModalOpen={qaEditModalOpen}
             setQaEditModalOpen={setQaEditModalOpen}
-            editingQa={editingQa}
+            editingQa={handleQaEdit}
             handleQaEditSubmit={handleQaEditSubmit}
           />
         );

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+  import React, { useState, useEffect, useMemo } from 'react';
 import { FaPlus, FaTrash, FaDownload } from 'react-icons/fa';
 import * as XLSX from 'xlsx';
 import {BASE_URL} from '../base_url';
@@ -791,10 +791,10 @@ const GoogleDrive = () => {
                     <a href={`https://drive.google.com/file/d/${item.file_id}/view`} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">View</a>
                     <button
                       onClick={() => handleDelete(item.id)}
-                      className="text-red-600 hover:text-red-800 ml-2"
+                      className="text-red-600 hover:text-red-800 ml-2 font-semibold underline"
                       title="Delete"
                     >
-                      <FaTrash />
+                      Delete
                     </button>
                   </td>
                 </tr>

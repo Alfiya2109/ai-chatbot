@@ -221,102 +221,6 @@ const SubcategoriesTable = ({ subCategories, categories, onAddSubcategory, onEdi
           <table className="min-w-full text-sm">
             <thead className="bg-gray-600 text-white ">
               <tr>
-                <th className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('categoryName')}>
-                  <div className="flex items-center space-x-1">
-                    <span>Category</span>
-                    {getSortIcon('categoryName')}
-                    <button
-                      type="button"
-                      className="ml-1 focus:outline-none"
-                      onClick={e => {e.stopPropagation(); setShowSubcategoryFilter(false); setShowCategoryFilter(prev => !prev);}}
-                      title="Filter Category"
-                    >
-                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
-                    </button>
-                  </div>
-                  {showCategoryFilter && (
-                    <div style={{ position: 'relative', zIndex: 9999 }}>
-                      <button type="button"
-                        className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50 bg-white"
-                        style={{ padding: '2px', borderRadius: '50%' }}
-                        onClick={() => setShowCategoryFilter(false)} title="Close">✖</button>
-                      <Select
-                        isMulti
-                        isSearchable
-                        options={categoryOptions}
-                        value={selectedCategoryFilter.map(val => ({ value: val, label: val }))}
-                        onChange={selected => setSelectedCategoryFilter(selected ? selected.map(s => s.value) : [])}
-                        classNamePrefix="react-select"
-                        placeholder="Filter Category..."
-                        styles={{
-                          control: (base, state) => ({
-                            ...base,
-                            borderRadius: '12px',
-                            borderColor: state.isFocused ? '#2563eb' : '#e5e7eb',
-                            boxShadow: state.isFocused ? '0 0 0 2px #2563eb33' : '0 2px 8px 0 rgba(60,72,88,0.10)',
-                            minHeight: '44px',
-                            fontSize: '1rem',
-                            background: '#f9fafb',
-                            transition: 'border-color 0.2s, box-shadow 0.2s',
-                          }),
-                          option: (base, state) => ({
-                            ...base,
-                            backgroundColor: state.isSelected
-                              ? '#2563eb22'
-                              : state.isFocused
-                              ? '#eff6ff'
-                              : '#fff',
-                            color: state.isSelected ? '#1d4ed8' : '#222',
-                            fontWeight: state.isSelected ? 600 : 400,
-                            borderRadius: '8px',
-                            margin: '2px 4px',
-                            padding: '10px 16px',
-                            cursor: 'pointer',
-                          }),
-                          multiValue: (base) => ({
-                            ...base,
-                            backgroundColor: '#dbeafe',
-                            borderRadius: '8px',
-                            color: '#1d4ed8',
-                            fontWeight: 500,
-                          }),
-                          multiValueLabel: (base) => ({
-                            ...base,
-                            color: '#1d4ed8',
-                            fontWeight: 500,
-                          }),
-                          multiValueRemove: (base) => ({
-                            ...base,
-                            color: '#1d4ed8',
-                            ':hover': {
-                              backgroundColor: '#1d4ed8',
-                              color: 'white',
-                            },
-                          }),
-                          menu: (base) => ({
-                            ...base,
-                            borderRadius: '12px',
-                            boxShadow: '0 8px 32px 0 rgba(60,72,88,0.18)',
-                            zIndex: 9999,
-                          }),
-                          placeholder: (base) => ({
-                            ...base,
-                            color: '#9ca3af',
-                          }),
-                          input: (base) => ({
-                            ...base,
-                            color: '#222',
-                          }),
-                        }}
-                        autoFocus
-                        menuPortalTarget={document.body}
-                        menuPosition="fixed"
-                      />
-                    </div>
-                  )}
-                </th>
                 <th className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('subcategoryName')}>
                   <div className="flex items-center space-x-1">
                     <span>Subcategory</span>
@@ -413,22 +317,117 @@ const SubcategoriesTable = ({ subCategories, categories, onAddSubcategory, onEdi
                     </div>
                   )}
                 </th>
+                <th className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('categoryName')}>
+                  <div className="flex items-center space-x-1">
+                    <span>Category</span>
+                    {getSortIcon('categoryName')}
+                    <button
+                      type="button"
+                      className="ml-1 focus:outline-none"
+                      onClick={e => {e.stopPropagation(); setShowSubcategoryFilter(false); setShowCategoryFilter(prev => !prev);}}
+                      title="Filter Category"
+                    >
+                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </button>
+                  </div>
+                  {showCategoryFilter && (
+                    <div style={{ position: 'relative', zIndex: 9999 }}>
+                      <button type="button"
+                        className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50 bg-white"
+                        style={{ padding: '2px', borderRadius: '50%' }}
+                        onClick={() => setShowCategoryFilter(false)} title="Close">✖</button>
+                      <Select
+                        isMulti
+                        isSearchable
+                        options={categoryOptions}
+                        value={selectedCategoryFilter.map(val => ({ value: val, label: val }))}
+                        onChange={selected => setSelectedCategoryFilter(selected ? selected.map(s => s.value) : [])}
+                        classNamePrefix="react-select"
+                        placeholder="Filter Category..."
+                        styles={{
+                          control: (base, state) => ({
+                            ...base,
+                            borderRadius: '12px',
+                            borderColor: state.isFocused ? '#2563eb' : '#e5e7eb',
+                            boxShadow: state.isFocused ? '0 0 0 2px #2563eb33' : '0 2px 8px 0 rgba(60,72,88,0.10)',
+                            minHeight: '44px',
+                            fontSize: '1rem',
+                            background: '#f9fafb',
+                            transition: 'border-color 0.2s, box-shadow 0.2s',
+                          }),
+                          option: (base, state) => ({
+                            ...base,
+                            backgroundColor: state.isSelected
+                              ? '#2563eb22'
+                              : state.isFocused
+                              ? '#eff6ff'
+                              : '#fff',
+                            color: state.isSelected ? '#1d4ed8' : '#222',
+                            fontWeight: state.isSelected ? 600 : 400,
+                            borderRadius: '8px',
+                            margin: '2px 4px',
+                            padding: '10px 16px',
+                            cursor: 'pointer',
+                          }),
+                          multiValue: (base) => ({
+                            ...base,
+                            backgroundColor: '#dbeafe',
+                            borderRadius: '8px',
+                            color: '#1d4ed8',
+                            fontWeight: 500,
+                          }),
+                          multiValueLabel: (base) => ({
+                            ...base,
+                            color: '#1d4ed8',
+                            fontWeight: 500,
+                          }),
+                          multiValueRemove: (base) => ({
+                            ...base,
+                            color: '#1d4ed8',
+                            ':hover': {
+                              backgroundColor: '#1d4ed8',
+                              color: 'white',
+                            },
+                          }),
+                          menu: (base) => ({
+                            ...base,
+                            borderRadius: '12px',
+                            boxShadow: '0 8px 32px 0 rgba(60,72,88,0.18)',
+                            zIndex: 9999,
+                          }),
+                          placeholder: (base) => ({
+                            ...base,
+                            color: '#9ca3af',
+                          }),
+                          input: (base) => ({
+                            ...base,
+                            color: '#222',
+                          }),
+                        }}
+                        autoFocus
+                        menuPortalTarget={document.body}
+                        menuPosition="fixed"
+                      />
+                    </div>
+                  )}
+                </th>
                 <th className="px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {sortedData.map((row, idx) => (
                 <tr key={row.subcategoryId} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3 font-medium">{row.categoryName}</td>
-                  <td className="px-4 py-3">{row.subcategoryName}</td>
-                  <td className="px-4 py-3 flex gap-2">
+                  <td className="px-4 py-3 font-medium">{row.subcategoryName}</td>
+                  <td className="px-4 py-3">{row.categoryName}</td>
+                  <td className="px-4 py-3">
                     <button
-                      className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-xs"
+                      className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                       onClick={() => openEditModal(row)}
                     >
                       Edit
                     </button>
-                    {/* TODO: Add delete button if needed */}
                   </td>
                 </tr>
               ))}
