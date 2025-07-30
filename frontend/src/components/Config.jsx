@@ -271,8 +271,15 @@ function Config() {
       (!startDate || ts >= startDate) &&
       (!endDate || ts <= endDate);
 
+
     const time = ts.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const username = (log.user || '').toString();
+    let username = '';
+    if (log.user && typeof log.user === 'object') {
+      const { first_name, last_name, title } = log.user;
+      username = `${first_name || ''} ${last_name || ''}${title ? ` (${title})` : ''}`.trim();
+    } else if (typeof log.user === 'string') {
+      username = log.user;
+    }
 
     const matchesCategory = filters.category.length === 0 || filters.category.includes('All') || filters.category.some(fcat =>
       (log.category || []).includes(fcat)
@@ -361,9 +368,17 @@ function Config() {
                   <th className="border border-gray-300 px-4 py-2">User
                     <select className="w-full mt-1 px-2 py-1 border rounded" value={filters.user} onChange={e => handleFilterChange('user', e.target.value)}>
                       <option value="">All</option>
-                      {[...new Set(chatLogs.map(log => typeof log.user === 'string' ? log.user : ''))]
+                      {[...new Set(chatLogs.map(log => {
+                        if (log.user && typeof log.user === 'object') {
+                          const { first_name, last_name, title } = log.user;
+                          return `${first_name || ''} ${last_name || ''}${title ? ` (${title})` : ''}`.trim();
+                        } else if (typeof log.user === 'string') {
+                          return log.user;
+                        }
+                        return '';
+                      }))]
                         .filter(u => u)
-                        .map((u, i) => <option key={i} value={u.name}>{u.name}</option>)}
+                        .map((u, i) => <option key={i} value={u}>{u}</option>)}
                     </select>
                   </th>
                   <th className="border border-gray-300 px-4 py-2">Question

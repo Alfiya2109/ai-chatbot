@@ -810,6 +810,54 @@ class UpdateChatLogSubCategoryByNameAPIView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+class UpdateChatLogAnswerAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, chatlog_id):
+        # Ensure the ChatLog exists
+        try:
+            chat_log = ChatLog.objects.get(id=chatlog_id)
+        except ChatLog.DoesNotExist:
+            return Response({"error": "ChatLog not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Fetch the new answer from the request
+        gpt_answer = request.data.get("gpt_answer")
+        if not gpt_answer:
+            return Response({"error": "gpt_answer is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Update the ChatLog's answer
+        chat_log.gpt_answer = gpt_answer
+        chat_log.save()
+
+        return Response({
+            "message": "Answer updated successfully.",
+            "chatlog_id": chat_log.id,
+            "gpt_answer": gpt_answer
+        }, status=status.HTTP_200_OK)
+
+
+class MarkChatLogCorrectAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, chatlog_id):
+        try:
+            chat_log = ChatLog.objects.get(id=chatlog_id)
+        except ChatLog.DoesNotExist:
+            return Response({"error": "ChatLog not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        is_correct = request.data.get("is_correct", True)
+
+        # Update ChatLog's is_correct field
+        chat_log.is_correct = is_correct
+        chat_log.save()
+
+        return Response({
+            "message": "ChatLog marked as correct successfully.",
+            "chatlog_id": chat_log.id,
+            "is_correct": is_correct
+        }, status=status.HTTP_200_OK)
+
+
 # File Uploder
 from chatbot.models import Files_upload
 from chatbot.serializers import FilesUploadSerializer

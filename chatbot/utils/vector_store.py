@@ -134,7 +134,7 @@ def query_vector_db(question, knowledge_bases=None, namespace="web_scraped"):
         )
 
         # Fetch more docs and filter in Python for KB match (OR logic)
-        all_docs = vector_store.similarity_search(question, k=100)  # Fetch more to allow filtering
+        all_docs = vector_store.similarity_search(question, k=10)  # Fetch more to allow filtering
         if knowledge_bases:
             relevant_docs = [doc for doc in all_docs if any(
                 kb in (doc.metadata.get("knowledge_base") or []) for kb in knowledge_bases

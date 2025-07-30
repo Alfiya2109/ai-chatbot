@@ -439,39 +439,49 @@ const ProfileTab = ({ profiles, handleEditProfile, handleDeleteProfile, handleCr
               ].filter(perm => profile[perm.key]).map(perm => perm.label);
 
               return (
-                <tr key={profile.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3 font-medium">{profile.name}</td>
-                  <td className="px-4 py-3">
-                    {permissions.length > 0 ? (
-                      <div className="flex flex-wrap gap-1">
-                        {permissions.map((perm, index) => (
-                          <span
-                            key={index}
-                            className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full"
-                          >
-                            {perm}
-                          </span>
-                        ))}
-                      </div>
-                    ) : (
-                      '-'
-                    )}
-                  </td>
-                  <td className="px-4 py-3 flex gap-2">
-                    <button
-                      className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-xs"
-                      onClick={() => handleEditProfile(profile)}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded text-xs"
-                      onClick={() => handleDeleteProfile(profile.id)}
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
+                <React.Fragment key={profile.id}>
+                  <tr className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-3 font-medium">{profile.name}</td>
+                    <td className="px-4 py-3">
+                      {permissions.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {permissions.map((perm, index) => (
+                            <span
+                              key={index}
+                              className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full"
+                            >
+                              {perm}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        '-'
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        className="text-blue-600 hover:text-blue-800 text-sm font-medium mr-2"
+                        onClick={() => handleEditProfile(profile)}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        className="text-red-600 hover:text-red-800 text-sm font-medium"
+                        onClick={() => handleDeleteProfile(profile.id)}
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                  {/* Separator line after each profile except the last one */}
+                  {idx < sortedProfiles.length - 1 && (
+                    <tr>
+                      <td colSpan="3" className="py-0">
+                        <hr className="border-t border-gray-300 my-0" />
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               );
             })
           ) : (

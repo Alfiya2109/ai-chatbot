@@ -8,49 +8,19 @@ const CategoriesTab = ({ categoriesList, handleEditCategory, handleDeleteCategor
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState('');
   const [sortDirection, setSortDirection] = useState('asc');
-  const [showSearchBox, setShowSearchBox] = useState(false);
-  const [selectedKBFilters, setSelectedKBFilters] = useState([]);
-  const [knowledgeBases, setKnowledgeBases] = useState([]);
+  // Removed Knowledge Base filter states
   const [showNameFilter, setShowNameFilter] = useState(false);
   const [selectedNameFilter, setSelectedNameFilter] = useState([]);
   const nameOptions = useMemo(() => Array.from(new Set(categoriesList.map(cat => cat.name))).map(name => ({ value: name, label: name })), [categoriesList]);
 
-  // Fetch knowledge bases on mount and when modal/filter opens
-  useEffect(() => {
-    fetchKnowledgeBases();
-  }, []);
-  const fetchKnowledgeBases = async () => {
-    try {
-      const token = localStorage.getItem('access_token');
-      const res = await fetch(`${BASE_URL}/api/knowledgebase/`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setKnowledgeBases(data);
-      }
-    } catch (err) {
-      setKnowledgeBases([]);
-    }
-  };
+  // Removed Knowledge Base fetch logic
 
-  // Update filteredCategories to apply multi-select filter before search and KB filter
+  // Update filteredCategories to apply multi-select filter before search
   const filteredCategories = useMemo(() => {
     let filtered = categoriesList;
     // Multi-select Name filter
     if (selectedNameFilter.length > 0) {
       filtered = filtered.filter(cat => selectedNameFilter.includes(cat.name));
-    }
-    // Knowledge Base filter
-    if (showSearchBox && selectedKBFilters.length > 0) {
-      filtered = filtered.filter(category =>
-        category.knowledge_bases &&
-        category.knowledge_bases.some(kb =>
-          typeof kb === 'string'
-            ? selectedKBFilters.includes(kb)
-            : (kb.name && selectedKBFilters.includes(kb.name))
-        )
-      );
     }
     // Search term filter
     if (searchTerm) {
@@ -58,26 +28,14 @@ const CategoriesTab = ({ categoriesList, handleEditCategory, handleDeleteCategor
       filtered = filtered.filter(category => category.name.toLowerCase().includes(term));
     }
     return filtered;
-  }, [categoriesList, searchTerm, selectedKBFilters, showSearchBox, selectedNameFilter]);
+  }, [categoriesList, searchTerm, selectedNameFilter]);
 
   const sortedCategories = useMemo(() => {
     let filtered = filteredCategories;
-    if (sortField) {
+    if (sortField === 'name') {
       filtered = [...filtered].sort((a, b) => {
-        let aValue = '';
-        let bValue = '';
-        switch (sortField) {
-          case 'name':
-            aValue = (a.name || '').toLowerCase();
-            bValue = (b.name || '').toLowerCase();
-            break;
-          case 'knowledge_bases':
-            aValue = a.knowledge_bases ? a.knowledge_bases.map(kb => typeof kb === 'string' ? kb : (kb.name || '')).join(', ').toLowerCase() : '';
-            bValue = b.knowledge_bases ? b.knowledge_bases.map(kb => typeof kb === 'string' ? kb : (kb.name || '')).join(', ').toLowerCase() : '';
-            break;
-          default:
-            return 0;
-        }
+        let aValue = (a.name || '').toLowerCase();
+        let bValue = (b.name || '').toLowerCase();
         if (sortDirection === 'asc') {
           return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
         } else {
@@ -120,11 +78,10 @@ const CategoriesTab = ({ categoriesList, handleEditCategory, handleDeleteCategor
     }
   };
 
-  // Download Excel logic (same as FileListTab)
+  // Download Excel logic (without Knowledge Base column)
   const handleDownloadExcel = () => {
     const data = filteredCategories.map(cat => ({
       'Category Name': cat.name || '-',
-      'Knowledge Bases': cat.knowledge_bases ? cat.knowledge_bases.map(kb => typeof kb === 'string' ? kb : kb.name).join(', ') : '-',
     }));
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
@@ -292,114 +249,6 @@ const CategoriesTab = ({ categoriesList, handleEditCategory, handleDeleteCategor
                 </div>
               )}
             </th>
-            <th 
-              className="relative px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors"
-              onClick={() => handleSort('knowledge_bases')}
-            >
-              <div className="flex items-center space-x-1">
-                <span>Knowledge Bases</span>
-                {getSortIcon('knowledge_bases')}
-                <button
-                  type="button"
-                  className="ml-1 focus:outline-none"
-                  onClick={e => {
-                    e.stopPropagation();
-                    setShowSearchBox(prev => {
-                      const next = !prev;
-                      if (next) fetchKnowledgeBases();
-                      return next;
-                    });
-                  }}
-                  title="Search Knowledge Base"
-                >
-                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </button>
-              </div>
-              {showSearchBox && (
-                <div style={{ position: 'relative', zIndex: 9999 }}>
-                  <button type="button"
-                    className="absolute top-2 right-2 text-gray-400 hover:text-red-500 z-50 bg-white"
-                    style={{ padding: '2px', borderRadius: '50%' }}
-                    onClick={() => setShowSearchBox(false)} title="Close">✖</button>
-                  <Select
-                    isMulti
-                    isSearchable
-                    options={knowledgeBases.map(kb => ({ value: String(kb.id), label: kb.name }))}
-                    value={knowledgeBases.filter(kb => selectedKBFilters.includes(kb.name)).map(kb => ({ value: String(kb.id), label: kb.name }))}
-                    onChange={selectedOptions => {
-                      setSelectedKBFilters(selectedOptions ? selectedOptions.map(opt => opt.label) : []);
-                    }}
-                    classNamePrefix="react-select"
-                    placeholder="Search Knowledge Base..."
-                    styles={{
-                      control: (base, state) => ({
-                        ...base,
-                        borderRadius: '12px',
-                        borderColor: state.isFocused ? '#2563eb' : '#e5e7eb',
-                        boxShadow: state.isFocused ? '0 0 0 2px #2563eb33' : '0 2px 8px 0 rgba(60,72,88,0.10)',
-                        minHeight: '44px',
-                        fontSize: '1rem',
-                        background: '#f9fafb',
-                        transition: 'border-color 0.2s, box-shadow 0.2s',
-                      }),
-                      option: (base, state) => ({
-                        ...base,
-                        backgroundColor: state.isSelected
-                          ? '#2563eb22'
-                          : state.isFocused
-                          ? '#eff6ff'
-                          : '#fff',
-                        color: state.isSelected ? '#1d4ed8' : '#222',
-                        fontWeight: state.isSelected ? 600 : 400,
-                        borderRadius: '8px',
-                        margin: '2px 4px',
-                        padding: '10px 16px',
-                        cursor: 'pointer',
-                      }),
-                      multiValue: (base) => ({
-                        ...base,
-                        backgroundColor: '#dbeafe',
-                        borderRadius: '8px',
-                        color: '#1d4ed8',
-                        fontWeight: 500,
-                      }),
-                      multiValueLabel: (base) => ({
-                        ...base,
-                        color: '#1d4ed8',
-                        fontWeight: 500,
-                      }),
-                      multiValueRemove: (base) => ({
-                        ...base,
-                        color: '#1d4ed8',
-                        ':hover': {
-                          backgroundColor: '#1d4ed8',
-                          color: 'white',
-                        },
-                      }),
-                      menu: (base) => ({
-                        ...base,
-                        borderRadius: '12px',
-                        boxShadow: '0 8px 32px 0 rgba(60,72,88,0.18)',
-                        zIndex: 9999,
-                      }),
-                      placeholder: (base) => ({
-                        ...base,
-                        color: '#9ca3af',
-                      }),
-                      input: (base) => ({
-                        ...base,
-                        color: '#222',
-                      }),
-                    }}
-                    autoFocus
-                    menuPortalTarget={document.body}
-                    menuPosition="fixed"
-                  />
-                </div>
-              )}
-            </th>
             <th className="px-4 py-3 text-left font-semibold text-white hover:text-black cursor-pointer hover:bg-gray-100 transition-colors">Actions</th>
           </tr>
         </thead>
@@ -409,31 +258,16 @@ const CategoriesTab = ({ categoriesList, handleEditCategory, handleDeleteCategor
               <tr key={cat.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-4 py-3 font-medium">{cat.name}</td>
                 <td className="px-4 py-3">
-                  {cat.knowledge_bases && cat.knowledge_bases.length > 0 ? (
-                    <div className="flex flex-wrap gap-1">
-                      {cat.knowledge_bases.map((kb, index) => (
-                        <span
-                          key={index}
-                          className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full"
-                        >
-                          {typeof kb === 'string' ? kb : kb.name}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <span className="text-gray-500">-</span>
-                  )}
-                </td>
-                <td className="px-4 py-3 flex gap-2">
-                  <button 
-                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-xs"
+                  <button
+                    className="text-blue-600 hover:text-blue-800 text-sm font-medium mr-2"
                     onClick={() => handleEditCategory(cat)}
                   >
                     Edit
                   </button>
-                  <button 
-                    className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded text-xs"
+                  <button
+                    className="text-red-600 hover:text-red-800 text-sm font-medium"
                     onClick={() => handleDeleteCategory(cat)}
+                    title="Delete Category"
                   >
                     Delete
                   </button>
@@ -442,8 +276,8 @@ const CategoriesTab = ({ categoriesList, handleEditCategory, handleDeleteCategor
             ))
           ) : (
             <tr>
-              <td colSpan="3" className="px-4 py-8 text-center text-gray-500">
-                {searchTerm || selectedKBFilters.length > 0 ? 'No categories found matching your search.' : 'No categories available.'}
+              <td colSpan="2" className="px-4 py-8 text-center text-gray-500">
+                {searchTerm ? 'No categories found matching your search.' : 'No categories available.'}
               </td>
             </tr>
           )}
@@ -465,25 +299,6 @@ const CategoriesTab = ({ categoriesList, handleEditCategory, handleDeleteCategor
                 onChange={e => setCategoryForm({ ...categoryForm, name: e.target.value })}
                 className="w-full p-2 border rounded"
               />
-            </div>
-            <div>
-              <label className="block mb-1 font-medium">Knowledge Bases</label>
-              <Select
-                isMulti
-                isSearchable
-                options={knowledgeBases.map(kb => ({ value: String(kb.id), label: kb.name }))}
-                value={knowledgeBases.filter(kb => categoryForm.knowledge_bases && categoryForm.knowledge_bases.includes(String(kb.id))).map(kb => ({ value: String(kb.id), label: kb.name }))}
-                onChange={selectedOptions => {
-                  setCategoryForm({
-                    ...categoryForm,
-                    knowledge_bases: selectedOptions ? selectedOptions.map(opt => opt.value) : []
-                  });
-                }}
-                classNamePrefix="react-select"
-                placeholder="Select knowledge bases..."
-                styles={{ menu: base => ({ ...base, zIndex: 9999 }) }}
-              />
-              <span className="text-xs text-gray-500">You can search and select multiple. Searched/selected will show on top.</span>
             </div>
             {categoryFormError && <div className="text-red-500 text-xs">{categoryFormError}</div>}
             <div className="flex justify-end space-x-2">

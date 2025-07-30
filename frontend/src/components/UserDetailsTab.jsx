@@ -942,44 +942,51 @@ const UserDetailsTab = ({
             ) : (
               filteredUsers.map((user, idx) => {
                 return (
-                  <tr key={user.id || idx} className="border-b">
-                    <td className="px-3 py-2">{user.first_name}</td>
-                    <td className="px-3 py-2">{user.last_name}</td>
-                    <td className="px-3 py-2">{user.phone_number}</td>
-                    <td className="px-3 py-2">{user.email}</td>
-                    <td className="px-3 py-2">{new Date(user.created_at).toLocaleDateString()}</td>
-                    <td className="px-3 py-2">{user.profile_name || ''}</td>
-                    <td className="px-3 py-2">
-                      {Array.isArray(user.knowledge_bases) && user.knowledge_bases.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {user.knowledge_bases.map((kb, kbIdx) => (
-                            <span
-                              key={kbIdx}
-                              className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full"
-                            >
-                              {typeof kb === 'string' ? kb : kb.name}
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        '-'
-                      )}
-                    </td>
-                    <td className="px-3 py-2 flex gap-2">
-                      <button
-                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-xs"
-                        onClick={() => openEditModal(user)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded text-xs"
-                        onClick={() => handleDeleteUser(user)}
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
+                  <React.Fragment key={user.id || idx}>
+                    <tr className="">
+                      <td className="px-3 py-2">{user.first_name}</td>
+                      <td className="px-3 py-2">{user.last_name}</td>
+                      <td className="px-3 py-2">{user.phone_number}</td>
+                      <td className="px-3 py-2">{user.email}</td>
+                      <td className="px-3 py-2">{new Date(user.created_at).toLocaleDateString()}</td>
+                      <td className="px-3 py-2">{user.profile_name || ''}</td>
+                      <td className="px-3 py-2">
+                        {Array.isArray(user.knowledge_bases) && user.knowledge_bases.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {user.knowledge_bases.map((kb, kbIdx) => (
+                              <span
+                                key={kbIdx}
+                                className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full"
+                              >
+                                {typeof kb === 'string' ? kb : kb.name}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          '-'
+                        )}
+                      </td>
+                      <td className="px-3 py-2">
+                        <button
+                          className="text-blue-600 hover:text-blue-800 text-sm font-medium mr-2"
+                          onClick={() => openEditModal(user)}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="text-red-600 hover:text-red-800 text-sm font-medium"
+                          onClick={() => handleDeleteUser(user)}
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td colSpan="8" className="py-0">
+                        <hr className="border-t border-gray-300" />
+                      </td>
+                    </tr>
+                  </React.Fragment>
                 );
               })
             )}

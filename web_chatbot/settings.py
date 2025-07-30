@@ -190,12 +190,12 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 # --- Email Backend Settings (required for Forgot Password) ---
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'  # Replace with your SMTP server
+EMAIL_HOST = 'smtp.hostinger.com'  # Replace with your SMTP server
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
-EMAIL_HOST_USER = 'iqratech7@gmail.com'  # Replace with your email
-EMAIL_HOST_PASSWORD = 'dhws hgub ruad kmyu'  # Replace with your email password (use an App Password for Gmail)
+EMAIL_HOST_USER = 'otp@iqratechnology.site'  # Replace with your email
+EMAIL_HOST_PASSWORD = '@l1qasW=M'  # Replace with your email password (use an App Password for Gmail)
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 # --- Frontend URL (used in password reset email links) ---

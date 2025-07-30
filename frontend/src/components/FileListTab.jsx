@@ -1017,14 +1017,21 @@ const FileListTab = ({ uploadedFiles, renderTable, fileModalOpen, setFileModalOp
                   <td className="px-4 py-3">
                     <div className="flex items-center space-x-2">
                       {file.file && (
-                        <a
-                          href={file.file}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          onClick={e => {
+                            e.preventDefault();
+                            let fileUrl = file.file;
+                            // If fileUrl is a relative path, prepend BASE_URL
+                            if (fileUrl && !/^https?:\/\//i.test(fileUrl)) {
+                              fileUrl = BASE_URL.replace(/\/$/, '') + (fileUrl.startsWith('/') ? '' : '/') + fileUrl;
+                            }
+                            window.open(fileUrl, '_blank');
+                          }}
                           className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                          title="View file"
                         >
                           View
-                        </a>
+                        </button>
                       )}
                       <button
                         onClick={() => onBulkDelete([file.id])}
