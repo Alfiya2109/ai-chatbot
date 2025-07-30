@@ -199,8 +199,8 @@ EMAIL_HOST_PASSWORD = '@l1qasW=M'  # Replace with your email password (use an Ap
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 # --- Frontend URL (used in password reset email links) ---
-# FRONTEND_URL = 'https://aichatbotfrontend.iqratechnology.com/'
-FRONTEND_URL = 'http://localhost:5173'  # For local development, change to your production URL in deployment
+FRONTEND_URL = 'https://aichatbotfrontend.iqratechnology.com/'
+# FRONTEND_URL = 'http://localhost:5173'  # For local development, change to your production URL in deployment
 
 # EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 # EMAIL_HOST = 'smtp.sendgrid.net'
