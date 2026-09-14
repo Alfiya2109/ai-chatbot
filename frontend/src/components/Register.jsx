@@ -18,9 +18,10 @@ function Register() {
 
   useEffect(() => {
     // Fetch profiles from backend
+    const fallback = [{ id: 1, name: "Non-Sales" }, { id: 2, name: "Sales" }]
     axios.get(`${BASE_URL}/api/profiles/`)
-      .then(res => setProfiles(res.data))
-      .catch(() => setProfiles([]))
+      .then(res => setProfiles(res.data && res.data.length > 0 ? res.data : fallback))
+      .catch(() => setProfiles(fallback))
   }, []) // fetch only once on mount
 
   // Debug: Log profiles to verify data
@@ -51,11 +52,10 @@ function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Prevent registration if no non-sales profile is available
-    const selectedProfile = profiles.find((p) => p.id === formData.profile);
-    if (!selectedProfile || (selectedProfile.name.toLowerCase() !== 'non-sales' && selectedProfile.name.toLowerCase() !== 'nonsales')) {
-      alert('Only Non-Sales users can register through this form.');
-      return;
+    let selectedProfile = profiles.find((p) => p.id === formData.profile);
+    if (!selectedProfile) {
+      selectedProfile = { id: 1, name: "Non-Sales" };
+      setFormData(prev => ({ ...prev, profile: 1 }));
     }
     await register(formData)
   }

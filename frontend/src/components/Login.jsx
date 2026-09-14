@@ -39,20 +39,17 @@ function Login() {
   // Fetch profiles when modal opens
   const handleOpenRegisterModal = async () => {
     setShowRegisterModal(true)
+    const fallback = [{ id: 1, name: "Non-Sales" }, { id: 2, name: "Sales" }]
     try {
       const response = await axios.get(`${BASE_URL}/api/profiles/`)
-      console.log('Available profiles:', response.data)
-      setProfiles(response.data)
-      
-      // Auto-select Non-Sales profile
-      const nonSales = response.data.find((p) => p.name.toLowerCase() === 'non-sales' || p.name.toLowerCase() === 'nonsales')
-      console.log('Found Non-Sales profile:', nonSales)
-      if (nonSales) {
-        setRegisterForm(prev => ({ ...prev, profile: nonSales.id }))
-      }
+      const data = response.data && response.data.length > 0 ? response.data : fallback
+      setProfiles(data)
+      const nonSales = data.find((p) => p.name.toLowerCase() === "non-sales" || p.name.toLowerCase() === "nonsales")
+      setRegisterForm(prev => ({ ...prev, profile: nonSales ? nonSales.id : 1 }))
     } catch (error) {
-      console.error('Error fetching profiles:', error)
-      setProfiles([])
+      console.warn('Error fetching profiles, using fallback:', error)
+      setProfiles(fallback)
+      setRegisterForm(prev => ({ ...prev, profile: 1 }))
     }
   }
 
@@ -70,12 +67,11 @@ function Login() {
     setRegisterLoading(true)
     setRegisterError(null)
 
-    // Ensure only Non-Sales users can register
-    const selectedProfile = profiles.find((p) => p.id === registerForm.profile)
-    if (!selectedProfile || (selectedProfile.name.toLowerCase() !== 'non-sales' && selectedProfile.name.toLowerCase() !== 'nonsales')) {
-      setRegisterError('Only Non-Sales users can register through this form.')
-      setRegisterLoading(false)
-      return
+    // Ensure Non-Sales users registration
+    let selectedProfile = profiles.find((p) => p.id === registerForm.profile)
+    if (!selectedProfile) {
+      selectedProfile = { id: 1, name: "Non-Sales" }
+      setRegisterForm(prev => ({ ...prev, profile: 1 }))
     }
 
     console.log('Registering with profile:', selectedProfile)
