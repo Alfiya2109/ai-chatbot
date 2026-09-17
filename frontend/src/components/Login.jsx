@@ -5,8 +5,8 @@ import axios from 'axios'
 import { BASE_URL } from '../base_url'
 
 function Login() {
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
+  const [username, setUsername] = useState('admin@gmail.com')
+  const [password, setPassword] = useState('admin123')
   const [showPassword, setShowPassword] = useState(false)
   const [showRegisterModal, setShowRegisterModal] = useState(false)
   const [registerForm, setRegisterForm] = useState({
@@ -107,6 +107,31 @@ function Login() {
           </h2>
         </div>
         <form className="mt-8 space-y-6 bg-white p-6 rounded-xl shadow-lg" onSubmit={handleSubmit}>
+          {/* Recruiter Demo Credentials Card */}
+          <div className="p-3.5 rounded-lg border border-purple-200 bg-purple-50/80 text-xs text-gray-700 text-left space-y-2">
+            <div className="font-bold text-purple-700 flex items-center gap-1.5">
+              <span>🔑</span> <span>Recruiter Demo Access (Pre-filled):</span>
+            </div>
+            <div className="flex justify-between items-center bg-white p-2 rounded border border-purple-100">
+              <div>
+                <span className="text-gray-500 block text-[10px] uppercase font-semibold">Demo Account</span>
+                <span className="text-purple-700 font-mono font-bold">admin@gmail.com</span> / <span className="font-mono font-bold text-gray-600">admin123</span>
+              </div>
+              <button
+                type="button"
+                onClick={async () => {
+                  setUsername('admin@gmail.com');
+                  setPassword('admin123');
+                  const ok = await login('admin@gmail.com', 'admin123');
+                  if (ok) navigate('/train');
+                }}
+                className="px-2.5 py-1 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded text-[11px] transition-colors"
+              >
+                ⚡ Auto Login
+              </button>
+            </div>
+          </div>
+
           <div className="space-y-4">
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-gray-700">
@@ -166,15 +191,27 @@ function Login() {
             <div className="text-red-500 text-sm text-center">{error}</div>
           )}
 
-          <div>
+          <div className="space-y-2">
             <button
               type="submit"
               disabled={loading}
-              className={`group relative flex w-full justify-center rounded-md bg-gray-700   py-2 px-3 text-sm font-semibold text-white hover:bg-gray-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 ${
+              className={`group relative flex w-full justify-center rounded-md bg-purple-700 py-2 px-3 text-sm font-semibold text-white hover:bg-purple-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 ${
                 loading ? 'opacity-70 cursor-not-allowed' : ''
               }`}
             >
               {loading ? 'Logging in...' : 'Sign in'}
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                setUsername('admin@gmail.com');
+                setPassword('admin123');
+                const ok = await login('admin@gmail.com', 'admin123');
+                if (ok) navigate('/train');
+              }}
+              className="w-full py-2 px-3 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-1.5"
+            >
+              <span>⚡</span> <span>One-Click Demo Access (Admin)</span>
             </button>
           </div>
 
