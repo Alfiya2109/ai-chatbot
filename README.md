@@ -1,9 +1,16 @@
-# 🧠 AI Chatbot with Data Analytics & Document QA
+# 🧠 Enterprise AI Chatbot & Document Management System (DMS)
 
-This project is a Django-based AI chatbot that answers user queries using both:
+> 🔗 **Live Chatbot Demo**: [https://iqra-ai-chatbot-aozl.vercel.app/login](https://iqra-ai-chatbot-aozl.vercel.app/login)  
+> 📁 **Document Management Portal (DMS)**: [https://iqra-ai-chatbot-aozl.vercel.app/train](https://iqra-ai-chatbot-aozl.vercel.app/train)  
+> 🔑 **Demo Login Credentials**: Username: `admin@gmail.com` &bull; Password: `admin123`
 
-- 🤖 **Context-aware semantic reasoning** (from uploaded documents/text/Q&A)
-- 📊 **Intelligent data analysis** (from uploaded Excel files using GPT and pandas)
+---
+
+This enterprise-grade platform combines a conversational AI chatbot with a full Document Management System (DMS) and Vector Database training pipeline:
+
+- 🤖 **Conversational AI & Semantic Search**: Multi-turn dialogue with LangChain, AstraDB vector embeddings, and OpenAI GPT synthesis.
+- 📁 **Full-Stack Document Ingestion**: Ingests PDF, DOCX, XLSX, PPT, and Web URLs with automated parsing and chunking.
+- 📊 **Intelligent Data Analytics**: Real-time analytical querying over spreadsheets with GPT-generated pandas code.
 
 ---
 
